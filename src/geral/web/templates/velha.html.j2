@@ -1,0 +1,42 @@
+{% extends "base.html.j2" %}
+{% block title %}Jogo da velha #{{ number }} · Geral{% endblock %}
+{% block head %}<link rel="stylesheet" href="/static/geral/jogos.css?v={{ asset_version }}">{% endblock %}
+{% block content %}
+<section class="jogo wall">
+  <div class="wrap" id="jv" data-number="{{ number }}" data-archive="{{ '1' if archive else '0' }}" data-board="{{ board.code }}" data-max="{{ max_guesses }}">
+    {% include "_game_tabs.html.j2" %}
+    <h1>Jogo da velha</h1>
+    {% if archive %}<p class="archive-note">Jogo de {{ day }} · não conta na sequência · <a href="{{ today_url }}">Jogar o de hoje →</a></p>{% endif %}
+    <p class="lead">Um tabuleiro por dia, o mesmo para todo mundo. Cada casa pede um jogador que se encaixe na linha e na coluna. São {{ max_guesses }} chutes para as 9 casas.</p>
+
+    <div class="board velha-board" role="grid" aria-label="Tabuleiro #{{ number }}">
+      <span class="lamp meta velha-corner">#{{ number }}<br><b id="jv-left">{{ max_guesses }}</b> chutes</span>
+      {% for c in board.cols %}<span class="lamp velha-head col" role="columnheader">{{ c.label }}</span>{% endfor %}
+      {% for r in board.rows %}{% set row = loop.index0 %}
+      <span class="lamp velha-head row" role="rowheader">{{ r.label }}</span>
+      {% for c in board.cols %}<button type="button" class="cell" data-casa="{{ row * 3 + loop.index0 }}" aria-label="{{ r.label }} e {{ c.label }}"><span class="cell-name"></span></button>{% endfor %}
+      {% endfor %}
+    </div>
+
+    <form class="picker" id="jv-form" role="search" hidden>
+      <div class="picker-top">
+        <label class="picker-search"><span id="jv-cell-label">Buscar jogador</span><input id="jv-search" type="search" autocomplete="off" spellcheck="false" placeholder="Digite o nome"></label>
+        <button class="btn secondary" type="button" id="jv-close">Fechar</button>
+      </div>
+      <ul class="velha-results" id="jv-results" aria-live="polite"></ul>
+    </form>
+    <p class="how" id="jv-error" role="alert" hidden></p>
+
+    <div class="result" id="jv-result" hidden>
+      <h2 id="jv-title"></h2>
+      <div class="actions"><button class="btn" type="button" id="jv-share">Compartilhar</button><span id="jv-copied" role="status"></span></div>
+      {% if not archive %}<div class="stats"><span><b id="jv-streak">0</b>sequência</span><span><b id="jv-wins">0</b>velhas</span><span><b id="jv-played">0</b>jogos</span></div>{% endif %}
+    </div>
+
+    <p class="how">Toque numa casa, busque o jogador e escolha. Erro gasta chute; cada jogador vale uma vez só. Clube conta empréstimo, não conta base. No fim aparecem as respostas mais conhecidas de cada casa. Amanhã tem outro.</p>
+    {% if past %}<nav class="past" aria-label="Jogos anteriores"><h2>Jogos anteriores</h2><ul>{% for p in past %}<li><a href="{{ p.url }}"{% if archive and p.number == number %} aria-current="page"{% endif %}>#{{ p.number }} <small>{{ p.day }}</small></a></li>{% endfor %}</ul></nav>{% endif %}
+    <p class="credit">Jogadores: <a href="https://en.wikipedia.org/">Wikipédia</a> (<a href="https://creativecommons.org/licenses/by-sa/4.0/deed.pt-br">CC BY-SA</a>) e <a href="https://www.wikidata.org/">Wikidata</a>. Achou um erro? Responda qualquer newsletter.</p>
+  </div>
+</section>
+<script src="/static/geral/velha.js?v={{ asset_version }}" defer></script>
+{% endblock %}
