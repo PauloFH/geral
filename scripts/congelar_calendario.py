@@ -11,6 +11,8 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from geral.games import calendario, craque, onde_jogou
+from geral.games.velha import base as velha_base
+from geral.games.velha import diario as velha_diario
 from geral.teams import load_teams
 
 BRASILIA = ZoneInfo("America/Sao_Paulo")
@@ -22,6 +24,9 @@ def freeze_until_tomorrow(careers: Path = onde_jogou.CAREERS) -> int:
     teams = {slug: team.name for slug, team in load_teams().items() if team.listed}
     calendario.freeze_games(calendario.CALENDAR, onde_jogou.load(careers), teams, until)
     calendario.freeze_craque(calendario.CALENDAR, craque.load_lists(), until)
+    velha_until = velha_diario.puzzle_number(tomorrow)
+    if velha_until >= 1:  # before its launch there is nothing to freeze
+        calendario.freeze_velha(calendario.CALENDAR, velha_base.load(), velha_until)
     return until
 
 

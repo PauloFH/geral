@@ -7,6 +7,7 @@ that failed midway (or a change to the grouping) resumes without asking again; `
 """
 
 import hashlib
+import json
 import shutil
 import sys
 from pathlib import Path
@@ -15,7 +16,7 @@ import httpx
 
 from geral.games.mediawiki import HEADERS
 from geral.games.velha.base import BASE, load_clubs
-from geral.games.velha.importacao import build_base, dump
+from geral.games.velha.importacao import build_base, dump, keep_countries
 
 CACHE = Path.home() / ".cache" / "geral" / "velha-http"
 
@@ -41,6 +42,8 @@ def main() -> None:
     transport = CachedTransport()
     with httpx.Client(headers=HEADERS, timeout=120, transport=transport) as client:
         data, report = build_base(client, load_clubs())
+    if BASE.exists():  # frozen boards may name a country nobody has after this import
+        data = keep_countries(json.loads(BASE.read_text(encoding="utf-8")), data)
     BASE.write_text(dump(data), encoding="utf-8")
     print(f"wrote {BASE}")
     print("\n".join(report))

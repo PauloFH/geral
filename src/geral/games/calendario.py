@@ -15,6 +15,7 @@ from geral.games.daily import pick as order_pick
 
 if TYPE_CHECKING:
     from geral.games.onde_jogou import Data
+    from geral.games.velha.base import Base
 
 CALENDAR = Path(__file__).with_name("calendario.json")
 
@@ -81,3 +82,12 @@ def freeze_craque(path: Path, lists: dict, until: int) -> None:
         known = answers(load(path), "craque-do-dia", edition)
         ids = [pick(games, n, known, key=lambda c: c.answer).answer for n in range(1, until + 1)]
         freeze(path, "craque-do-dia", edition, ids)
+
+
+def freeze_velha(path: Path, base: "Base", until: int) -> None:
+    """Freeze the jogo da velha boards #1..#until with this base (numbers frozen keep theirs)."""
+    from geral.games.velha.diario import GAME, daily_board
+
+    known = answers(load(path), GAME, "geral")
+    codes = [daily_board(base, n, known).code for n in range(1, until + 1)]
+    freeze(path, GAME, "geral", codes)

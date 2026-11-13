@@ -202,6 +202,11 @@ def build_base(
     return {"paises": country_names, "jogadores": players}, report
 
 
+def keep_countries(old: dict, new: dict) -> dict:
+    """`new` keeping every country of `old`: a frozen board may name one nobody has now."""
+    return new | {"paises": old["paises"] | new["paises"]}
+
+
 def dump(data: dict) -> str:
     """`base.json` with one player per line (a readable diff when the base changes)."""
     lines = [json.dumps(p, ensure_ascii=False) for p in data["jogadores"]]
