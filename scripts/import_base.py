@@ -1,7 +1,9 @@
 """Download the jogo da velha player base into `src/geral/games/velha/base.json`.
 
 Run with `uv run python scripts/import_base.py`, read the report (players per club, Seleção, Copa),
-review the diff of the generated file, then commit it. The board clubs are in
+review the diff of the generated file, then commit it. It freezes the games calendar first, so a
+board already played (or today's) never changes; run `congelar_calendario.py` before editing
+`clubes.toml` too. The board clubs are in
 `src/geral/games/velha/clubes.toml`. Answers are kept in `~/.cache/geral/velha-http/` so a run
 that failed midway (or a change to the grouping) resumes without asking again; `--fresh` clears it.
 """
@@ -13,6 +15,7 @@ import sys
 from pathlib import Path
 
 import httpx
+from congelar_calendario import freeze_until_tomorrow  # scripts/, next to this one
 
 from geral.games.mediawiki import HEADERS
 from geral.games.velha.base import BASE, load_clubs
@@ -42,11 +45,17 @@ def main() -> None:
     transport = CachedTransport()
     with httpx.Client(headers=HEADERS, timeout=120, transport=transport) as client:
         data, report = build_base(client, load_clubs())
+    write_base(data)
+    print(f"wrote {BASE}")
+    print("\n".join(report))
+
+
+def write_base(data: dict) -> None:
+    """Freeze the boards already played (and tomorrow's) with the old base, then write the new."""
+    print(f"froze #1..#{freeze_until_tomorrow()} in the games calendar")
     if BASE.exists():  # frozen boards may name a country nobody has after this import
         data = keep_countries(json.loads(BASE.read_text(encoding="utf-8")), data)
     BASE.write_text(dump(data), encoding="utf-8")
-    print(f"wrote {BASE}")
-    print("\n".join(report))
 
 
 if __name__ == "__main__":
