@@ -31,7 +31,7 @@ def test_velha_page_shows_the_six_categories(game) -> None:
     assert 'data-number="8"' in page and 'data-archive="0"' in page
     for cat in (*today.rows, *today.cols):
         assert cat.label in page
-    assert page.count('class="cell"') == 9
+    assert page.count('class="vcell"') == 9
 
 
 def test_player_search_finds_by_name_without_accents_and_hides_where_it_fits(game) -> None:

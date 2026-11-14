@@ -1,6 +1,6 @@
 /* Shared by the Geral games: page, board, guesses, result. */
 .jogo .wrap { display: flex; flex-direction: column; gap: 22px; padding-block: 36px 48px; }
-.jogo h1 { font-size: clamp(52px, 8vw, 104px); color: #fff; text-shadow: 5px 5px 0 var(--turf); }
+.jogo h1 { font-size: clamp(52px, 8vw, 104px); color: #fff; text-shadow: 5px 5px 0 var(--turf); text-align: center; }
 .jogo .lead { margin: 0; max-width: none; background: var(--paper); border: 3px solid var(--ink); padding: 12px 16px; }
 .editions { display: flex; flex-wrap: wrap; gap: 8px; }
 .editions a { font: 800 18px/1 var(--display); text-transform: uppercase; letter-spacing: .04em; text-decoration: none; padding: 12px 14px; background: var(--paper); border: 3px solid var(--ink); }
@@ -136,3 +136,41 @@ select.chip { appearance: auto; }
 .hub-editions a { pointer-events: auto; }
 .hub-editions a { font: 700 14px/1 var(--body); color: var(--paper); text-decoration: none; border: 2px solid #5E6B60; padding: 10px 12px; min-height: 40px; box-sizing: border-box; display: inline-flex; align-items: center; }
 .hub-editions a:hover { border-color: var(--lamp); color: var(--lamp); }
+
+/* Jogo da velha: the categories as dark plates, the nine cells as cards of the same size. */
+.velha-board { container-type: inline-size; display: grid; grid-template-columns: minmax(0, .8fr) repeat(3, minmax(0, 1fr)); gap: clamp(6px, 1.8cqw, 14px); }
+.plate { display: grid; place-items: center; text-align: center; padding: 6px 4px; background: var(--board); color: var(--lamp); font-family: var(--dots); text-transform: uppercase; border: 3px solid var(--ink); box-shadow: 3px 3px 0 rgba(0, 0, 0, .35); }
+.velha-corner { font-size: clamp(11px, 2.4cqw, 16px); line-height: 1.2; align-content: center; }
+.velha-corner b { display: block; font-size: clamp(20px, 5cqw, 34px); }
+/* A name breaks only between words: the font shrinks with the board instead. */
+.velha-head { min-height: 52px; font-size: clamp(10px, 2.6cqw, 16px); line-height: 1.15; overflow-wrap: normal; hyphens: none; }
+.velha-head.row { min-width: 0; }
+.vcell { aspect-ratio: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px; padding: 6px; border: 3px solid var(--ink); background: var(--paper); color: var(--ink); box-shadow: 4px 4px 0 rgba(0, 0, 0, .35); cursor: pointer; text-align: center; min-width: 0; overflow: hidden; transition: transform .08s; }
+.vcell:hover:not(:disabled) { background: var(--ticket); }
+.vcell.chosen { outline: 4px solid var(--lamp); outline-offset: 2px; }
+.vcell:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: 2px 2px 0 rgba(0, 0, 0, .35); }
+.vcell:disabled { cursor: default; }
+.vcell-name { font: 800 clamp(12px, 3.6cqw, 22px)/1.1 var(--display); text-transform: uppercase; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+/* Full width like the other games: wide cells on a wide board, square ones on a phone. */
+@container (min-width: 700px) { .vcell { aspect-ratio: 3 / 2; } }
+.vcell-note { font: 700 clamp(10px, 2cqw, 13px)/1 var(--body); letter-spacing: .04em; color: var(--ink-soft); }
+.vcell.filled { background: #2F7D3A; color: #fff; }
+.vcell.filled .vcell-note { color: #E6F4E8; }
+.vcell.revealed { background: var(--concrete-lt); color: var(--ink-soft); }
+/* The search opens over the board (a sheet from the bottom on a phone). */
+.velha-dialog { padding: 0; border: 0; background: transparent; width: min(640px, calc(100vw - 32px)); max-width: none; }
+.velha-dialog::backdrop { background: rgba(0, 0, 0, .55); }
+.velha-dialog .picker { max-height: min(80vh, 640px); overflow: auto; box-shadow: 6px 6px 0 rgba(0, 0, 0, .35); }
+.velha-dialog .picker-top { flex-wrap: nowrap; align-items: center; justify-content: space-between; }
+.velha-dialog .picker-search { flex: none; }
+.velha-dialog-title { margin: 0; font-size: clamp(22px, 5vw, 30px); }
+.velha-close { flex: none; width: 44px; height: 44px; border: 3px solid var(--ink); background: transparent; color: var(--ink); font: 900 20px/1 var(--display); cursor: pointer; }
+.velha-error { margin: 0; background: var(--ink); color: var(--lamp); padding: 10px 14px; font-weight: 600; }
+.velha-results { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); grid-auto-rows: minmax(76px, auto); gap: 8px; }
+.velha-results li { min-width: 0; }
+.velha-results .club-name { -webkit-line-clamp: 3; line-clamp: 3; }
+.velha-results .empty { grid-column: 1 / -1; color: var(--ink-soft); align-self: center; }
+@media (max-width: 600px) {
+  .velha-dialog { width: 100vw; margin: auto 0 0; }
+  .velha-dialog .picker { max-height: 78vh; border-bottom: 0; box-shadow: none; }
+}
