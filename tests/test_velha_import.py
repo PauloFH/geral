@@ -45,6 +45,16 @@ CLAIMS = {
         "P106": FOOTBALLER,
         "P413": [_claim("Q280658")],
         "P27": [_claim("Q155")],
+        "P1477": [  # the birth name: the label of a one-name player is the nickname itself
+            {
+                "mainsnak": {
+                    "datavalue": {
+                        "value": {"text": "Edmundo Alves de Souza Neto", "language": "pt"}
+                    }
+                },
+                "rank": "normal",
+            }
+        ],
         "P54": [_claim("Q80845")],  # ignored: Edmundo has an infobox
     },
     "Q2": {
@@ -152,7 +162,7 @@ def test_import_base_builds_from_recorded_wikidata_and_wikipedia(network, tmp_pa
     assert players["Q1"] == {
         "id": "Q1",
         "nome": "Edmundo",
-        "completo": "",
+        "completo": "Edmundo Alves de Souza Neto",
         "anos": "1985–2002",
         "posicoes": ["atacante"],
         "paises": [],

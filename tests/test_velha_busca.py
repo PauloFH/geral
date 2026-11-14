@@ -36,3 +36,11 @@ def test_search_puts_the_famous_first_and_stops_at_ten() -> None:
 def test_search_needs_two_letters() -> None:
     assert search(B, "j") == []
     assert search(B, "  ") == []
+
+
+def test_search_on_the_real_base_finds_players_by_their_registered_name() -> None:
+    from geral.games.velha.base import load
+
+    real = load()
+    assert [p.nome for p in search(real, "edson arantes")][:1] == ["Pelé"]
+    assert "Kaká" in [p.nome for p in search(real, "ricardo izecson")]
