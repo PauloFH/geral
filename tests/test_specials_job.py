@@ -1,0 +1,163 @@
+import json
+from datetime import date
+
+import httpx
+import pytest
+import respx
+from fakes import FakeLLMClient
+
+from geral.config import Settings
+from geral.specials import job
+from geral.specials.sources import Passage
+from geral.summarizer.client import LLMError
+from geral.teams import get_team
+
+API = "https://geral.test/api/teams/nautico/stories"
+MONDAY, SUNDAY = date(2026, 11, 16), date(2026, 11, 22)
+TEXT = " ".join(["O Náutico venceu o Sport por 7 a 3 em 1947 nos Aflitos."] * 14)
+
+
+def passage(n: int, kind: str = "jogo") -> Passage:
+    return Passage(kind=kind, key=f"k{n}", title=f"Trecho {n}", url=f"https://w/{n}", text=TEXT)
+
+
+def settings() -> Settings:
+    return Settings(
+        SUBSCRIBERS_API_TOKEN="api-token", PUBLIC_URL="https://geral.test", DRY_RUN=False
+    )
+
+
+def faithful(prompt, schema):
+    return {"title": "O sete a três", "body": TEXT, "summary": "Uma goleada.", "fact_date": "1947"}
+
+
+def page(unused: int, seen: list[str]):
+    respx.get(f"{API}/count").mock(return_value=httpx.Response(200, json={"unused": unused}))
+    respx.get(f"{API}/sources").mock(return_value=httpx.Response(200, json=seen))
+    return respx.post(API).mock(return_value=httpx.Response(204))
+
+
+@pytest.fixture
+def sources(monkeypatch):
+    found = [passage(n, kind) for n, kind in enumerate(["jogo", "idolo", "clube"] * 2)]
+    monkeypatch.setattr(job.sources, "passages", lambda client, team: found)
+    return found
+
+
+def posted(route) -> list[dict]:
+    return [json.loads(call.request.content) for call in route.calls]
+
+
+@respx.mock
+def test_job_tops_up_to_10_and_skips_used_sources(sources) -> None:
+    route = page(unused=7, seen=["k0"])
+
+    report = job.top_up(
+        get_team("nautico"), settings(), FakeLLMClient(faithful), httpx.Client(), MONDAY
+    )
+
+    keys = [s["source_key"] for s in posted(route)]
+    assert len(keys) == 3 and "k0" not in keys
+    assert report.accepted == 3 and report.rejected == 0
+    assert all(s["rejected_reason"] is None for s in posted(route))
+
+
+@respx.mock
+def test_job_interleaves_the_kinds(sources) -> None:
+    route = page(unused=7, seen=[])
+
+    job.top_up(get_team("nautico"), settings(), FakeLLMClient(faithful), httpx.Client(), MONDAY)
+
+    assert sorted(s["kind"] for s in posted(route)) == ["clube", "idolo", "jogo"]
+
+
+@respx.mock
+def test_job_does_nothing_with_8_or_more_unless_sunday(sources) -> None:
+    route = page(unused=8, seen=[])
+    llm = FakeLLMClient(faithful)
+
+    report = job.top_up(get_team("nautico"), settings(), llm, httpx.Client(), MONDAY)
+
+    assert llm.prompts == [] and not route.called
+    assert report.skipped_reason == "acervo com 8 histórias"
+    job.top_up(get_team("nautico"), settings(), llm, httpx.Client(), SUNDAY)
+    assert len(posted(route)) == 2
+
+
+@respx.mock
+def test_job_records_rejections_with_the_reason(sources) -> None:
+    route = page(unused=7, seen=[])
+
+    def invents(prompt, schema):
+        return faithful(prompt, schema) | {"body": TEXT + " Bita fez 3 gols em 1999."}
+
+    report = job.top_up(
+        get_team("nautico"), settings(), FakeLLMClient(invents), httpx.Client(), MONDAY
+    )
+
+    stories = posted(route)
+    assert report.rejected == len(stories) == 6 and report.accepted == 0  # tried every source
+    assert "1999" in stories[0]["rejected_reason"] and "Bita" in stories[0]["rejected_reason"]
+
+
+@respx.mock
+def test_job_drops_a_fact_date_not_in_the_source(sources) -> None:
+    route = page(unused=7, seen=[])
+
+    def dated(prompt, schema):
+        return faithful(prompt, schema) | {"fact_date": "1950-01-01"}
+
+    job.top_up(get_team("nautico"), settings(), FakeLLMClient(dated), httpx.Client(), MONDAY)
+
+    assert posted(route)[0]["fact_date"] == ""
+
+
+@respx.mock
+def test_job_keeps_what_it_wrote_when_the_llm_fails(sources) -> None:
+    route = page(unused=0, seen=[])
+    calls = []
+
+    def flaky(prompt, schema):
+        calls.append(prompt)
+        if len(calls) > 1:
+            raise LLMError("quota")
+        return faithful(prompt, schema)
+
+    report = job.top_up(
+        get_team("nautico"), settings(), FakeLLMClient(flaky), httpx.Client(), MONDAY
+    )
+
+    assert len(posted(route)) == 1 and report.accepted == 1
+    assert "quota" in report.problems[0]
+
+
+@respx.mock
+def test_job_without_the_page_writes_nothing(sources) -> None:
+    respx.get(f"{API}/count").mock(return_value=httpx.Response(503))
+    llm = FakeLLMClient(faithful)
+
+    report = job.top_up(get_team("nautico"), settings(), llm, httpx.Client(), MONDAY)
+
+    assert llm.prompts == []
+    assert report.skipped_reason == "portal fora do ar"
+
+
+def test_acervo_all_runs_every_specials_team(monkeypatch) -> None:
+    from typer.testing import CliRunner
+
+    import geral.__main__ as cli
+
+    seen = []
+
+    def fake(team, settings, llm, wiki, today):
+        seen.append(team.slug)
+        return job.TopUpReport(team=team.slug, accepted=2, rejected=1)
+
+    monkeypatch.setattr(job, "top_up", fake)
+    monkeypatch.setattr(cli.pipeline, "get_llm_client", lambda settings: FakeLLMClient(faithful))
+
+    result = CliRunner().invoke(cli.app, ["acervo", "--all"])
+
+    assert result.exit_code == 0, result.output
+    assert sorted(seen) == ["abc", "nautico"]
+    assert "nautico: 2 aceitas, 1 recusadas" in result.output

@@ -1,0 +1,46 @@
+name: Acervo
+
+on:
+  # Every night (22:07 in Brasília): tops up each team's stories when fewer than 8 are left,
+  # and every Sunday. Odd minute: GitHub drops runs on the hour.
+  schedule:
+    - cron: "7 1 * * *"
+  workflow_dispatch:
+    inputs:
+      team:
+        description: "Torcida (slug); vazio = todas com seções especiais"
+        type: string
+        required: false
+      dry_run:
+        description: "Só simular (não grava no portal)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: acervo
+  cancel-in-progress: false
+
+jobs:
+  top-up:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv python install 3.12
+      - run: uv sync --frozen
+      - name: Top up the stories
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-flash-latest' }}
+          SUBSCRIBERS_API_TOKEN: ${{ secrets.SUBSCRIBERS_API_TOKEN }}
+          PUBLIC_URL: ${{ vars.PUBLIC_URL || 'https://geral.diegoponte.dev' }}
+          DRY_RUN: ${{ github.event_name == 'schedule' && 'false' || (inputs.dry_run && 'true' || 'false') }}
+          TEAM: ${{ inputs.team }}
+        run: |
+          if [ -n "$TEAM" ]; then uv run python -m geral acervo --team "$TEAM"; else uv run python -m geral acervo --all; fi

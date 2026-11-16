@@ -295,3 +295,39 @@ def preview_summary(
     )
     response.raise_for_status()
     return BolaoSummary.model_validate(response.json())
+
+
+# --- stories for the special sections (the nightly job) --------------------------------------
+
+
+def _stories_url(settings: Settings, team: str, suffix: str = "") -> str:
+    return settings.PUBLIC_URL.rstrip("/") + f"/api/teams/{team}/stories{suffix}"
+
+
+def stories_count(settings: Settings, team: str, client: httpx.Client | None = None) -> int:
+    """Stories ready and not used yet. Raises httpx.HTTPError."""
+    response = (client or httpx.Client(timeout=TIMEOUT)).get(
+        _stories_url(settings, team, "/count"), headers=_auth(settings)
+    )
+    return response.raise_for_status().json()["unused"]
+
+
+def story_sources(settings: Settings, team: str, client: httpx.Client | None = None) -> set[str]:
+    """Every source already turned into a story (or refused). Raises httpx.HTTPError."""
+    response = (client or httpx.Client(timeout=TIMEOUT)).get(
+        _stories_url(settings, team, "/sources"), headers=_auth(settings)
+    )
+    return set(response.raise_for_status().json())
+
+
+def add_story(
+    settings: Settings, team: str, story: dict, client: httpx.Client | None = None
+) -> bool:
+    """Keep a story or a refusal; False if its source was already there. Raises httpx.HTTPError."""
+    response = (client or httpx.Client(timeout=TIMEOUT)).post(
+        _stories_url(settings, team), json=story, headers=_auth(settings)
+    )
+    if response.status_code == 409:
+        return False
+    response.raise_for_status()
+    return True

@@ -37,3 +37,9 @@ def test_verifier_allows_the_team_names() -> None:
 
     assert unsupported(story, SOURCE, allowed=["Timbu News", "Capibaribe"]) == []
     assert unsupported(story, SOURCE) == ["News", "Capibaribe"]
+
+
+def test_verifier_checks_a_name_at_the_start_of_a_sentence() -> None:
+    story = "O Náutico venceu em 1934. Bita marcou. Naquela tarde, a Jaqueira lotou. Foi festa."
+
+    assert unsupported(story, SOURCE) == ["Bita"]
