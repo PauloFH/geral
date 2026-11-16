@@ -116,3 +116,24 @@ def test_manchetes_concordam_com_clube_e_campeonato_femininos() -> None:
         carreira, _ = _ao_acaso(f"g{i}", regras.POSICOES[i % 5])
         for t in carreira.temporadas:
             assert not any(e in t.manchete for e in erradas), t.manchete
+
+
+def test_mudanca_escolhida_vale_na_temporada_seguinte() -> None:
+    dados = carregar()
+    vistas = 0
+    for i in range(300):
+        rng = random.Random(f"m{i}")
+        e = entrada(f"m{i}", posicao=regras.POSICOES[i % 5], melhor=rng.choice((True, None)))
+        while (carreira := simular(dados, "geral", e)).final is None:
+            pergunta = carreira.pendente
+            resposta = rng.randrange(len(pergunta.opcoes))
+            e = e.model_copy(update={"escolhas": [*e.escolhas, resposta]})
+            alvo, tipo = pergunta.clubes[resposta], pergunta.destinos[resposta]
+            if alvo is None:
+                continue
+            depois = simular(dados, "geral", e).temporadas[len(carreira.temporadas)]
+            assert depois.clube_id == alvo, (pergunta.id, tipo)
+            if tipo == "exotico":
+                assert depois.pais != carreira.temporadas[-1].pais
+            vistas += 1
+    assert vistas > 100

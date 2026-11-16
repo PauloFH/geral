@@ -63,6 +63,8 @@ class Escolha(BaseModel):
     id: str
     pergunta: str
     opcoes: list[str]
+    destinos: list[str]  # the kind of each option (ficar, europa, aposentar…)
+    clubes: list[str | None]  # the club each option moves to, None when it stays put
 
 
 class Final(BaseModel):
@@ -191,10 +193,10 @@ class _Simulacao:
             temporada, saida = self._temporada()
             self.temporadas.append(temporada)
             if not self._encerra():
-                pendente, ficou = self._pergunta(temporada)
+                pendente, decidiu = self._pergunta(temporada)
                 if pendente:
                     return Carreira(temporadas=self.temporadas, pendente=pendente)
-                if not (self.aposentou or ficou):
+                if not (self.aposentou or decidiu):  # the fan's answer holds this winter
                     self._mercado(saida)
             if self.aposentou or self._encerra():
                 break
@@ -352,7 +354,9 @@ class _Simulacao:
             "emprestimo": lambda c: nota - 16 <= self._nivel(c) <= nota - 3,
             "lado": lambda c: abs(self._nivel(c) - atual) <= 6,
             "arabia": lambda c: c.liga == "ara" and self._nivel(c) <= nota + 8,
-            "exotico": lambda c: c.liga in EXOTICAS and self._nivel(c) <= nota + 8,
+            "exotico": lambda c: (
+                c.liga in EXOTICAS and c.liga != self.clube.liga and self._nivel(c) <= nota + 8
+            ),
         }
         cabem = sorted((c for c in clubes if filtros[tipo](c)), key=lambda c: c.id)
         if tipo in ("menor", "lado", "emprestimo"):
@@ -365,7 +369,7 @@ class _Simulacao:
     def _mudar(self, clube: Clube | None, emprestimo: bool = False) -> None:
         if clube is None:
             return
-        self.emprestado_de = self.clube if emprestimo else None
+        self.emprestado_de = (self.emprestado_de or self.clube) if emprestimo else None
         self.clube = clube
 
     def _mercado(self, saida: float) -> None:
@@ -384,7 +388,7 @@ class _Simulacao:
             self._mudar(self._destino("lado"))
 
     def _pergunta(self, temporada: Temporada) -> tuple[Escolha | None, bool]:
-        """Maybe a question this season: (pending question, the player chose to stay)."""
+        """Maybe a question this season: (pending question, the fan settled this winter)."""
         if len(self.perguntadas) >= MAX_ESCOLHAS or self.rng.random() >= CHANCE_ESCOLHA:
             return None, False
         ctx = self._contexto()
@@ -416,16 +420,19 @@ class _Simulacao:
             self.aposenta_aos = min(IDADE_MAXIMA, max(self.aposenta_aos, self.idade + 2))
         elif destino in destinos:
             self._mudar(destinos[destino], emprestimo=destino == "emprestimo")
-        return None, destino in ("ficar", "mais_um")
+        return None, True
 
     def _escolha(self, decisao: Decisao, destinos: dict[str, Clube | None]) -> Escolha:
         alvo = next(iter(destinos.values()), None)
+        clubes = [destinos.get(o.destino) for o in decisao.opcoes]
         campos = artigos("clube", self.clube) | artigos("destino", alvo)
         campos |= {"nome": self.entrada.craque.nome, "idade": self.idade}
         return Escolha(
             id=decisao.id,
             pergunta=decisao.pergunta.format_map(campos),
             opcoes=[o.texto.format_map(campos) for o in decisao.opcoes],
+            destinos=[o.destino for o in decisao.opcoes],
+            clubes=[c.id if c else None for c in clubes],
         )
 
     # -- the end ---------------------------------------------------------------------------

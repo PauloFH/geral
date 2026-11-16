@@ -66,3 +66,11 @@ def _b64(raw: bytes) -> str:
 def test_codigo_adulterado_e_codigo_invalido(codigo) -> None:
     with pytest.raises(CodigoInvalido):
         decodificar(codigo)
+
+
+def test_codigo_aninhado_demais_ou_bomba_e_codigo_invalido() -> None:
+    for bruto in (b"[" * 200_000, b'{"v": "' + b"a" * 1_000_000 + b'"}'):
+        codigo = _b64(zlib.compress(bruto, 9))
+        assert len(codigo) <= 2000
+        with pytest.raises(CodigoInvalido):
+            decodificar(codigo)

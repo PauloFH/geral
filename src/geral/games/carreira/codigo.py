@@ -14,6 +14,7 @@ from pydantic import BaseModel, ValidationError
 from geral.games.carreira.motor import Carreira, Entrada
 
 LIMITE = 2000  # characters
+MAX_JSON = 8192  # bytes once decompressed: a real career is ~1.5 KB
 
 
 class CodigoInvalido(ValueError):
@@ -61,6 +62,10 @@ def decodificar(codigo: str) -> Compartilhado:
         raise CodigoInvalido("código vazio ou grande demais")
     try:
         bruto = base64.urlsafe_b64decode(codigo + "=" * (-len(codigo) % 4))
-        return Compartilhado.model_validate(json.loads(zlib.decompress(bruto)))
-    except (binascii.Error, ValueError, zlib.error, ValidationError) as erro:
+        descompressor = zlib.decompressobj()
+        texto = descompressor.decompress(bruto, MAX_JSON)
+        if descompressor.unconsumed_tail:
+            raise CodigoInvalido("código grande demais")
+        return Compartilhado.model_validate(json.loads(texto))
+    except (binascii.Error, ValueError, zlib.error, ValidationError, RecursionError) as erro:
         raise CodigoInvalido("código de carreira inválido") from erro
