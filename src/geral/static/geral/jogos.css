@@ -38,12 +38,13 @@
 
 /* Craque do dia: a Termo on the board. Every guess fills its own row in place. */
 .grid { container-type: inline-size; display: flex; flex-direction: column; gap: 6px; align-items: center; }
-.guessrow { --gap: clamp(3px, 1.2cqw, 6px); display: grid; grid-template-columns: repeat(var(--n), min(72px, calc((100svh - 470px) / 6 - var(--gap)), calc((100cqw - (var(--n) - 1) * var(--gap)) / var(--n)))); gap: var(--gap); }
+/* --sq: the square's side, by the screen's height and the board's width; the letter follows it. */
+.guessrow { --gap: clamp(3px, 1.2cqw, 6px); --sq: min(72px, calc((100svh - 380px) / 6 - var(--gap)), calc((100cqw - (var(--n) - 1) * var(--gap)) / var(--n))); display: grid; grid-template-columns: repeat(var(--n), var(--sq)); grid-auto-rows: var(--sq); gap: var(--gap); }
 .guessrow.active .sq { border-color: rgba(255, 194, 26, .45); cursor: pointer; }
 .guessrow.active .sq.cursor { border-color: var(--lamp); box-shadow: inset 0 -5px 0 var(--lamp); }
 .guessrow.shake { animation: shake .3s; }
 @media (max-width: 480px) { .cd-board { padding: 14px 10px 16px; border-width: 6px; } }
-.sq { aspect-ratio: 1; display: grid; place-items: center; border: 2px solid #3A3833; background: rgba(255, 255, 255, .03); font: 900 min(40px, calc(60cqw / var(--n)))/1 var(--dots); color: var(--lamp); text-transform: uppercase; user-select: none; }
+.sq { aspect-ratio: 1; min-width: 0; overflow: hidden; display: grid; place-items: center; border: 2px solid #3A3833; background: rgba(255, 255, 255, .03); font: 900 calc(var(--sq) * .55)/1 var(--dots); color: var(--lamp); text-transform: uppercase; user-select: none; }
 @keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
 .sq.certo, .sq.existe, .sq.nao { border: 3px solid var(--ink); font-family: var(--display); color: var(--ink); }
 .sq.certo { background: #2F7D3A; color: #fff; }
@@ -156,7 +157,9 @@ select.chip { appearance: auto; }
 .vcell:disabled { cursor: default; }
 .vcell-name { font: 800 clamp(12px, 3.6cqw, 22px)/1.1 var(--display); text-transform: uppercase; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 /* Full width like the other games: wide cells on a wide board, square ones on a phone. */
-@container (min-width: 700px) { .vcell { aspect-ratio: auto; height: clamp(80px, calc((100svh - 220px) / 3), 200px); } .duel-stage .vcell { height: clamp(70px, calc((100svh - 330px) / 3), 190px); } }
+/* Compact like the grid games: square cells on a board of at most 640 px, centred. */
+.velha-board { max-width: 640px; width: 100%; align-self: center; box-sizing: border-box; }
+.duel-score, .duel-stage, .duel-status { width: 100%; max-width: 640px; align-self: center; }
 .vcell-note { font: 700 clamp(10px, 2cqw, 13px)/1 var(--body); letter-spacing: .04em; color: var(--ink-soft); }
 .vcell.filled { background: #2F7D3A; color: #fff; }
 .vcell.filled .vcell-note { color: #E6F4E8; }
