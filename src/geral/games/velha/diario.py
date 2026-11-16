@@ -7,7 +7,7 @@ from geral.games.daily import number_on
 from geral.games.velha.base import Base
 from geral.games.velha.board import Board, make_board, parse_board
 
-LAUNCH = date(2026, 11, 14)  # board #1: no later than the deploy, or two days share #1
+LAUNCH = date(2026, 11, 15)  # board #1: no later than the deploy, or two days share #1
 GAME = "velha"  # its key in `calendario.json` (edition "geral" only)
 
 
