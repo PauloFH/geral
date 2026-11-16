@@ -13,7 +13,9 @@
         <h2>{{ d.newsletter }} — {{ d.label }}</h2>
         <p>
           {% if d.held %}<b>Segurada</b>: não sai até você soltar.
-          {% else %}Sai {% if d.late %}na próxima verificação{% else %}às {{ d.send_at.astimezone(timezone).strftime("%H:%M de %d/%m") }}{% endif %}.{% endif %}
+          {% elif d.late and d.going %}Solta: sai na próxima verificação.
+          {% elif d.late %}Não saiu (passou do horário de {{ d.send_at.astimezone(timezone).strftime("%H:%M de %d/%m") }}). Segure e solte para enviar agora.
+          {% else %}Sai às {{ d.send_at.astimezone(timezone).strftime("%H:%M de %d/%m") }}.{% endif %}
           · <a href="/revisao/{{ d.id }}/previa?t={{ token }}" target="_blank" rel="noreferrer">Ver a prévia</a>
         </p>
         <form method="post" action="/revisao/{{ d.id }}/{{ 'soltar' if d.held else 'segurar' }}">

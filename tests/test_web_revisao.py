@@ -216,3 +216,35 @@ def test_a_second_put_of_the_same_draft_sends_no_notice(owner, mailer) -> None:
     owner.put("/api/teams/flamengo/drafts/news/2026-11-16", json=body, headers=AUTH)
 
     assert len(mailer.notifications) == 1
+
+
+def test_release_when_a_newer_draft_exists_is_409(owner, store, clock) -> None:
+    old = draft(store)
+    post(owner, f"/revisao/{old.id}/segurar")
+    clock.now = NOW + timedelta(days=3)
+    store.save_draft(
+        "flamengo",
+        "post",
+        "2026-11-13",
+        "Pós-jogo",
+        newsletter().model_dump_json(),
+        clock.now,
+        clock.now + timedelta(hours=5),
+    )
+
+    response = post(owner, f"/revisao/{old.id}/soltar", link(clock.now))
+
+    assert response.status_code == 409  # the newer one already carries its news
+    assert store.draft_by_id(old.id).held is True
+
+
+def test_late_draft_not_released_says_it_did_not_go_out(owner, store, clock) -> None:
+    d = draft(store)
+    post(owner, f"/revisao/{d.id}/segurar")
+    post(owner, f"/revisao/{d.id}/soltar")  # let go before its time, then the send failed
+    clock.now = NOW + timedelta(hours=9)
+
+    page = owner.get(f"/revisao?t={link(clock.now)}")
+
+    assert "não saiu" in page.text.lower()
+    assert "próxima verificação" not in page.text

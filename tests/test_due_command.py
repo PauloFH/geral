@@ -375,7 +375,7 @@ def test_released_draft_after_send_at_is_due_for_send(geral_db) -> None:
 
     lines = CliRunner().invoke(cli.app, ["due", "--all"]).stdout.splitlines()
 
-    assert "vasco\tpost\t2026-10-17\tPós-jogo — 17/10/2026\trelease" in lines
+    assert "vasco\tpost\t2026-10-17\tPós-jogo — 17/10/2026 (solta 18/10 14:40)\trelease" in lines
 
 
 def test_next_window_starts_at_last_real_send() -> None:
@@ -395,3 +395,29 @@ def test_next_window_starts_at_last_real_send() -> None:
     assert cli._since_last_send(edition, None) == edition
     later = LatestEdition(subject="x", published_at=datetime(2026, 10, 25, 13, 2, tzinfo=TZ))
     assert cli._since_last_send(edition, later) == edition
+
+
+def test_a_second_late_release_is_a_new_row(geral_db) -> None:
+    follow(geral_db, "ana@example.com", ["vasco"])
+    geral_db.save_draft(
+        "vasco",
+        "post",
+        "2026-10-18",
+        "Pós-jogo — 18/10/2026",
+        "{}",
+        datetime(2026, 10, 18, 8, 0, tzinfo=TZ),
+        datetime(2026, 10, 18, 13, 0, tzinfo=TZ),
+    )
+    draft = geral_db.draft("vasco", "post", "2026-10-18")
+
+    def release_row(at: datetime) -> str:
+        geral_db.set_held(draft.id, True, at)
+        geral_db.set_held(draft.id, False, at)
+        out = CliRunner().invoke(cli.app, ["due", "--all"]).stdout.splitlines()
+        return next(line for line in out if line.endswith("\trelease"))
+
+    first = release_row(datetime(2026, 10, 18, 14, 0, tzinfo=TZ))
+    second = release_row(datetime(2026, 10, 18, 14, 40, tzinfo=TZ))
+
+    assert first != second  # the trigger dispatches each row once: a new release is a new row
+    assert second.split("\t")[:3] == ["vasco", "post", "2026-10-18"]

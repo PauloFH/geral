@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import Annotated, Literal
 from urllib.parse import urlencode
 
-from fastapi import FastAPI, Form, Query, Request, Response
+from fastapi import BackgroundTasks, FastAPI, Form, Query, Request, Response
 from fastapi.responses import (
     FileResponse,
     HTMLResponse,
@@ -140,8 +140,8 @@ class EditionIn(BaseModel):
 class DraftIn(BaseModel):
     label: str
     newsletter: dict  # a geral.models.Newsletter dumped as JSON
-    build_at: datetime
-    send_at: datetime
+    build_at: AwareDatetime
+    send_at: AwareDatetime
 
 
 class BolaoMatchIn(BaseModel):
@@ -810,7 +810,14 @@ def create_app(
     DraftKind = Literal["pre", "post", "news"]
 
     @app.put("/api/teams/{team}/drafts/{kind}/{day}", status_code=204)
-    def save_draft(request: Request, team: str, kind: DraftKind, day: date, draft: DraftIn):
+    def save_draft(
+        request: Request,
+        team: str,
+        kind: DraftKind,
+        day: date,
+        draft: DraftIn,
+        background: BackgroundTasks,
+    ):
         if not authorized(request):
             return unauthorized()
         if team not in catalog:
@@ -826,7 +833,8 @@ def create_app(
         )
         if not saved:
             return JSONResponse({"detail": "this edition already has a draft"}, status_code=409)
-        notify_review(team, draft)
+        # After the response: a slow mail provider must not fail the build that saved the draft.
+        background.add_task(notify_review, team, draft)
         return Response(status_code=204)
 
     def notify_review(team: str, draft: DraftIn) -> None:
@@ -904,6 +912,7 @@ def create_app(
         if not review_owner(t):
             return not_found(request)
         drafts = []
+        going = {d.id for d in store.released_due(now())}
         for d in store.pending_drafts():
             newsletter = Newsletter.model_validate_json(d.newsletter_json)
             drafts.append(
@@ -913,6 +922,7 @@ def create_app(
                     "newsletter": newsletter.team.newsletter,
                     "held": d.held,
                     "late": d.send_at <= now(),
+                    "going": d.id in going,
                     "send_at": d.send_at,
                     "topics": [
                         {"title": topic.title, "removed": i in d.removed_topics}
@@ -957,6 +967,10 @@ def create_app(
     @app.post("/revisao/{draft_id}/soltar")
     def review_release(request: Request, draft_id: int, t: Annotated[str, Form()] = ""):
         def release(draft):
+            if any(d.build_at > draft.build_at for d in store.team_drafts(draft.team)):
+                # A newer draft already carries this one's news (its window reaches back).
+                text = "Já existe uma edição mais nova dessa torcida; esta fica segurada."
+                return message(request, "Edição antiga", text, status=409)
             latest = store.latest_edition(draft.team)
             if latest is not None and latest.published_at > draft.send_at:
                 # A newer edition went out meanwhile: this one would arrive out of order.

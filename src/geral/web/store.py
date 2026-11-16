@@ -15,6 +15,9 @@ from pathlib import Path
 CONFIRMATION_COOLDOWN = timedelta(minutes=10)
 # Data minimization: unconfirmed sign-ups and unsubscribed addresses are deleted after this.
 RETENTION = timedelta(days=30)
+# A draft let go after its send time is listed for sending this long (a failed run is not retried
+# forever; the owner can let it go again).
+RELEASE_GRACE = timedelta(hours=3)
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS subscribers (
@@ -435,8 +438,11 @@ class SubscriberStore:
         return [
             d
             for d in self._drafts("sent_at IS NULL AND held = 0 AND released_at IS NOT NULL")
-            if d.released_at >= d.send_at and d.send_at <= now
+            if d.send_at <= d.released_at <= now < d.released_at + RELEASE_GRACE
         ]
+
+    def team_drafts(self, team: str) -> list[Draft]:
+        return self._drafts("team = ?", team)
 
     def mark_draft_sent(self, team: str, kind: str, day: str, now: datetime) -> bool:
         """False when there is no such draft."""

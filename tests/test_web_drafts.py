@@ -152,3 +152,18 @@ def test_store_adds_released_at_to_an_old_drafts_table(tmp_path) -> None:
     SubscriberStore(db)  # twice: the migration is idempotent
 
     assert saved(store).released_at is None
+
+
+def test_released_due_only_for_3h_after_the_release(store) -> None:
+    late = saved(store)
+    store.set_held(late.id, True, datetime(2026, 11, 16, 9, 0, tzinfo=TZ))
+    store.set_held(late.id, False, datetime(2026, 11, 16, 14, 0, tzinfo=TZ))
+
+    assert store.released_due(datetime(2026, 11, 16, 16, 59, tzinfo=TZ))
+    assert store.released_due(datetime(2026, 11, 16, 17, 0, tzinfo=TZ)) == []
+
+
+def test_draft_send_at_must_have_a_timezone(client) -> None:
+    body = draft_in(send_at="2026-11-16T13:00:00")
+
+    assert client.put(URL, json=body, headers=AUTH).status_code == 422

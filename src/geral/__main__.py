@@ -255,7 +255,9 @@ def due(
             typer.echo(f"{club.slug}\t{slot.kind}\t{slot.send_at:%Y-%m-%d}\t{slot.label}\t{stage}")
         # Let go by the owner after its send time: it goes out now, once.
         for d in (d for d in released if d.team == club.slug):
-            typer.echo(f"{club.slug}\t{d.kind}\t{d.day}\t{d.label}\trelease")
+            # The release time in the label: each release is a new row for the trigger.
+            label = f"{d.label} (solta {d.released_at.astimezone(TZ):%d/%m %H:%M})"
+            typer.echo(f"{club.slug}\t{d.kind}\t{d.day}\t{label}\trelease")
     if counts.get(GENERAL_SLUG):  # the edição geral: Mondays at 8h, for its subscribers
         edition = store.latest_edition(GENERAL_SLUG)
         monday = due_general(now, edition.subject if edition else None)
