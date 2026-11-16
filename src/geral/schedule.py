@@ -169,7 +169,7 @@ def plan(
 
     slots: list[Slot] = []
     # Each draft collects news up to its build: the next window starts there, not at the send.
-    start = _built_before(last_sent, sent_label) if last_sent else anchor
+    start = built_before(last_sent, sent_label) if last_sent else anchor
     for kind, send_at, match in timeline:
         build_at = pre_builds[match.match_id] if kind == "pre" and match else None
         slots.append(
@@ -187,7 +187,7 @@ def plan(
     return slots
 
 
-def _built_before(sent: datetime, label: str | None) -> datetime:
+def built_before(sent: datetime, label: str | None) -> datetime:
     """When the edition sent at `sent` was built: 2 h before for a pre-game, 5 h otherwise."""
     if label and label.startswith(LABELS["pre"]):
         return sent - REVIEW_TIME

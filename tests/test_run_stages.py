@@ -289,3 +289,34 @@ def test_run_auto_stage_follows_the_calendar(env, hour, stage) -> None:
 
     assert result.exit_code == 0, result.output
     assert seen["stage"] == stage
+
+
+@respx.mock
+def test_run_release_sends_the_draft_of_that_day(env) -> None:
+    enable_subscriptions(env)
+    env.setattr(pipeline, "build_newsletter", no_build)
+    respx.get(DRAFT).mock(return_value=httpx.Response(200, json=drafted()))
+    respx.post(f"{DRAFT}/sent").mock(return_value=httpx.Response(204))
+    respx.put("https://news.test/api/teams/flamengo/latest-edition").mock(
+        return_value=httpx.Response(204)
+    )
+    route = respx.post(RESEND_URL).mock(return_value=sent(["e1"]))
+
+    result = run("release")
+
+    assert result.exit_code == 0, result.output
+    [body] = json.loads(route.calls.last.request.content)
+    assert body["subject"] == "Urubu News — Notícias — 12/10/2026: Flamengo vence o Fla-Flu"
+
+
+@respx.mock
+def test_run_release_without_a_draft_sends_nothing(env) -> None:
+    enable_subscriptions(env)
+    env.setattr(pipeline, "build_newsletter", no_build)
+    respx.get(DRAFT).mock(return_value=httpx.Response(404))
+    resend = respx.post(RESEND_URL)
+
+    result = run("release")
+
+    assert result.exit_code == 1
+    assert not resend.called

@@ -18,9 +18,9 @@ on:
         options: [auto, pre, post, news]
         default: auto
       stage:
-        description: "Etapa: all = monta e envia agora; build = só o rascunho para revisão; send = envia o rascunho"
+        description: "Etapa: all = monta e envia agora; build = só o rascunho para revisão; send = envia o rascunho; release = envia o rascunho solto depois do horário"
         type: choice
-        options: [all, build, send]
+        options: [all, build, send, release]
         default: all
       date:
         description: "Data de referência (AAAA-MM-DD, opcional)"
