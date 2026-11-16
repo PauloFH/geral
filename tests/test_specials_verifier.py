@@ -39,7 +39,20 @@ def test_verifier_allows_the_team_names() -> None:
     assert unsupported(story, SOURCE) == ["News", "Capibaribe"]
 
 
-def test_verifier_checks_a_name_at_the_start_of_a_sentence() -> None:
-    story = "O Náutico venceu em 1934. Bita marcou. Naquela tarde, a Jaqueira lotou. Foi festa."
+def test_verifier_does_not_take_a_sentence_opener_for_a_name() -> None:
+    # Measured on the real sources: openers ("Embalou", "Nascido", "Conheça") were most of the
+    # refusals. A name invented only at the start of a sentence is left to the owner's review.
+    story = "Embalou a torcida em 1934. Nascido na Jaqueira, o Timbu cresceu. Conheça o Náutico."
 
-    assert unsupported(story, SOURCE) == ["Bita"]
+    assert unsupported(story, SOURCE) == []
+
+
+def test_verifier_accepts_a_digit_written_out_in_the_source() -> None:
+    source = "O Náutico foi hexacampeão pernambucano e venceu seis títulos. Tará fez nove gols."
+
+    assert unsupported("O Náutico ganhou 6 títulos; Tará fez 9 gols.", source) == []
+    assert unsupported("O Náutico ganhou 7 títulos.", source) == ["7"]
+
+
+def test_a_prefix_counts_only_in_a_title_word() -> None:
+    assert unsupported("Foram 3 jogos.", "Lotou a tribuna do Náutico.") == ["3"]

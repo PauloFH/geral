@@ -14,15 +14,21 @@ WORD = re.compile(r"[^\W\d_]+(?:-[^\W\d_]+)*")
 SENTENCE_START = re.compile(r"(?:^|[.!?:;]\s+|[\"“«(]\s*)$")
 # Capitalized words that are not names even mid-sentence.
 COMMON = {"o", "a", "os", "as", "um", "uma", "e", "em", "no", "na", "de", "do", "da"}
-# Words that often open a sentence: not taken as names there.
-OPENERS = COMMON | set(
-    "nos nas dos das ao aos pelo pela pelos pelas com para por sem sob sobre entre contra até "
-    "desde durante após antes depois quando enquanto como mas nem ou se então logo assim ainda "
-    "já hoje ali lá aqui também nunca sempre mais muito foi era eram foram seria naquele "
-    "naquela naqueles naquelas nesse nessa neste nesta ele ela eles elas seu sua seus suas "
-    "este esta esse essa aquele aquela isso isto cada todo toda todos todas outro outra "
-    "nenhum nenhuma anos dias meses tudo nada alguns algumas muitos muitas poucos".split()
-)
+# A digit may stand for a number written out in the source (or a title count: "hexacampeão").
+SPELLED = {
+    "1": ("um", "uma", "primeiro", "primeira"),
+    "2": ("dois", "duas", "bi"),
+    "3": ("tres", "tri"),
+    "4": ("quatro", "tetra"),
+    "5": ("cinco", "penta"),
+    "6": ("seis", "hexa"),
+    "7": ("sete", "hepta"),
+    "8": ("oito", "octa"),
+    "9": ("nove",),
+    "10": ("dez", "deca"),
+    "11": ("onze",),
+    "12": ("doze",),
+}
 
 
 def _plain(text: str) -> str:
@@ -36,22 +42,21 @@ def _words(text: str) -> set[str]:
     }
 
 
-def _names(story: str, lowercase: set[str]) -> list[str]:
-    """Capitalized words taken as names. At the start of a sentence a word is a name only when
-    it is not a usual opener and is never written in lowercase (in the story or the source)."""
+def _names(story: str) -> list[str]:
+    """Capitalized words mid-sentence (an opener like "Embalou" is not a name)."""
     names = []
     for match in WORD.finditer(story):
         word = match.group(0)
-        if not word[0].isupper():
+        if not word[0].isupper() or SENTENCE_START.search(story[: match.start()]):
             continue
-        plain = _plain(word)
-        if SENTENCE_START.search(story[: match.start()]):
-            if plain in OPENERS or plain in lowercase:
-                continue
-        elif plain in COMMON:
-            continue
-        names.append(word)
+        if _plain(word) not in COMMON:
+            names.append(word)
     return names
+
+
+def _spelled_out(number: str, words: set[str]) -> bool:
+    """The number as a word ("seis") or a title count ("hexacampeão", "bicampeonato")."""
+    return any(w == s or w.startswith(f"{s}campe") for s in SPELLED.get(number, ()) for w in words)
 
 
 def unsupported(story: str, source: str, allowed: Iterable[str] = ()) -> list[str]:
@@ -63,10 +68,10 @@ def unsupported(story: str, source: str, allowed: Iterable[str] = ()) -> list[st
     known = _words(source) | {w for name in allowed for w in _words(name)}
     missing: list[str] = []
     for token in NUMBER.findall(story):
-        if token not in numbers and token not in missing:
-            missing.append(token)
-    lowercase = {_plain(w) for w in WORD.findall(f"{story} {source}") if w[0].islower()}
-    for name in _names(story, lowercase):
+        if token in numbers or token in missing or _spelled_out(token, known):
+            continue
+        missing.append(token)
+    for name in _names(story):
         if _plain(name) not in known and name not in missing:
             missing.append(name)
     return missing

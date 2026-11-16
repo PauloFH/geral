@@ -89,7 +89,7 @@ def test_job_records_rejections_with_the_reason(sources) -> None:
     route = page(unused=7, seen=[])
 
     def invents(prompt, schema):
-        return faithful(prompt, schema) | {"body": TEXT + " Bita fez 3 gols em 1999."}
+        return faithful(prompt, schema) | {"body": TEXT + " Em 1999, o atacante Bita fez 3 gols."}
 
     report = job.top_up(
         get_team("nautico"), settings(), FakeLLMClient(invents), httpx.Client(), MONDAY
