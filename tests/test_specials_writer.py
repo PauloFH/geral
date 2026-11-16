@@ -44,3 +44,11 @@ def test_story_draft_keeps_the_passage_kind_and_source() -> None:
     )
     assert story.source_title == "Clube Náutico Capibaribe — Mascote"
     assert story.fact_date == "1934-08-19"
+
+
+def test_prompt_forbids_talking_to_the_reader() -> None:
+    llm = FakeLLMClient(answer)
+
+    write_story(PASSAGE, get_team("nautico"), llm)
+
+    assert "Não cite a newsletter" in llm.prompts[0]

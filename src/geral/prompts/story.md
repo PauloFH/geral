@@ -4,6 +4,7 @@ Conte uma história a partir do trecho abaixo{% if kind == "jogo" %}, sobre um j
 
 Regras:
 - Use apenas os fatos do trecho. Não acrescente datas, placares, nomes, números ou detalhes que não estejam nele, mesmo que você os conheça.
+- A história é sobre o {{ team.name }}: cite o clube no texto. Não cite a newsletter nem fale com o leitor (nada de "para os leitores" ou "resgatamos").
 - Escreva de 120 a 180 palavras, em português do Brasil, em tom de crônica: conte a história, não liste dados.
 - Escreva os números com algarismos, como no trecho (1934, 3 a 1, 221 gols).
 - `title`: um título curto (até 60 caracteres).

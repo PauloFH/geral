@@ -178,3 +178,21 @@ def test_refusal_reads_the_section_title_as_source() -> None:
     )
 
     assert job.refusal(story, p, get_team("nautico")) is None
+
+
+def test_a_story_that_never_names_the_club_is_refused() -> None:
+    from geral.specials.writer import StoryDraft
+
+    other = " ".join(["O atacante brilhou no Bahia em 1978 com gols de cabeça."] * 12)
+    p = Passage(kind="idolo", key="k", title="Osni Lopes", url="u", text=other + " Náutico")
+    story = StoryDraft(
+        title="Osni",
+        body=other,
+        summary="Artilheiro.",
+        kind="idolo",
+        source_key="k",
+        source_url="u",
+        source_title="Osni Lopes",
+    )
+
+    assert job.refusal(story, p, get_team("nautico")) == "não fala do clube"

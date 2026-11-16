@@ -7,6 +7,7 @@ model from its passage and checked by the verifier: a refusal is kept too, with 
 
 import logging
 import random
+import re
 from datetime import date
 from itertools import zip_longest
 
@@ -57,6 +58,9 @@ def refusal(story: StoryDraft, passage: Passage, team: Team) -> str | None:
     missing = unsupported(text, f"{passage.title}\n{passage.text}", allowed)
     if missing:
         return "fora da fonte: " + ", ".join(missing)
+    terms = [team.name, *team.club_terms]
+    if not any(re.search(rf"\b{re.escape(t)}\b", story.body, re.IGNORECASE) for t in terms):
+        return "não fala do clube"
     words = len(story.body.split())
     if not MIN_WORDS <= words <= MAX_WORDS:
         return f"tamanho: {words} palavras"
