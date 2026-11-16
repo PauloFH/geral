@@ -63,3 +63,76 @@ def test_story_kind_is_checked(client) -> None:
 def test_fact_date_format_is_checked(client) -> None:
     assert client.post(BASE, json=story(fact_date="ontem"), headers=AUTH).status_code == 422
     assert client.post(BASE, json=story("y", fact_date="1934"), headers=AUTH).status_code == 204
+
+
+# --- drawing for an edition and "Neste dia" ---------------------------------------------------
+
+DRAW = f"{BASE}/draw"
+
+
+def test_draw_reserves_an_unused_story(client) -> None:
+    client.post(BASE, json=story("a"), headers=AUTH)
+
+    first = client.post(DRAW, json={"label": "Notícias — 23/11/2026"}, headers=AUTH)
+
+    assert first.status_code == 200 and first.json()["title"] == "Bita, o artilheiro"
+    assert client.get(f"{BASE}/count", headers=AUTH).json() == {"unused": 0}
+    other = client.post(DRAW, json={"label": "Notícias — 26/11/2026"}, headers=AUTH)
+    assert other.status_code == 204
+
+
+def test_draw_is_idempotent_per_label(client) -> None:
+    client.post(BASE, json=story("a"), headers=AUTH)
+    client.post(BASE, json=story("b", title="Outra"), headers=AUTH)
+    label = {"label": "Notícias — 23/11/2026"}
+
+    first = client.post(DRAW, json=label, headers=AUTH).json()
+    again = client.post(DRAW, json=label, headers=AUTH).json()
+
+    assert first["id"] == again["id"]
+    assert client.get(f"{BASE}/count", headers=AUTH).json() == {"unused": 1}
+
+
+def test_draw_without_reserving_keeps_the_stock(client) -> None:
+    client.post(BASE, json=story("a"), headers=AUTH)
+
+    peek = client.post(DRAW, json={"label": "x", "reserve": False}, headers=AUTH)
+
+    assert peek.status_code == 200
+    assert client.get(f"{BASE}/count", headers=AUTH).json() == {"unused": 1}
+
+
+def test_draw_skips_rejected_and_discarded(client, store) -> None:
+    client.post(BASE, json=story("a", rejected_reason="x"), headers=AUTH)
+    client.post(BASE, json=story("b"), headers=AUTH)
+    drawn = client.post(DRAW, json={"label": "L1"}, headers=AUTH).json()
+    store.discard_story(drawn["id"])
+
+    assert client.post(DRAW, json={"label": "L1"}, headers=AUTH).status_code == 204
+
+
+def facts(client, day: str) -> list[dict]:
+    return client.get(f"{BASE}/on-this-day", params={"day": day}, headers=AUTH).json()
+
+
+def test_on_this_day_needs_a_full_date(client) -> None:
+    client.post(BASE, json=story("a", fact_date="1934-08-19"), headers=AUTH)
+    client.post(BASE, json=story("b", fact_date="1934", title="Ano só"), headers=AUTH)
+    client.post(BASE, json=story("c", fact_date="1934-08-30", title="Longe"), headers=AUTH)
+
+    found = facts(client, "2026-08-21")
+
+    assert found == [
+        {
+            "date": "1934-08-19",
+            "title": "Bita, o artilheiro",
+            "summary": "O maior artilheiro alvirrubro.",
+        }
+    ]
+
+
+def test_on_this_day_window_crosses_the_new_year(client) -> None:
+    client.post(BASE, json=story("a", fact_date="1968-01-02"), headers=AUTH)
+
+    assert len(facts(client, "2026-12-30")) == 1
+    assert facts(client, "2026-12-26") == []

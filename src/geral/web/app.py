@@ -156,6 +156,11 @@ class StoryIn(BaseModel):
     rejected_reason: str | None = None  # refused by the verifier: kept so the source is skipped
 
 
+class DrawIn(BaseModel):
+    label: str  # the edition the story goes in (a rebuild gets the same story)
+    reserve: bool = True  # False for a preview: the stock is left as it is
+
+
 class BolaoMatchIn(BaseModel):
     opponent: str
     home: bool  # our team plays at home
@@ -914,6 +919,23 @@ def create_app(
         if team not in catalog:
             return unknown_team()
         return {"unused": store.unused_stories(team)}
+
+    @app.post("/api/teams/{team}/stories/draw")
+    def draw_story(request: Request, team: str, body: DrawIn):
+        if not authorized(request):
+            return unauthorized()
+        if team not in catalog:
+            return unknown_team()
+        story = store.draw_story(team, body.label, reserve=body.reserve)
+        return story if story else Response(status_code=204)
+
+    @app.get("/api/teams/{team}/stories/on-this-day")
+    def stories_on_this_day(request: Request, team: str, day: date):
+        if not authorized(request):
+            return unauthorized()
+        if team not in catalog:
+            return unknown_team()
+        return store.on_this_day(team, day)
 
     @app.get("/api/teams/{team}/stories/sources")
     def story_sources(request: Request, team: str):

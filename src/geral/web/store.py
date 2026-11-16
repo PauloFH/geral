@@ -5,10 +5,11 @@ until a confirmation link is clicked. Leaving the last team unsubscribes the e-m
 """
 
 import json
+import random
 import sqlite3
 from contextlib import closing
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from enum import Enum
 from pathlib import Path
 
@@ -504,6 +505,73 @@ class SubscriberStore:
             team,
         )
         return rows[0][0]
+
+    _STORY_COLUMNS = (
+        "id",
+        "kind",
+        "title",
+        "body",
+        "summary",
+        "fact_date",
+        "source_title",
+        "source_url",
+    )
+
+    def _stories(self, where: str, *params: object) -> list[dict]:
+        rows = self._run(
+            f"SELECT {', '.join(self._STORY_COLUMNS)} FROM stories WHERE {where} ORDER BY id",
+            *params,
+        )
+        return [dict(zip(self._STORY_COLUMNS, row, strict=True)) for row in rows]
+
+    def draw_story(self, team: str, label: str, reserve: bool = True) -> dict | None:
+        """A ready story for the edition `label`, reserved for it; the same one on a rebuild.
+
+        The pick is seeded by the label (a rebuild without reserving picks the same story).
+        """
+        mine = self._run(
+            "SELECT id, discarded FROM stories WHERE team = ? AND used_label = ?", team, label
+        )
+        if mine:
+            story_id, discarded = mine[0]
+            return None if discarded else self._stories("id = ?", story_id)[0]
+        ready = self._stories(
+            "team = ? AND rejected_reason IS NULL AND used_label IS NULL AND discarded = 0", team
+        )
+        if not ready:
+            return None
+        story = random.Random(f"{team}|{label}").choice(ready)
+        if reserve:
+            self._run("UPDATE stories SET used_label = ? WHERE id = ?", label, story["id"])
+        return story
+
+    def discard_story(self, story_id: int) -> None:
+        """Removed by the owner in the review: never drawn again."""
+        self._run("UPDATE stories SET discarded = 1 WHERE id = ?", story_id)
+
+    def on_this_day(self, team: str, day: date, days: int = 3) -> list[dict]:
+        """Dated facts of the team's stories whose day and month fall within `days` of `day`."""
+        found = []
+        for story in self._stories(
+            "team = ? AND rejected_reason IS NULL AND discarded = 0 AND length(fact_date) = 10",
+            team,
+        ):
+            fact = date.fromisoformat(story["fact_date"])
+            near = []
+            for year in (day.year - 1, day.year, day.year + 1):
+                try:
+                    near.append(abs((fact.replace(year=year) - day).days))
+                except ValueError:  # 29/02 outside a leap year
+                    continue
+            if near and min(near) <= days:
+                found.append(
+                    {
+                        "date": story["fact_date"],
+                        "title": story["title"],
+                        "summary": story["summary"],
+                    }
+                )
+        return found
 
     def story_sources(self, team: str) -> list[str]:
         return [key for (key,) in self._run("SELECT source_key FROM stories WHERE team = ?", team)]
