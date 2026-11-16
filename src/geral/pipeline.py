@@ -292,7 +292,12 @@ def drop_topics(newsletter: Newsletter, removed: list[int], llm: LLMClient | Non
 
 def is_empty(newsletter: Newsletter) -> bool:
     """True when there is neither news nor a match: such an edition is not sent."""
-    return not newsletter.topics and newsletter.last_match is None and newsletter.preview is None
+    return (
+        not newsletter.topics
+        and newsletter.last_match is None
+        and newsletter.preview is None
+        and newsletter.story is None  # a story alone carries a news edition
+    )
 
 
 def unsubscribe_url(settings: Settings) -> str:

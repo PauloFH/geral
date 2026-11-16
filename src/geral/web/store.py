@@ -544,10 +544,20 @@ class SubscriberStore:
         )
         if not ready:
             return None
-        story = random.Random(f"{team}|{label}").choice(ready)
-        if reserve:
-            self._run("UPDATE stories SET used_label = ? WHERE id = ?", label, story["id"])
-        return story
+        rng = random.Random(f"{team}|{label}")
+        rng.shuffle(ready)
+        if not reserve:
+            return ready[0]
+        for story in ready:
+            # Only if still free: two builds at once must not get the same story.
+            if self._run(
+                "UPDATE stories SET used_label = ? WHERE id = ? AND used_label IS NULL"
+                " RETURNING id",
+                label,
+                story["id"],
+            ):
+                return story
+        return None
 
     def discard_story(self, story_id: int) -> None:
         """Removed by the owner in the review: never drawn again."""
@@ -560,7 +570,10 @@ class SubscriberStore:
             "team = ? AND rejected_reason IS NULL AND discarded = 0 AND length(fact_date) = 10",
             team,
         ):
-            fact = date.fromisoformat(story["fact_date"])
+            try:
+                fact = date.fromisoformat(story["fact_date"])
+            except ValueError:
+                continue  # a date the calendar does not have
             near = []
             for year in (day.year - 1, day.year, day.year + 1):
                 try:

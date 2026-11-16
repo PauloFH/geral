@@ -147,3 +147,42 @@ def test_build_without_stories_or_page_has_no_section() -> None:
     picked = sections.from_page(settings)(edition(), NAUTICO, second_chance=True)
 
     assert picked == Sections()
+
+
+def test_story_only_edition_is_not_empty() -> None:
+    newsletter = build(lambda e, t, second_chance=False: Sections(story=Story(**STORY)), [])
+
+    assert not pipeline.is_empty(newsletter)
+
+
+def test_a_failing_on_this_day_keeps_the_reserved_story(monkeypatch) -> None:
+    monkeypatch.setattr(sections, "STORY_CHANCE", 1.0)
+    monkeypatch.setattr(sections, "ON_THIS_DAY_CHANCE", 1.0)
+
+    def facts():
+        raise httpx.ConnectError("down")
+
+    picked = sections.pick_sections(edition(), NAUTICO, draw=lambda: STORY, facts=facts)
+
+    assert picked.story is not None and picked.on_this_day == []
+
+
+def test_a_bad_answer_from_the_page_leaves_the_section_out() -> None:
+    picked = sections.pick_sections(
+        edition(), NAUTICO, draw=lambda: {"id": "x"}, facts=lambda: [], force_story=True
+    )
+
+    assert picked == Sections()
+
+
+def test_on_this_day_skips_facts_of_this_year_and_sorts_by_date(monkeypatch) -> None:
+    monkeypatch.setattr(sections, "ON_THIS_DAY_CHANCE", 1.0)
+    found = [
+        {"date": "1968-08-18", "title": "b", "summary": "B."},
+        {"date": "2026-08-16", "title": "c", "summary": "C."},
+        {"date": "1934-08-19", "title": "a", "summary": "A."},
+    ]
+
+    picked = pick_sections(edition("pre"), NAUTICO, draw=lambda: None, facts=lambda: found)
+
+    assert [line[-2:] for line in picked.on_this_day] == ["A.", "B."]

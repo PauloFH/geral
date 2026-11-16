@@ -31,8 +31,9 @@ class Sections(BaseModel):
     max_topics: int | None = None  # the news cap when there is a section
 
 
-def on_this_day_line(fact: dict, send_day: date) -> str:
-    """'Há 92 anos, em 19/08/1934: <summary>' (the anniversary nearest to the send day)."""
+def on_this_day_line(fact: dict, send_day: date) -> str | None:
+    """'Há 92 anos, em 19/08/1934: <summary>' (the anniversary nearest to the send day);
+    None for a fact of this year."""
     when = date.fromisoformat(fact["date"])
     years = (
         min(
@@ -41,6 +42,8 @@ def on_this_day_line(fact: dict, send_day: date) -> str:
         )
         - when.year
     )
+    if years < 1:
+        return None
     return f"Há {years} anos, em {when:%d/%m/%Y}: {fact['summary']}"
 
 
@@ -52,16 +55,25 @@ def pick_sections(
     facts: Callable[[], list[dict]],
     force_story: bool = False,
 ) -> Sections:
+    # Each part fails on its own: a reserved story is kept when "Neste dia" fails.
     rng = random.Random(f"{team.slug}|{edition.label}")
     story = None
     wants_story = rng.random() < STORY_CHANCE
     if edition.kind == "news" and (wants_story or force_story):
-        drawn = draw()
-        story = Story(**drawn) if drawn else None
+        try:
+            drawn = draw()
+            story = Story(**drawn) if drawn else None
+        except (httpx.HTTPError, ValueError) as e:  # ValueError: a reply that isn't a story
+            logger.warning("Story left out, the page failed: %s", e)
     lines = []
+    # The forced draw (a second chance for the story) does not draw "Neste dia" again.
     if not force_story and rng.random() < ON_THIS_DAY_CHANCE:
         send_day = edition.end.astimezone(TZ).date()
-        lines = [on_this_day_line(f, send_day) for f in facts()]
+        try:
+            found = sorted(facts(), key=lambda f: f["date"])
+            lines = [line for f in found if (line := on_this_day_line(f, send_day))]
+        except (httpx.HTTPError, ValueError, KeyError) as e:
+            logger.warning("Neste dia left out, the page failed: %s", e)
     has_section = story is not None or bool(lines)
     return Sections(
         story=story, on_this_day=lines, max_topics=TOPICS_WITH_SECTION if has_section else None
@@ -75,20 +87,16 @@ def from_page(settings: Settings) -> Callable[..., Sections]:
     """
 
     def specials(edition: Edition, team: Team, second_chance: bool = False) -> Sections:
-        try:
-            return pick_sections(
-                edition,
-                team,
-                draw=lambda: recipients.draw_story(
-                    settings, team.slug, edition.label, reserve=not settings.DRY_RUN
-                ),
-                facts=lambda: recipients.on_this_day(
-                    settings, team.slug, edition.end.astimezone(TZ).date()
-                ),
-                force_story=second_chance,
-            )
-        except httpx.HTTPError as e:
-            logger.warning("Special sections left out, the page failed: %s", e)
-            return Sections()
+        return pick_sections(
+            edition,
+            team,
+            draw=lambda: recipients.draw_story(
+                settings, team.slug, edition.label, reserve=not settings.DRY_RUN
+            ),
+            facts=lambda: recipients.on_this_day(
+                settings, team.slug, edition.end.astimezone(TZ).date()
+            ),
+            force_story=second_chance,
+        )
 
     return specials

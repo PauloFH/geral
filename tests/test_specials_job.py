@@ -248,3 +248,7 @@ def test_a_wikipedia_error_skips_only_that_team(monkeypatch) -> None:
     )
 
     assert report.skipped_reason == "Wikipédia fora do ar"
+
+
+def test_an_impossible_date_is_cut_to_the_year() -> None:
+    assert job.checked_date("1934-06-31", "Em 31/06/1934, um registro errado.") == "1934"

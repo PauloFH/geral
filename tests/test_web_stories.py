@@ -136,3 +136,28 @@ def test_on_this_day_window_crosses_the_new_year(client) -> None:
 
     assert len(facts(client, "2026-12-30")) == 1
     assert facts(client, "2026-12-26") == []
+
+
+def test_a_bad_stored_date_does_not_break_on_this_day(client, store) -> None:
+    from datetime import UTC, datetime
+
+    client.post(BASE, json=story("a", fact_date="1934-08-19"), headers=AUTH)
+    store._run(
+        "INSERT INTO stories (team, kind, title, body, summary, fact_date, source_url,"
+        " source_title, source_key, created_at) VALUES ('nautico', 'jogo', 't', 'b', 's',"
+        " '1934-06-31', 'u', 't', 'bad', ?)",
+        datetime.now(UTC).isoformat(),
+    )
+
+    assert len(facts(client, "2026-08-20")) == 1
+
+
+def test_a_story_is_reserved_once(store) -> None:
+    from datetime import UTC, datetime
+
+    store.add_story("nautico", story("a"), datetime.now(UTC))
+    first = store.draw_story("nautico", "L1")
+    store._run("UPDATE stories SET used_label = NULL WHERE id = ?", -1)  # nothing changes
+
+    assert store.draw_story("nautico", "L2") is None
+    assert store.draw_story("nautico", "L1")["id"] == first["id"]
