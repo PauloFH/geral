@@ -153,3 +153,66 @@ def test_review_page_says_when_nothing_is_pending(owner) -> None:
 
     assert page.status_code == 200
     assert re.search(r"nenhuma edição", page.text, re.I)
+
+
+def test_saving_a_draft_emails_the_owner_the_review_link(owner, mailer) -> None:
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    from webkit import AUTH
+
+    tz = ZoneInfo("America/Sao_Paulo")
+    body = {
+        "label": "Notícias — 16/11/2026",
+        "newsletter": newsletter().model_dump(mode="json"),
+        "build_at": datetime(2026, 11, 16, 8, 0, tzinfo=tz).isoformat(),
+        "send_at": datetime(2026, 11, 16, 13, 0, tzinfo=tz).isoformat(),
+    }
+
+    put = owner.put("/api/teams/flamengo/drafts/news/2026-11-16", json=body, headers=AUTH)
+
+    assert put.status_code == 204
+    [(to, subject, text)] = mailer.notifications
+    assert to == OWNER
+    assert subject == "Revisar: Urubu News — Notícias — 16/11/2026, sai às 13:00"
+    found = re.search(r"https://geral\.test(/revisao\?t=[\w.\-]+)", text)
+    assert found, text
+    assert "Rumor de contratação" in text
+    assert owner.get(found.group(1)).status_code == 200
+
+
+def test_draft_saved_even_if_the_notice_fails(owner, mailer, store, monkeypatch) -> None:
+    from webkit import AUTH
+
+    from geral.web.mailer import MailError
+
+    def down(*args):
+        raise MailError("resend down")
+
+    monkeypatch.setattr(mailer, "send_notification", down)
+    body = {
+        "label": "Notícias — 16/11/2026",
+        "newsletter": newsletter().model_dump(mode="json"),
+        "build_at": "2026-11-16T08:00:00-03:00",
+        "send_at": "2026-11-16T13:00:00-03:00",
+    }
+
+    put = owner.put("/api/teams/flamengo/drafts/news/2026-11-16", json=body, headers=AUTH)
+
+    assert put.status_code == 204
+    assert store.draft("flamengo", "news", "2026-11-16") is not None
+
+
+def test_a_second_put_of_the_same_draft_sends_no_notice(owner, mailer) -> None:
+    from webkit import AUTH
+
+    body = {
+        "label": "Notícias — 16/11/2026",
+        "newsletter": newsletter().model_dump(mode="json"),
+        "build_at": "2026-11-16T08:00:00-03:00",
+        "send_at": "2026-11-16T13:00:00-03:00",
+    }
+    owner.put("/api/teams/flamengo/drafts/news/2026-11-16", json=body, headers=AUTH)
+    owner.put("/api/teams/flamengo/drafts/news/2026-11-16", json=body, headers=AUTH)
+
+    assert len(mailer.notifications) == 1

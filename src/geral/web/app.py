@@ -826,7 +826,31 @@ def create_app(
         )
         if not saved:
             return JSONResponse({"detail": "this edition already has a draft"}, status_code=409)
+        notify_review(team, draft)
         return Response(status_code=204)
+
+    def notify_review(team: str, draft: DraftIn) -> None:
+        """One e-mail per draft to the owner, with the review link; a failure keeps the draft."""
+        if not settings.NOTIFY_EMAIL:
+            return
+        newsletter = Newsletter.model_validate(draft.newsletter)
+        send_at = draft.send_at.astimezone(BRASILIA)
+        topics = "\n".join(f"{i}. {t.title}" for i, t in enumerate(newsletter.topics, 1))
+        edition = f"{newsletter.team.newsletter} — {draft.label}"
+        text = (
+            f"{edition} sai às {send_at:%H:%M} se você não mexer.\n\n"
+            f"{topics or '(sem tópicos de notícia)'}\n\n"
+            f"Revisar (segurar ou tirar tópicos; o link vale {REVIEW_MAX_AGE.days} dias):\n"
+            f"{review_link()}\n"
+        )
+        try:
+            mailer.send_notification(
+                settings.NOTIFY_EMAIL,
+                f"Revisar: {edition}, sai às {send_at:%H:%M}",
+                text,
+            )
+        except MailError as e:
+            logger.error("Review notice for %s failed: %s", team, e)
 
     @app.get("/api/teams/{team}/drafts/{kind}/{day}")
     def get_draft(request: Request, team: str, kind: DraftKind, day: date):
