@@ -3,7 +3,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
-from geral.schedule import Fixture, Slot, due, label_of, plan
+from geral.schedule import Fixture, Slot, due, due_stage, label_of, plan
 
 TZ = ZoneInfo("America/Sao_Paulo")
 UTC = ZoneInfo("UTC")
@@ -253,3 +253,29 @@ def test_label_of_reads_the_label_from_a_subject() -> None:
     )
     assert label_of("Urubu News — Notícias — 21/10/2026") == "Notícias — 21/10/2026"
     assert label_of("Urubu News — Edição de Sexta — 16/10/2026: x") is None
+
+
+def test_due_stage_build_window_is_not_send() -> None:
+    slots = plan([fixture(at("18/10/2026", "20:00"))], NOW, LAST_SENT)
+
+    slot, stage = due_stage(slots, at("19/10/2026", "10:00"))
+
+    assert (slot.label, stage) == ("Pós-jogo — 19/10/2026", "build")
+    assert due_stage(slots, at("19/10/2026", "12:59")) is None  # build is over, send not yet
+
+
+def test_due_stage_send_after_13() -> None:
+    slots = plan([fixture(at("18/10/2026", "20:00"))], NOW, LAST_SENT)
+
+    assert due_stage(slots, at("19/10/2026", "07:59")) is None
+    assert due_stage(slots, at("19/10/2026", "13:00"))[1] == "send"
+    assert due_stage(slots, at("19/10/2026", "15:59"))[1] == "send"
+    assert due_stage(slots, at("19/10/2026", "16:00")) is None
+
+
+def test_due_stage_pre_game_send_wins_over_its_build_window() -> None:
+    # build 14:00 (until 17:00), send 16:00: at 16:30 both are inside their windows
+    slots = plan([fixture(at("18/10/2026", "20:00"))], NOW, LAST_SENT)
+
+    assert due_stage(slots, at("18/10/2026", "14:10"))[1] == "build"
+    assert due_stage(slots, at("18/10/2026", "16:30"))[1] == "send"

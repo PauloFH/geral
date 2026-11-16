@@ -173,9 +173,31 @@ def test_due_all_lists_only_teams_with_subscribers(geral_db) -> None:
 
     assert result.exit_code == 0, result.output
     assert result.stdout.splitlines() == [
-        "vasco\tpre\t2026-10-18\tPré-jogo — 18/10/2026",
-        "nautico\tpre\t2026-10-18\tPré-jogo — 18/10/2026",
+        "vasco\tpre\t2026-10-18\tPré-jogo — 18/10/2026\tsend",
+        "nautico\tpre\t2026-10-18\tPré-jogo — 18/10/2026\tsend",
     ]
+
+
+def test_due_all_prints_build_then_send_for_the_same_slot(geral_db) -> None:
+    follow(geral_db, "ana@example.com", ["vasco"])
+
+    def due_at(hour: int, minute: int) -> str:
+        with pytest.MonkeyPatch.context() as m:
+            m.setattr(cli, "_now", lambda: datetime(2026, 10, 18, hour, minute, tzinfo=TZ))
+            return CliRunner().invoke(cli.app, ["due", "--all"]).stdout
+
+    # kick-off 18:30: built at 12:30, sent at 14:30
+    assert due_at(12, 40) == "vasco\tpre\t2026-10-18\tPré-jogo — 18/10/2026\tbuild\n"
+    assert due_at(14, 40) == "vasco\tpre\t2026-10-18\tPré-jogo — 18/10/2026\tsend\n"
+
+
+def test_due_all_stage_is_the_last_column(geral_db) -> None:
+    follow(geral_db, "ana@example.com", ["vasco"])
+
+    [line] = CliRunner().invoke(cli.app, ["due", "--all"]).stdout.splitlines()
+
+    team, kind, day, label, stage = line.split("\t")
+    assert (team, kind, day, stage) == ("vasco", "pre", "2026-10-18", "send")
 
 
 def test_due_all_uses_each_team_latest_edition(geral_db) -> None:

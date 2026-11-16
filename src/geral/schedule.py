@@ -29,6 +29,7 @@ DEFAULT_WINDOW = timedelta(days=3)  # news window when nothing was ever sent
 LABELS = {"pre": "Pré-jogo", "post": "Pós-jogo", "news": "Notícias"}
 
 Kind = Literal["pre", "post", "news"]
+Stage = Literal["build", "send"]
 
 
 class Fixture(BaseModel):
@@ -188,3 +189,17 @@ def due(slots: list[Slot], now: datetime, grace: timedelta = timedelta(hours=3))
     """The latest slot whose send time passed less than `grace` ago."""
     ready = [s for s in slots if s.send_at <= now < s.send_at + grace]
     return max(ready, key=lambda s: s.send_at, default=None)
+
+
+def due_stage(
+    slots: list[Slot], now: datetime, grace: timedelta = timedelta(hours=3)
+) -> tuple[Slot, Stage] | None:
+    """The latest build or send whose time passed less than `grace` ago; a tie goes to send."""
+    events = [(s.build_at, 0, s, "build") for s in slots] + [
+        (s.send_at, 1, s, "send") for s in slots
+    ]
+    ready = [e for e in events if e[0] <= now < e[0] + grace]
+    if not ready:
+        return None
+    _, _, slot, stage = max(ready, key=lambda e: (e[0], e[1]))
+    return slot, stage

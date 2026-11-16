@@ -113,7 +113,7 @@ def test_due_all_lists_the_general_edition_on_monday_morning(geral_db, monkeypat
     geral_db.confirm("ana@example.com", NOW)
 
     assert due_at(monkeypatch, datetime(2026, 11, 16, 8, 10, tzinfo=TZ)) == [
-        "geral\tnews\t2026-11-16\tEdição geral — 16/11/2026"
+        "geral\tnews\t2026-11-16\tEdição geral — 16/11/2026\tall"
     ]
     assert due_at(monkeypatch, datetime(2026, 11, 16, 7, 50, tzinfo=TZ)) == []
     assert due_at(monkeypatch, datetime(2026, 11, 16, 11, 30, tzinfo=TZ)) == []

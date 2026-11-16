@@ -21,7 +21,17 @@ from geral.general.render import render_general
 from geral.models import Edition, Newsletter
 from geral.render.renderer import render
 from geral.report import ProblemCollector, RunReport
-from geral.schedule import DEFAULT_WINDOW, LABELS, TZ, Fixture, Slot, label_of, plan
+from geral.schedule import (
+    DEFAULT_WINDOW,
+    LABELS,
+    TZ,
+    Fixture,
+    Slot,
+    Stage,
+    due_stage,
+    label_of,
+    plan,
+)
 from geral.schedule import due as due_slot
 from geral.send.recipients import (
     LatestEdition,
@@ -232,18 +242,22 @@ def due(
             if edition
             else None
         )
-        slot = _due_slot(club, settings, now, latest)
-        if slot is not None:
-            typer.echo(f"{club.slug}\t{slot.kind}\t{slot.send_at:%Y-%m-%d}\t{slot.label}")
+        due = _due_stage(club, settings, now, latest)
+        if due is not None:
+            slot, stage = due
+            # The stage goes last: a trigger that reads only 4 columns keeps working.
+            typer.echo(f"{club.slug}\t{slot.kind}\t{slot.send_at:%Y-%m-%d}\t{slot.label}\t{stage}")
     if counts.get(GENERAL_SLUG):  # the edição geral: Mondays at 8h, for its subscribers
         edition = store.latest_edition(GENERAL_SLUG)
         monday = due_general(now, edition.subject if edition else None)
         if monday is not None:
-            typer.echo(f"{GENERAL_SLUG}\tnews\t{monday:%Y-%m-%d}\t{general_label(monday)}")
+            typer.echo(f"{GENERAL_SLUG}\tnews\t{monday:%Y-%m-%d}\t{general_label(monday)}\tall")
 
 
-def _due_slot(club: Team, settings, now: datetime, latest: LatestEdition | None) -> Slot | None:
-    """The slot due now for one team; an unknown calendar (ESPN down) means nothing is due."""
+def _plan_for(
+    club: Team, settings, now: datetime, latest: LatestEdition | None
+) -> list[Slot] | None:
+    """The team's planned slots; an unknown calendar (ESPN down) is None: nothing is due."""
     try:
         fixtures = _fixtures(club, settings, now)
     except StatsUnavailable as e:
@@ -252,7 +266,19 @@ def _due_slot(club: Team, settings, now: datetime, latest: LatestEdition | None)
     sent_at, sent_label = (
         (latest.published_at, label_of(latest.subject)) if latest else (None, None)
     )
-    return due_slot(plan(fixtures, now, sent_at, sent_label), now)
+    return plan(fixtures, now, sent_at, sent_label)
+
+
+def _due_slot(club: Team, settings, now: datetime, latest: LatestEdition | None) -> Slot | None:
+    slots = _plan_for(club, settings, now, latest)
+    return due_slot(slots, now) if slots is not None else None
+
+
+def _due_stage(
+    club: Team, settings, now: datetime, latest: LatestEdition | None
+) -> tuple[Slot, Stage] | None:
+    slots = _plan_for(club, settings, now, latest)
+    return due_stage(slots, now) if slots is not None else None
 
 
 @app.command()
