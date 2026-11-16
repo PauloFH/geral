@@ -6,7 +6,7 @@ is published back so new subscribers get it right after confirming.
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from email.utils import parseaddr
 
 import httpx
@@ -331,3 +331,30 @@ def add_story(
         return False
     response.raise_for_status()
     return True
+
+
+def draw_story(
+    settings: Settings, team: str, label: str, reserve: bool, client: httpx.Client | None = None
+) -> dict | None:
+    """A ready story for the edition (reserved for it unless `reserve` is False), or None.
+    Raises httpx.HTTPError."""
+    response = (client or httpx.Client(timeout=TIMEOUT)).post(
+        _stories_url(settings, team, "/draw"),
+        json={"label": label, "reserve": reserve},
+        headers=_auth(settings),
+    )
+    response.raise_for_status()
+    return None if response.status_code == 204 else response.json()
+
+
+def on_this_day(
+    settings: Settings, team: str, day: date, client: httpx.Client | None = None
+) -> list[dict]:
+    """Dated facts of the team's stories around `day`. Raises httpx.HTTPError."""
+    response = (client or httpx.Client(timeout=TIMEOUT)).get(
+        _stories_url(settings, team, "/on-this-day"),
+        params={"day": day.isoformat()},
+        headers=_auth(settings),
+    )
+    response.raise_for_status()
+    return [] if response.status_code == 204 else response.json()
