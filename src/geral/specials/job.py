@@ -54,7 +54,7 @@ def refusal(story: StoryDraft, passage: Passage, team: Team) -> str | None:
     """Why the verifier refuses the story, or None."""
     allowed = [team.name, team.newsletter, team.fans, *team.club_terms]
     text = f"{story.title}\n{story.body}\n{story.summary}"
-    missing = unsupported(text, passage.text, allowed)
+    missing = unsupported(text, f"{passage.title}\n{passage.text}", allowed)
     if missing:
         return "fora da fonte: " + ", ".join(missing)
     words = len(story.body.split())

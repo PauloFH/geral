@@ -11,7 +11,7 @@ from collections.abc import Iterable
 NUMBER = re.compile(r"\d+")
 WORD = re.compile(r"[^\W\d_]+(?:-[^\W\d_]+)*")
 # A capitalized word right after the start or the end of a sentence is not taken as a name.
-SENTENCE_START = re.compile(r"(?:^|[.!?:;]\s+|[\"“«(]\s*)$")
+SENTENCE_START = re.compile(r"(?:^|[.!?:;]\s+|\n\s*|[\"“«(—–]\s*)$")
 # Capitalized words that are not names even mid-sentence.
 COMMON = {"o", "a", "os", "as", "um", "uma", "e", "em", "no", "na", "de", "do", "da"}
 # A digit may stand for a number written out in the source (or a title count: "hexacampeão").

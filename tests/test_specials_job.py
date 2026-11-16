@@ -161,3 +161,20 @@ def test_acervo_all_runs_every_specials_team(monkeypatch) -> None:
     assert result.exit_code == 0, result.output
     assert sorted(seen) == ["abc", "nautico"]
     assert "nautico: 2 aceitas, 1 recusadas" in result.output
+
+
+def test_refusal_reads_the_section_title_as_source() -> None:
+    from geral.specials.writer import StoryDraft
+
+    p = Passage(kind="jogo", key="k", title="Clube — 2013: rebaixamento", url="u", text=TEXT)
+    story = StoryDraft(
+        title="O ano difícil",
+        body="Em 2013, o Náutico caiu. " + TEXT,
+        summary="Queda.",
+        kind="jogo",
+        source_key="k",
+        source_url="u",
+        source_title=p.title,
+    )
+
+    assert job.refusal(story, p, get_team("nautico")) is None

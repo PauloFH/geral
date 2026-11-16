@@ -56,3 +56,10 @@ def test_verifier_accepts_a_digit_written_out_in_the_source() -> None:
 
 def test_a_prefix_counts_only_in_a_title_word() -> None:
     assert unsupported("Foram 3 jogos.", "Lotou a tribuna do Náutico.") == ["3"]
+
+
+def test_a_new_line_starts_a_sentence() -> None:
+    assert (
+        unsupported("Como o Náutico virou Timbu\nNascido na Jaqueira, o apelido ficou.", SOURCE)
+        == []
+    )
