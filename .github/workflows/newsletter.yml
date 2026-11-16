@@ -17,6 +17,11 @@ on:
         type: choice
         options: [auto, pre, post, news]
         default: auto
+      stage:
+        description: "Etapa: all = monta e envia agora; build = só o rascunho para revisão; send = envia o rascunho"
+        type: choice
+        options: [all, build, send]
+        default: all
       date:
         description: "Data de referência (AAAA-MM-DD, opcional)"
         type: string
@@ -104,6 +109,8 @@ jobs:
           DRY_RUN: ${{ github.event_name == 'schedule' && 'false' || (inputs.dry_run && 'true' || 'false') }}
           TEAM: ${{ matrix.team }}
           EDITION: ${{ inputs.edition || 'auto' }}
+          # Scheduled backup: the stage the calendar has due now (build or send).
+          STAGE: ${{ github.event_name == 'schedule' && 'auto' || inputs.stage || 'all' }}
           REFERENCE_DATE: ${{ inputs.date }}
           NOTE: ${{ inputs.note }}
           PUBLISH_ONLY: ${{ inputs.publish_only && 'true' || 'false' }}
@@ -120,12 +127,12 @@ jobs:
             uv run python -m geral edicao-geral "${args[@]}"
             exit 0
           fi
-          args=(--team "$TEAM" --edition "$EDITION")
+          args=(--team "$TEAM" --edition "$EDITION" --stage "$STAGE")
           if [ "$SKIP_IF_SENT" = "true" ]; then args+=(--skip-if-sent); fi
           if [ -n "$REFERENCE_DATE" ]; then args+=(--date "$REFERENCE_DATE"); fi
           if [ -n "$NOTE" ]; then args+=(--note "$NOTE"); fi
           if [ "$PUBLISH_ONLY" = "true" ]; then args+=(--publish-only); fi
-          echo "DRY_RUN=$DRY_RUN SKIP_IF_SENT=$SKIP_IF_SENT PUBLISH_ONLY=$PUBLISH_ONLY team=$TEAM edition=$EDITION date=${REFERENCE_DATE:-hoje}"
+          echo "DRY_RUN=$DRY_RUN SKIP_IF_SENT=$SKIP_IF_SENT PUBLISH_ONLY=$PUBLISH_ONLY team=$TEAM edition=$EDITION stage=$STAGE date=${REFERENCE_DATE:-hoje}"
           uv run python -m geral run "${args[@]}"
 
       - name: Upload rendered newsletter

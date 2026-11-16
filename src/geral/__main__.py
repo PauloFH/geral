@@ -21,17 +21,31 @@ from geral.general.render import render_general
 from geral.models import Edition, Newsletter
 from geral.render.renderer import render
 from geral.report import ProblemCollector, RunReport
-from geral.schedule import DEFAULT_WINDOW, LABELS, TZ, Fixture, Slot, label_of, plan
+from geral.schedule import (
+    DEFAULT_WINDOW,
+    LABELS,
+    TZ,
+    Fixture,
+    Slot,
+    Stage,
+    due_stage,
+    due_stages,
+    label_of,
+    plan,
+)
 from geral.schedule import due as due_slot
 from geral.send.recipients import (
     LatestEdition,
+    fetch_draft,
     latest_edition,
     mailto_unsubscribe,
+    mark_draft_sent,
     preview_summary,
     publish_latest_edition,
     register_match,
     report_result,
     resolve_recipients,
+    save_draft,
 )
 from geral.send.resend_sender import (
     UNSUBSCRIBE_PLACEHOLDER,
@@ -232,18 +246,22 @@ def due(
             if edition
             else None
         )
-        slot = _due_slot(club, settings, now, latest)
-        if slot is not None:
-            typer.echo(f"{club.slug}\t{slot.kind}\t{slot.send_at:%Y-%m-%d}\t{slot.label}")
+        slots = _plan_for(club, settings, now, latest)
+        # Every stage due (a build must not hide a send that has not gone out); the stage goes
+        # last, so a trigger that reads only 4 columns keeps working.
+        for slot, stage in due_stages(slots, now) if slots is not None else []:
+            typer.echo(f"{club.slug}\t{slot.kind}\t{slot.send_at:%Y-%m-%d}\t{slot.label}\t{stage}")
     if counts.get(GENERAL_SLUG):  # the edição geral: Mondays at 8h, for its subscribers
         edition = store.latest_edition(GENERAL_SLUG)
         monday = due_general(now, edition.subject if edition else None)
         if monday is not None:
-            typer.echo(f"{GENERAL_SLUG}\tnews\t{monday:%Y-%m-%d}\t{general_label(monday)}")
+            typer.echo(f"{GENERAL_SLUG}\tnews\t{monday:%Y-%m-%d}\t{general_label(monday)}\tall")
 
 
-def _due_slot(club: Team, settings, now: datetime, latest: LatestEdition | None) -> Slot | None:
-    """The slot due now for one team; an unknown calendar (ESPN down) means nothing is due."""
+def _plan_for(
+    club: Team, settings, now: datetime, latest: LatestEdition | None
+) -> list[Slot] | None:
+    """The team's planned slots; an unknown calendar (ESPN down) is None: nothing is due."""
     try:
         fixtures = _fixtures(club, settings, now)
     except StatsUnavailable as e:
@@ -252,7 +270,12 @@ def _due_slot(club: Team, settings, now: datetime, latest: LatestEdition | None)
     sent_at, sent_label = (
         (latest.published_at, label_of(latest.subject)) if latest else (None, None)
     )
-    return due_slot(plan(fixtures, now, sent_at, sent_label), now)
+    return plan(fixtures, now, sent_at, sent_label)
+
+
+def _due_slot(club: Team, settings, now: datetime, latest: LatestEdition | None) -> Slot | None:
+    slots = _plan_for(club, settings, now, latest)
+    return due_slot(slots, now) if slots is not None else None
 
 
 @app.command()
@@ -274,16 +297,59 @@ def run(
             help="Build and publish on the page (portal, welcome e-mails) without sending",
         ),
     ] = False,
+    stage: Annotated[
+        Literal["all", "build", "send", "auto"],
+        typer.Option(
+            help="build: keep a draft for review; send: send the draft; all: both now;"
+            " auto: the stage the match calendar has due now"
+        ),
+    ] = "all",
 ) -> None:
     """Build, render, save to out/ and send the newsletter (respects DRY_RUN)."""
     _setup_logging()
     club = _team(team)
-    if publish_only and not get_settings().SUBSCRIBERS_API_TOKEN:
-        typer.echo(
-            "--publish-only precisa de SUBSCRIBERS_API_TOKEN para publicar no portal.", err=True
-        )
+    if (publish_only or stage != "all") and not get_settings().SUBSCRIBERS_API_TOKEN:
+        option = "--publish-only" if publish_only else f"--stage {stage}"
+        typer.echo(f"{option} precisa de SUBSCRIBERS_API_TOKEN para falar com o portal.", err=True)
         raise typer.Exit(code=2)
-    resolved = _resolve(club, edition, date)
+    if stage == "auto":
+        resolved, stage = _resolve_stage(club)
+    else:
+        resolved = _resolve(club, edition, date)
+    _run_stage(
+        stage, club, resolved, skip_if_sent=skip_if_sent, note=note, publish_only=publish_only
+    )
+
+
+def _resolve_stage(club: Team) -> tuple[Edition, Stage]:
+    """The edition and stage due now (none: exit 0)."""
+    settings, now = get_settings(), _now()
+    try:
+        fixtures = _fixtures(club, settings, now)
+    except StatsUnavailable as e:
+        typer.echo(f"Agenda da ESPN indisponível: {e}")
+        raise typer.Exit(code=0) from e
+    latest = _latest(settings, club)
+    sent_at, sent_label = (
+        (latest.published_at, label_of(latest.subject)) if latest else (None, None)
+    )
+    due = due_stage(plan(fixtures, now, sent_at, sent_label), now)
+    if due is None:
+        typer.echo("Nenhuma edição agendada agora.")
+        raise typer.Exit(code=0)
+    slot, stage = due
+    return edition_from_slot(slot), stage
+
+
+def _run_stage(
+    stage: str,
+    club: Team,
+    resolved: Edition,
+    *,
+    skip_if_sent: bool,
+    note: str | None,
+    publish_only: bool,
+) -> None:
     settings = get_settings()
     report = RunReport(edition=f"{club.newsletter} — {resolved.label}", outcome="interrompida")
     if skip_if_sent and _already_sent(settings, club, resolved.label):
@@ -291,97 +357,83 @@ def run(
         typer.echo(f"{resolved.label}: já enviada, nada a fazer.")
         _publish_report(report)
         return
-    try:
-        llm = pipeline.get_llm_client(settings)
-    except LLMError:
-        llm = None  # build_newsletter logs the failure and keeps the stats sections
-
+    llm = None
     with ProblemCollector() as problems:
         try:
+            draft = None
+            if stage in ("build", "send"):
+                try:
+                    draft = fetch_draft(settings, club.slug, resolved)
+                except (httpx.HTTPError, ValueError) as e:
+                    report.outcome = (
+                        f"não {'montada' if stage == 'build' else 'enviada'}: portal fora do ar"
+                    )
+                    typer.echo(f"{resolved.label}: o portal não respondeu ({e}).")
+                    raise typer.Exit(code=2) from e
+            if stage == "build" and draft is not None:
+                report.outcome = "rascunho já montado"
+                typer.echo(f"{resolved.label}: rascunho já montado, nada a fazer.")
+                return
+            if draft is not None and draft.sent_at is not None:
+                report.outcome = "já enviada"
+                typer.echo(f"{resolved.label}: já enviada, nada a fazer.")
+                return
+            if draft is not None and draft.held:
+                report.outcome = "segurada na revisão"
+                typer.echo(f"{resolved.label}: segurada na revisão, não enviada.")
+                return
+            try:
+                llm = pipeline.get_llm_client(settings)
+            except LLMError:
+                llm = None  # build_newsletter logs the failure and keeps the stats sections
             # Resolved before building: a team nobody follows costs no collection, no Gemini.
             resolved_recipients = None if publish_only else resolve_recipients(settings, club.slug)
             if resolved_recipients and not resolved_recipients.recipients and not settings.DRY_RUN:
                 report.outcome = "nada a enviar: sem inscritos"
                 typer.echo(f"{resolved.label}: nada a enviar, sem inscritos na {club.newsletter}.")
                 return
-            newsletter = pipeline.build_newsletter(
-                resolved,
-                club,
-                settings,
-                llm=llm,
-                report=report,
-                published_topics=_published_topics(settings, club, resolved),
-            )
+            if draft is not None:
+                newsletter = pipeline.drop_topics(draft.newsletter, draft.removed_topics, llm)
+                if draft.removed_topics:
+                    typer.echo(f"Revisão: {len(draft.removed_topics)} tópico(s) tirado(s).")
+            else:
+                newsletter = pipeline.build_newsletter(
+                    resolved,
+                    club,
+                    settings,
+                    llm=llm,
+                    report=report,
+                    published_topics=_published_topics(settings, club, resolved),
+                )
+                if stage == "send":
+                    typer.echo(f"{resolved.label}: sem revisão (rascunho ausente), montada agora.")
             _fill_report(report, newsletter)
             if resolved.kind == "post" and newsletter.last_match is None:
                 report.outcome = "não enviada: partida não encerrada"
                 typer.echo(f"{resolved.label}: partida não encerrada, nada a enviar.")
                 return
+            if draft is not None and draft.removed_topics and pipeline.is_empty(newsletter):
+                # The owner's choice, not a failure: marked done so the backup won't retry it.
+                report.outcome = "não enviada: todos os tópicos tirados na revisão"
+                typer.echo(f"{resolved.label}: todos os tópicos tirados na revisão, não enviada.")
+                if not settings.DRY_RUN:
+                    mark_draft_sent(settings, club.slug, resolved)
+                return
             if pipeline.is_empty(newsletter):
                 report.outcome = "nada para enviar (sem notícias e sem partida)"
                 typer.echo(f"Nada para enviar em {resolved.label}: sem notícias e sem partida.")
                 raise typer.Exit(code=1)
-
-            # The page link only shows up once subscriptions are live (API token configured).
-            subscribe = settings.PUBLIC_URL.rstrip("/") if settings.SUBSCRIBERS_API_TOKEN else None
-            _bolao(newsletter, settings, club, write=not settings.DRY_RUN)
-
-            def render_edition(note: str | None) -> tuple[str, str]:
-                return render(
-                    newsletter,
-                    unsubscribe_url=UNSUBSCRIBE_PLACEHOLDER,
-                    subscribe_url=subscribe,
-                    logo_url=_brand_logo(settings, club),
-                    note=note,
-                    page_url=subscribe,
-                )
-
-            html, text = render_edition(note)
-            mailto = pipeline.unsubscribe_url(settings)
-            html_path = Path("out") / f"{club.slug}-{resolved.end:%Y-%m-%d}.html"
-            html_path.parent.mkdir(parents=True, exist_ok=True)
-            html_path.write_text(html.replace(UNSUBSCRIBE_PLACEHOLDER, mailto), encoding="utf-8")
-            html_path.with_suffix(".txt").write_text(
-                text.replace(UNSUBSCRIBE_PLACEHOLDER, mailto), encoding="utf-8"
-            )
-
-            plain_subject = build_subject(newsletter)
-            if publish_only:
-                # First edition of a new team (or a refresh): portal and welcome e-mails only.
-                plain_html, plain_text = render_edition(None) if note else (html, text)
-                publish_latest_edition(settings, club.slug, plain_subject, plain_html, plain_text)
-                report.outcome = "publicada no portal (sem envio)"
-                typer.echo(
-                    f"{resolved.label}: publicada no portal, sem envio; cópia em {html_path}"
-                )
+            if stage == "build":
+                _keep_draft(settings, club, newsletter, report)
                 return
-            recipients = resolved_recipients.recipients
-            report.recipients = len(recipients)
-            report.subscribers = resolved_recipients.from_api
-            # The page keeps the plain edition: new subscribers get no stale announcement.
-            subject = f"Novidades! {plain_subject}" if note else plain_subject
-            try:
-                ids = ResendSender.from_settings(settings, club).send(
-                    subject, html, text, recipients
-                )
-            except SendError as e:
-                report.outcome = f"falha no envio: {e}"
-                typer.echo(f"Falha no envio: {e}")
-                raise typer.Exit(code=2) from e
-            if ids and settings.SUBSCRIBERS_API_TOKEN:
+            ids = _deliver(
+                newsletter, club, settings, report, resolved_recipients, note, publish_only
+            )
+            if draft is not None and ids:
                 try:
-                    plain_html, plain_text = render_edition(None) if note else (html, text)
-                    publish_latest_edition(
-                        settings, club.slug, plain_subject, plain_html, plain_text
-                    )
+                    mark_draft_sent(settings, club.slug, resolved)
                 except httpx.HTTPError as e:
-                    logger.warning(
-                        "Could not publish the latest edition for new subscribers: %s", e
-                    )
-            noun = "destinatário" if len(ids) == 1 else "destinatários"
-            status = f"enviada para {len(ids)} {noun}" if ids else "não enviada (DRY_RUN)"
-            report.outcome = status
-            typer.echo(f"{resolved.label}: {status}; cópia em {html_path}")
+                    logger.warning("Could not mark the draft as sent: %s", e)
         finally:
             usage = getattr(llm, "usage", None)
             if usage is not None:
@@ -390,6 +442,109 @@ def run(
                 report.output_tokens = usage.output_tokens
             report.problems = problems.messages
             _publish_report(report)
+
+
+def _keep_draft(settings, club: Team, newsletter: Newsletter, report: RunReport) -> None:
+    """Keep the built edition on the page for review; a dry run only writes the local preview."""
+    _render_preview(settings, club, newsletter)
+    if settings.DRY_RUN:
+        report.outcome = "rascunho não gravado (DRY_RUN)"
+        typer.echo(f"{newsletter.edition.label}: rascunho montado, não gravado (DRY_RUN).")
+        return
+    try:
+        saved = save_draft(settings, club.slug, newsletter, _now())
+    except httpx.HTTPError as e:
+        report.outcome = "rascunho não gravado: portal fora do ar"
+        typer.echo(f"{newsletter.edition.label}: rascunho não gravado ({e}).")
+        raise typer.Exit(code=2) from e
+    send_at = newsletter.edition.end.astimezone(TZ)
+    status = "rascunho montado" if saved else "rascunho já montado"
+    report.outcome = f"{status}, sai às {send_at:%H:%M}"
+    typer.echo(f"{newsletter.edition.label}: {status}, sai às {send_at:%d/%m %H:%M}.")
+
+
+def _render_preview(settings, club: Team, newsletter: Newsletter) -> Path:
+    subscribe = settings.PUBLIC_URL.rstrip("/") if settings.SUBSCRIBERS_API_TOKEN else None
+    html, text = render(
+        newsletter,
+        unsubscribe_url=UNSUBSCRIBE_PLACEHOLDER,
+        subscribe_url=subscribe,
+        logo_url=_brand_logo(settings, club),
+        note=None,
+        page_url=subscribe,
+    )
+    return _save_copy(settings, club, newsletter, html, text)
+
+
+def _save_copy(settings, club: Team, newsletter: Newsletter, html: str, text: str) -> Path:
+    mailto = pipeline.unsubscribe_url(settings)
+    html_path = Path("out") / f"{club.slug}-{newsletter.edition.end:%Y-%m-%d}.html"
+    html_path.parent.mkdir(parents=True, exist_ok=True)
+    html_path.write_text(html.replace(UNSUBSCRIBE_PLACEHOLDER, mailto), encoding="utf-8")
+    html_path.with_suffix(".txt").write_text(
+        text.replace(UNSUBSCRIBE_PLACEHOLDER, mailto), encoding="utf-8"
+    )
+    return html_path
+
+
+def _deliver(
+    newsletter: Newsletter,
+    club: Team,
+    settings,
+    report: RunReport,
+    resolved_recipients,
+    note: str | None,
+    publish_only: bool,
+) -> list[str]:
+    """Bolão, render, send and publish: what a sent edition does. The ids of the e-mails sent."""
+    resolved = newsletter.edition
+    # The page link only shows up once subscriptions are live (API token configured).
+    subscribe = settings.PUBLIC_URL.rstrip("/") if settings.SUBSCRIBERS_API_TOKEN else None
+    _bolao(newsletter, settings, club, write=not settings.DRY_RUN)
+
+    def render_edition(note: str | None) -> tuple[str, str]:
+        return render(
+            newsletter,
+            unsubscribe_url=UNSUBSCRIBE_PLACEHOLDER,
+            subscribe_url=subscribe,
+            logo_url=_brand_logo(settings, club),
+            note=note,
+            page_url=subscribe,
+        )
+
+    html, text = render_edition(note)
+    html_path = _save_copy(settings, club, newsletter, html, text)
+
+    plain_subject = build_subject(newsletter)
+    if publish_only:
+        # First edition of a new team (or a refresh): portal and welcome e-mails only.
+        plain_html, plain_text = render_edition(None) if note else (html, text)
+        publish_latest_edition(settings, club.slug, plain_subject, plain_html, plain_text)
+        report.outcome = "publicada no portal (sem envio)"
+        typer.echo(f"{resolved.label}: publicada no portal, sem envio; cópia em {html_path}")
+        return []
+    recipients = resolved_recipients.recipients
+    report.recipients = len(recipients)
+    report.subscribers = resolved_recipients.from_api
+    # The page keeps the plain edition: new subscribers get no stale announcement.
+    subject = f"Novidades! {plain_subject}" if note else plain_subject
+    try:
+        ids = ResendSender.from_settings(settings, club).send(subject, html, text, recipients)
+    except SendError as e:
+        report.outcome = f"falha no envio: {e}"
+        typer.echo(f"Falha no envio: {e}")
+        raise typer.Exit(code=2) from e
+    if ids and settings.SUBSCRIBERS_API_TOKEN:
+        try:
+            plain_html, plain_text = render_edition(None) if note else (html, text)
+            publish_latest_edition(settings, club.slug, plain_subject, plain_html, plain_text)
+        except httpx.HTTPError as e:
+            logger.warning("Could not publish the latest edition for new subscribers: %s", e)
+    noun = "destinatário" if len(ids) == 1 else "destinatários"
+    status = f"enviada para {len(ids)} {noun}" if ids else "não enviada (DRY_RUN)"
+    report.outcome = status
+    typer.echo(f"{resolved.label}: {status}; cópia em {html_path}")
+    return ids
 
 
 @app.command("import-legacy")
