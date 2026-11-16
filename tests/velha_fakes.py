@@ -1,6 +1,7 @@
 """Small jogo da velha bases built in the tests (no base.json)."""
 
-from geral.games.velha.base import Base, Player
+from geral.games.velha.base import Base, Player, category
+from geral.games.velha.board import Board
 
 CLUBS = {"Q5014111": "Vasco", "Q221695": "Grêmio", "Q17479": "Flamengo"}
 COUNTRIES = {"Q77": "Uruguai", "Q414": "Argentina"}
@@ -59,3 +60,28 @@ def synthetic(size: int = 300, seed: int = 7) -> Base:
         for n in range(size)
     ]
     return base(*players, clubs=MANY_CLUBS)
+
+
+def crossed() -> tuple[Base, Board]:
+    """Rows Flamengo, Grêmio, Vasco × columns Seleção, Copa, Atacante; four players per cell
+    (`Q{casa}{k}`, fama 10·k), each fitting only its own cell."""
+    rows, cols = sorted(CLUBS), ("selecao", "copa", "atacante")
+    players = [
+        player(
+            f"Q{casa}{k}",
+            f"Jogador {casa}{k}",
+            clubes=(rows[casa // 3],),
+            selecao=cols[casa % 3] == "selecao",
+            copa=cols[casa % 3] == "copa",
+            posicoes=("atacante",) if cols[casa % 3] == "atacante" else (),
+            fama=10 * k,
+        )
+        for casa in range(9)
+        for k in range(4)
+    ]
+    b = base(*players)
+    board = Board(
+        tuple(category(b, f"clube:{q}") for q in rows),
+        tuple(category(b, c) for c in ("selecao:BRA", "copa:FIFA", "posicao:atacante")),
+    )
+    return b, board
