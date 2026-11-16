@@ -144,6 +144,18 @@ class DraftIn(BaseModel):
     send_at: AwareDatetime
 
 
+class StoryIn(BaseModel):
+    kind: Literal["jogo", "idolo", "clube"]
+    title: str
+    body: str
+    summary: str
+    fact_date: str = Field(default="", pattern=r"^(\d{4}(-\d{2}-\d{2})?)?$")
+    source_key: str
+    source_url: str
+    source_title: str
+    rejected_reason: str | None = None  # refused by the verifier: kept so the source is skipped
+
+
 class BolaoMatchIn(BaseModel):
     opponent: str
     home: bool  # our team plays at home
@@ -882,6 +894,34 @@ def create_app(
         if team not in catalog or not store.mark_draft_sent(team, kind, day.isoformat(), now()):
             return JSONResponse({"detail": "no draft"}, status_code=404)
         return Response(status_code=204)
+
+    # --- stories for the special sections (written by the nightly job) -----------------------
+
+    @app.post("/api/teams/{team}/stories", status_code=204)
+    def add_story(request: Request, team: str, story: StoryIn):
+        if not authorized(request):
+            return unauthorized()
+        if team not in catalog:
+            return unknown_team()
+        if not store.add_story(team, story.model_dump(), now()):
+            return JSONResponse({"detail": "this source was already used"}, status_code=409)
+        return Response(status_code=204)
+
+    @app.get("/api/teams/{team}/stories/count")
+    def count_stories(request: Request, team: str):
+        if not authorized(request):
+            return unauthorized()
+        if team not in catalog:
+            return unknown_team()
+        return {"unused": store.unused_stories(team)}
+
+    @app.get("/api/teams/{team}/stories/sources")
+    def story_sources(request: Request, team: str):
+        if not authorized(request):
+            return unauthorized()
+        if team not in catalog:
+            return unknown_team()
+        return store.story_sources(team)
 
     # --- review: the owner holds an edition or drops topics before it goes out ----------------
 

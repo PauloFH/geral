@@ -785,6 +785,44 @@ def _publish_report(report: RunReport) -> None:
             summary.write(markdown)
 
 
+@app.command()
+def acervo(
+    team: Annotated[str | None, typer.Option("--team", help="One team (slug)")] = None,
+    all_teams: Annotated[
+        bool, typer.Option("--all", help="Every team with special sections")
+    ] = False,
+) -> None:
+    """Top up the stories collection of the special sections (the nightly job; respects
+    DRY_RUN: then it writes nothing on the page and prints the stories it would keep)."""
+    from geral.games import mediawiki
+    from geral.specials import job
+
+    _setup_logging()
+    if (team is None) == (not all_teams):
+        typer.echo("Use --team <slug> ou --all.", err=True)
+        raise typer.Exit(code=2)
+    clubs = [_team(team)] if team else [t for t in load_teams().values() if t.specials]
+    settings = get_settings()
+    try:
+        llm = pipeline.get_llm_client(settings)
+    except LLMError as e:
+        typer.echo(f"Gemini indisponível: {e}")
+        raise typer.Exit(code=1) from e
+    with httpx.Client(headers=mediawiki.HEADERS, timeout=30) as wiki:
+        for club in clubs:
+            report = job.top_up(club, settings, llm, wiki, _now().date())
+            line = (
+                report.skipped_reason or f"{report.accepted} aceitas, {report.rejected} recusadas"
+            )
+            typer.echo(f"{club.slug}: {line}")
+            for problem in report.problems:
+                typer.echo(f"  problema: {problem}")
+            if settings.DRY_RUN:
+                for story in report.stories:
+                    typer.echo(f"\n  [{story.kind}] {story.title} ({story.fact_date or 's/ data'})")
+                    typer.echo(f"  {story.body}\n  Fonte: {story.source_title}")
+
+
 @app.command("edicao-geral")
 def edicao_geral(
     date: DateOption = None,
