@@ -31,7 +31,9 @@ seções especiais (projeto B), em que a revisão é a última rede de seguranç
   `build`: tudo até o render; grava o rascunho no site (`Newsletter` em JSON) e não envia. Roda
   uma vez por slot: já existe rascunho, não faz nada (reserva e janela de 3 h não chamam o Gemini de
   novo nem apagam o que o dono tirou). *(decisão do construtor)*
-  `send`: lê o rascunho, descarta os tópicos tirados, monta (assunto incluído) e envia como hoje.
+  `send`: lê o rascunho, descarta os tópicos tirados, monta e envia como hoje. Com tópico tirado,
+  a manchete (assunto) e a abertura são reescritas sobre os que ficaram (1 chamada ao Gemini; sem
+  ele, a manchete é o primeiro tópico que ficou).
   A gravação do bolão (`_bolao`) e o `--note` passam para o `send`: só vale o que saiu de fato.
   *(decisão do construtor)*
   Sem rascunho (a montagem falhou): `send` faz `all`, a edição sai sem revisão e o relatório diz
@@ -58,17 +60,17 @@ seções especiais (projeto B), em que a revisão é a última rede de seguranç
 
 ## Critérios de aceite (como testes)
 
-- [ ] `test_news_and_post_build_at_8_send_at_13`, `test_pre_game_builds_6h_before_sends_4h_before`,
+- [x] `test_news_and_post_build_at_8_send_at_13`, `test_pre_game_builds_6h_before_sends_4h_before`,
   `test_early_kickoff_pre_game_builds_18h_sends_20h_day_before`
-- [ ] `test_due_all_prints_build_then_send_for_the_same_slot`
-- [ ] `test_run_build_saves_draft_and_sends_nothing`
-- [ ] `test_run_send_drops_removed_topics_and_subject_follows_first_kept_topic`
-- [ ] `test_run_send_without_draft_builds_and_sends`; `test_run_send_held_draft_sends_nothing`
-- [ ] `test_send_twice_sends_once` (o rascunho marcado como enviado e o `--skip-if-sent` atual)
+- [x] `test_due_all_prints_build_then_send_for_the_same_slot`
+- [x] `test_run_build_saves_draft_and_sends_nothing`
+- [x] `test_run_send_drops_removed_topics_and_rewrites_the_opening`
+- [x] `test_run_send_without_draft_builds_and_sends`; `test_run_send_held_draft_sends_nothing`
+- [x] `test_send_twice_sends_once` (o rascunho marcado como enviado e o `--skip-if-sent` atual)
 - [ ] `test_review_page_rejects_token_of_other_purpose` e `test_review_page_rejects_expired_token`
 - [ ] `test_remove_topic_after_sent_is_409`
 - [ ] `test_released_draft_after_send_at_is_due_for_send` e `test_next_window_starts_at_last_real_send`
-- [ ] `test_build_twice_keeps_first_draft_and_removed_topics`
+- [x] `test_run_build_twice_keeps_first_draft`
 
 ## Verificação ponta a ponta
 
