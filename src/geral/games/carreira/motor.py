@@ -104,6 +104,22 @@ def simular(dados: Dados, edicao: str, entrada: Entrada) -> Carreira:
     return _Simulacao(dados, entrada, notas, inicio).rodar()
 
 
+def artigos(campo: str, clube: Clube | None) -> dict[str, str]:
+    """`{campo}` plus its articled forms for the texts: {o_clube}, {do_clube}, {no_clube}…"""
+    nome = clube.nome if clube else ""
+    f = clube is not None and clube.genero == "f"
+    formas = {
+        "o": "a" if f else "o",
+        "O": "A" if f else "O",
+        "do": "da" if f else "do",
+        "no": "na" if f else "no",
+        "pelo": "pela" if f else "pelo",
+        "ao": "à" if f else "ao",
+        "para_o": "para a" if f else "para o",
+    }
+    return {campo: nome} | {f"{k}_{campo}": f"{v} {nome}" for k, v in formas.items()}
+
+
 def _fase(idade: int) -> str:
     return "inicio" if idade < 21 else "auge" if idade <= 30 else "fim"
 
@@ -291,10 +307,9 @@ class _Simulacao:
             if e.efeito.titulo:
                 titulos.append(e.efeito.titulo)
         principal = (depois or antes)[0] if eventos else None
-        campos = {
+        campos = artigos("clube", self.clube) | {
             "nome": self.entrada.craque.nome,
             "camisa": self.entrada.craque.camisa,
-            "clube": self.clube.nome,
             "liga": liga.pais,
             "campeonato": liga.campeonato,
             "gols": gols,
@@ -405,12 +420,8 @@ class _Simulacao:
 
     def _escolha(self, decisao: Decisao, destinos: dict[str, Clube | None]) -> Escolha:
         alvo = next(iter(destinos.values()), None)
-        campos = {
-            "nome": self.entrada.craque.nome,
-            "clube": self.clube.nome,
-            "idade": self.idade,
-            "destino": alvo.nome if alvo else "",
-        }
+        campos = artigos("clube", self.clube) | artigos("destino", alvo)
+        campos |= {"nome": self.entrada.craque.nome, "idade": self.idade}
         return Escolha(
             id=decisao.id,
             pergunta=decisao.pergunta.format_map(campos),

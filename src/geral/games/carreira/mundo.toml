@@ -16,7 +16,7 @@ id = "bra-b"
 pais = "Brasil"
 divisao = 2
 forca = 55
-campeonato = "Série B"
+campeonato = "Campeonato da Série B"
 copa = "Copa do Brasil"
 
 [[liga]]
@@ -24,7 +24,7 @@ id = "bra-c"
 pais = "Brasil"
 divisao = 3
 forca = 42
-campeonato = "Série C"
+campeonato = "Campeonato da Série C"
 copa = "Copa do Brasil"
 
 [[liga]]
@@ -50,7 +50,7 @@ id = "esp"
 pais = "Espanha"
 divisao = 1
 forca = 90
-campeonato = "La Liga"
+campeonato = "Campeonato Espanhol"
 copa = "Copa do Rei"
 continental = "Champions League"
 
@@ -59,7 +59,7 @@ id = "ing"
 pais = "Inglaterra"
 divisao = 1
 forca = 95
-campeonato = "Premier League"
+campeonato = "Campeonato Inglês"
 copa = "Copa da Inglaterra"
 continental = "Champions League"
 
@@ -77,7 +77,7 @@ id = "ale"
 pais = "Alemanha"
 divisao = 1
 forca = 85
-campeonato = "Bundesliga"
+campeonato = "Campeonato Alemão"
 copa = "Copa da Alemanha"
 continental = "Champions League"
 
@@ -121,7 +121,7 @@ id = "jap"
 pais = "Japão"
 divisao = 1
 forca = 56
-campeonato = "J-League"
+campeonato = "Campeonato Japonês"
 copa = "Copa do Imperador"
 continental = "Champions da Ásia"
 
@@ -130,7 +130,7 @@ id = "eua"
 pais = "Estados Unidos"
 divisao = 1
 forca = 60
-campeonato = "MLS"
+campeonato = "Campeonato Americano"
 copa = "US Open Cup"
 
 [[liga]]
@@ -267,6 +267,7 @@ wikidata = "Q478317"
 [[clube]]
 id = "chapecoense"
 nome = "Chapecoense"
+genero = "f"
 liga = "bra-a"
 prestigio = 48
 wikidata = "Q2536715"
@@ -386,6 +387,7 @@ prestigio = 32
 [[clube]]
 id = "ponte-preta"
 nome = "Ponte Preta"
+genero = "f"
 liga = "bra-b"
 prestigio = 40
 
@@ -437,6 +439,7 @@ wikidata = "Q508440"
 [[clube]]
 id = "portuguesa"
 nome = "Portuguesa"
+genero = "f"
 liga = "bra-c"
 prestigio = 30
 wikidata = "Q204675"
@@ -468,6 +471,7 @@ prestigio = 22
 [[clube]]
 id = "ferroviaria"
 nome = "Ferroviária"
+genero = "f"
 liga = "bra-c"
 prestigio = 24
 
@@ -696,12 +700,14 @@ prestigio = 66
 [[clube]]
 id = "juventus"
 nome = "Juventus"
+genero = "f"
 liga = "ita"
 prestigio = 92
 
 [[clube]]
 id = "inter-de-milao"
 nome = "Inter de Milão"
+genero = "f"
 liga = "ita"
 prestigio = 92
 
@@ -720,24 +726,28 @@ prestigio = 84
 [[clube]]
 id = "roma"
 nome = "Roma"
+genero = "f"
 liga = "ita"
 prestigio = 80
 
 [[clube]]
 id = "lazio"
 nome = "Lazio"
+genero = "f"
 liga = "ita"
 prestigio = 74
 
 [[clube]]
 id = "atalanta"
 nome = "Atalanta"
+genero = "f"
 liga = "ita"
 prestigio = 74
 
 [[clube]]
 id = "fiorentina"
 nome = "Fiorentina"
+genero = "f"
 liga = "ita"
 prestigio = 68
 

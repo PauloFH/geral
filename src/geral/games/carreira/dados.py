@@ -118,6 +118,7 @@ class Clube:
     prestigio: int  # 1-100
     time: str | None = None  # slug of the team edition that starts here
     wikidata: str | None = None  # same id as the jogo da velha base, when there is one
+    genero: str = "m"  # "f": a Lazio, da Ponte Preta (the headlines' articles)
 
 
 @dataclass(frozen=True)

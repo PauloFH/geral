@@ -103,3 +103,16 @@ def test_parecido_prefere_quem_passou_pelos_mesmos_clubes() -> None:
     ]
 
     assert parecido(carregar(), b, temporadas, "atacante") == "Do Vasco"
+
+
+def test_manchetes_concordam_com_clube_e_campeonato_femininos() -> None:
+    dados = carregar()
+    femininos = [c.nome for c in dados.clubes.values() if c.genero == "f"]
+    assert {"Ponte Preta", "Lazio", "Juventus"} <= set(femininos)
+    erradas = [
+        f"{artigo} {nome}" for nome in femininos for artigo in ("do", "no", "pelo", "o", "O")
+    ] + ["o Bundesliga", "do Bundesliga", "do Premier League", "do La Liga", "do MLS"]
+    for i in range(400):
+        carreira, _ = _ao_acaso(f"g{i}", regras.POSICOES[i % 5])
+        for t in carreira.temporadas:
+            assert not any(e in t.manchete for e in erradas), t.manchete

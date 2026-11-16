@@ -67,16 +67,16 @@ compartilhar. **Livre** (joga quantas vezes quiser, sorteio novo a cada vez). Re
 
 ## Critérios de aceite (como testes)
 
-- [ ] `test_same_input_gives_the_same_career`: mesma semente, draft e escolhas → carreira idêntica.
-- [ ] `test_careers_vary`: 500 sementes de carreira com o mesmo draft → ≥ 8 rótulos finais diferentes, ≥ 40
+- [x] `test_same_input_gives_the_same_career`: mesma semente, draft e escolhas → carreira idêntica.
+- [x] `test_careers_vary`: 500 sementes de carreira com o mesmo draft → ≥ 8 rótulos finais diferentes, ≥ 40
   clubes distintos visitados e nenhuma sequência de manchetes repetida em mais de 2% das carreiras.
-- [ ] `test_better_draft_scores_higher_on_average`: draft forte supera draft fraco em média, mas não sempre.
-- [ ] `test_choices_change_the_story`: mesma semente, escolha "Europa" × "ficar" → clubes diferentes.
-- [ ] `test_team_edition_starts_in_its_youth_and_fills_draft_with_geral_legends`.
-- [ ] `test_steal_outside_offer_or_repeated_attribute_is_422`.
-- [ ] `test_career_code_reopens_the_exact_career` e `test_old_code_after_data_change_shows_the_card_summary`.
-- [ ] `test_hidden_team_has_no_career_edition`.
-- [ ] `test_every_event_and_choice_in_toml_is_reachable` (nenhum dado morto) e manchetes sem `{campo}` sobrando.
+- [x] `test_better_draft_scores_higher_on_average`: draft forte supera draft fraco em média, mas não sempre.
+- [x] `test_choices_change_the_story`: mesma semente, escolha "Europa" × "ficar" → clubes diferentes.
+- [x] `test_team_edition_starts_in_its_youth_and_fills_draft_with_geral_legends`.
+- [x] `test_steal_outside_offer_or_repeated_attribute_is_422`.
+- [x] `test_career_code_reopens_the_exact_career` e `test_old_code_after_data_change_shows_the_card_summary`.
+- [x] `test_hidden_team_has_no_career_edition`.
+- [x] `test_every_event_and_choice_in_toml_is_reachable` (nenhum dado morto) e manchetes sem `{campo}` sobrando.
 
 ## Verificação ponta a ponta
 
