@@ -73,8 +73,8 @@ revisão das edições (#50, #51) é a rede final. O dono não valida item a ite
 
 ## Critérios de aceite (como testes)
 
-- [ ] `test_verifier_rejects_a_year_not_in_the_source`, `test_verifier_accepts_names_and_dates_in_the_source`
-- [ ] `test_acervo_job_tops_up_to_10_and_skips_used_sources`
+- [x] `test_verifier_rejects_a_year_not_in_the_source`, `test_verifier_accepts_names_and_dates_in_the_source`
+- [x] `test_job_tops_up_to_10_and_skips_used_sources`
 - [ ] `test_build_picks_an_unused_story_and_marks_it_only_when_sent`
 - [ ] `test_on_this_day_lists_births_and_story_dates_of_that_day`
 - [ ] `test_offseason_adds_a_thursday_news_edition`
