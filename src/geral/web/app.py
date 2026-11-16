@@ -42,6 +42,8 @@ from geral.games.velha import diario as velha_diario
 from geral.games.velha import duelo as velha_duelo
 from geral.games.velha import judge as velha_judge
 from geral.general import GENERAL_EDITION, GENERAL_SLUG
+from geral.models import Newsletter
+from geral.render.renderer import render
 from geral.send.resend_sender import UNSUBSCRIBE_PLACEHOLDER, personalize
 from geral.teams import Team, load_teams
 from geral.web.bolao import TZ, BolaoStore
@@ -81,6 +83,8 @@ TOP_REQUESTS = 10
 REQUESTS_IN_EMAIL = 5
 PANEL_PURPOSE = "team-requests"
 PANEL_MAX_AGE = timedelta(days=30)
+REVIEW_PURPOSE = "review"  # the owner's review page (one link per draft e-mail)
+REVIEW_MAX_AGE = timedelta(days=7)
 SCORE_RE = re.compile(r"^(\d)-(\d)$")
 # Shown in every follower's e-mail: letters, digits, spaces, hyphens and apostrophes only (no
 # links, no line breaks).
@@ -846,6 +850,116 @@ def create_app(
         if team not in catalog or not store.mark_draft_sent(team, kind, day.isoformat(), now()):
             return JSONResponse({"detail": "no draft"}, status_code=404)
         return Response(status_code=204)
+
+    # --- review: the owner holds an edition or drops topics before it goes out ----------------
+
+    def review_owner(token: str) -> bool:
+        owner = read_token(secret, REVIEW_PURPOSE, token, now(), max_age=REVIEW_MAX_AGE)
+        return bool(settings.NOTIFY_EMAIL) and owner == settings.NOTIFY_EMAIL
+
+    def review_link() -> str:
+        token = make_token(secret, REVIEW_PURPOSE, settings.NOTIFY_EMAIL, now())
+        return f"{public_url}/revisao?{urlencode({'t': token})}"
+
+    def not_found(request: Request) -> HTMLResponse:
+        return message(request, "Página não encontrada", "Volte para a Geral.", status=404)
+
+    def private(response):
+        response.headers["Cache-Control"] = "no-store"
+        response.headers["Referrer-Policy"] = "no-referrer"  # the link carries the token
+        return response
+
+    def kept_newsletter(draft) -> Newsletter:
+        newsletter = Newsletter.model_validate_json(draft.newsletter_json)
+        removed = set(draft.removed_topics)
+        kept = [t for i, t in enumerate(newsletter.topics) if i not in removed]
+        return newsletter.model_copy(update={"topics": kept})
+
+    @app.get("/revisao", response_class=HTMLResponse)
+    def review_page(request: Request, t: str = ""):
+        if not review_owner(t):
+            return not_found(request)
+        drafts = []
+        for d in store.pending_drafts():
+            newsletter = Newsletter.model_validate_json(d.newsletter_json)
+            drafts.append(
+                {
+                    "id": d.id,
+                    "label": d.label,
+                    "newsletter": newsletter.team.newsletter,
+                    "held": d.held,
+                    "late": d.send_at <= now(),
+                    "send_at": d.send_at,
+                    "topics": [
+                        {"title": topic.title, "removed": i in d.removed_topics}
+                        for i, topic in enumerate(newsletter.topics)
+                    ],
+                }
+            )
+        return private(page(request, "revisao.html.j2", drafts=drafts, token=t, timezone=BRASILIA))
+
+    @app.get("/revisao/{draft_id}/previa", response_class=HTMLResponse)
+    def review_preview(request: Request, draft_id: int, t: str = ""):
+        draft = store.draft_by_id(draft_id) if review_owner(t) else None
+        if draft is None:
+            return not_found(request)
+        html, _ = render(
+            kept_newsletter(draft),
+            unsubscribe_url=UNSUBSCRIBE_PLACEHOLDER,
+            subscribe_url=public_url,
+            page_url=public_url,
+        )
+        html = personalize(html, None).replace(UNSUBSCRIBE_PLACEHOLDER, f"{public_url}/")
+        return private(HTMLResponse(html))
+
+    def review_action(request: Request, draft_id: int, token: str, change) -> Response:
+        draft = store.draft_by_id(draft_id) if review_owner(token) else None
+        if draft is None:
+            return not_found(request)
+        if draft.sent_at is not None:
+            return message(request, "Já saiu", "Essa edição já foi enviada.", status=409)
+        refused = change(draft)
+        if refused is not None:
+            return refused
+        return RedirectResponse(f"/revisao?{urlencode({'t': token})}", status_code=303)
+
+    @app.post("/revisao/{draft_id}/segurar")
+    def review_hold(request: Request, draft_id: int, t: Annotated[str, Form()] = ""):
+        def hold(draft):
+            store.set_held(draft.id, True, now())
+
+        return review_action(request, draft_id, t, hold)
+
+    @app.post("/revisao/{draft_id}/soltar")
+    def review_release(request: Request, draft_id: int, t: Annotated[str, Form()] = ""):
+        def release(draft):
+            latest = store.latest_edition(draft.team)
+            if latest is not None and latest.published_at > draft.send_at:
+                # A newer edition went out meanwhile: this one would arrive out of order.
+                text = "Já saiu uma edição mais nova dessa torcida; esta fica segurada."
+                return message(request, "Edição antiga", text, status=409)
+            store.set_held(draft.id, False, now())
+            return None
+
+        return review_action(request, draft_id, t, release)
+
+    def topic_action(request: Request, draft_id: int, n: int, t: str, removed: bool):
+        def change(draft):
+            topics = Newsletter.model_validate_json(draft.newsletter_json).topics
+            if not 0 <= n < len(topics):
+                return not_found(request)
+            store.set_topic_removed(draft.id, n, removed)
+            return None
+
+        return review_action(request, draft_id, t, change)
+
+    @app.post("/revisao/{draft_id}/topicos/{n}/tirar")
+    def review_remove(request: Request, draft_id: int, n: int, t: Annotated[str, Form()] = ""):
+        return topic_action(request, draft_id, n, t, True)
+
+    @app.post("/revisao/{draft_id}/topicos/{n}/voltar")
+    def review_restore(request: Request, draft_id: int, n: int, t: Annotated[str, Form()] = ""):
+        return topic_action(request, draft_id, n, t, False)
 
     # --- bolão ---------------------------------------------------------------------------------
 
