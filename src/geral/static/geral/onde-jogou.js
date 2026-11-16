@@ -80,9 +80,13 @@
   let country = ALL;
   let page = 0;
 
+  // Shown where the player is looking: in the search dialog while it is open, else on the page.
   const error = (text) => {
-    $("oj-error").textContent = text;
-    $("oj-error").hidden = !text;
+    for (const id of ["oj-error", "oj-dialog-error"]) {
+      const shown = (id === "oj-dialog-error") === dialog.open;
+      $(id).textContent = shown ? text : "";
+      $(id).hidden = !(shown && text);
+    }
   };
 
   const matches = () => {

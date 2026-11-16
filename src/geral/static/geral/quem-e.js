@@ -59,9 +59,13 @@
   let busy = false;
   let page = 0;
 
+  // Shown where the player is looking: in the search dialog while it is open, else on the page.
   const error = (text) => {
-    $("qe-error").textContent = text;
-    $("qe-error").hidden = !text;
+    for (const id of ["qe-error", "qe-dialog-error"]) {
+      const shown = (id === "qe-dialog-error") === dialog.open;
+      $(id).textContent = shown ? text : "";
+      $(id).hidden = !(shown && text);
+    }
   };
 
   const matches = () => {

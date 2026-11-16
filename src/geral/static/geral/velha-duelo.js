@@ -97,6 +97,7 @@
   const move = async (jogada) => {
     if (busy) return;
     busy = true;
+    draw(); // no new cell while this move is judged
     const who = state ? state.vez : "X";
     try {
       const next = [...jogadas, jogada];
@@ -113,7 +114,11 @@
           : `Não vale: ${state.nomes[jogada.jogador] || "esse jogador"} não serve nessa casa ou já foi usado.`;
       startClock();
     } catch {
-      status("Não deu para conferir agora. Tente de novo.");
+      const text = "Não deu para conferir agora. Tente de novo.";
+      if (dialog.open) status(text);
+      else $("jd-status").textContent = text;
+      // A timeout that could not be sent tries again in a few seconds, not on every tick.
+      if (jogada.estouro) deadline = Date.now() + 3000;
     } finally {
       busy = false;
       draw();
@@ -203,9 +208,11 @@
       board.colunas.forEach((label, i) => (heads.cols[i].textContent = label));
       state = await judge([]);
       $("jd-start").hidden = true;
+      $("jd-status").textContent = "";
       startClock();
     } catch {
       board = null;
+      heads.rows.concat(heads.cols).forEach((head) => (head.textContent = "?"));
       $("jd-status").textContent = "Não deu para sortear o tabuleiro. Tente de novo.";
     } finally {
       $("jd-go").disabled = false;
