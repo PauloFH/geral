@@ -4,6 +4,7 @@ An e-mail is confirmed once (pending -> active); each team it follows is a subsc
 until a confirmation link is clicked. Leaving the last team unsubscribes the e-mail.
 """
 
+import json
 import sqlite3
 from contextlib import closing
 from dataclasses import dataclass
@@ -44,6 +45,21 @@ CREATE TABLE IF NOT EXISTS announcements_sent (
     sent_at TEXT NOT NULL,
     PRIMARY KEY (name, email)
 );
+-- Each team edition is built first (the owner reviews it) and sent later: one per team, kind, day.
+CREATE TABLE IF NOT EXISTS drafts (
+    id INTEGER PRIMARY KEY,
+    team TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    day TEXT NOT NULL,
+    label TEXT NOT NULL,
+    newsletter_json TEXT NOT NULL,
+    build_at TEXT NOT NULL,
+    send_at TEXT NOT NULL,
+    held INTEGER NOT NULL DEFAULT 0,
+    removed_topics TEXT NOT NULL DEFAULT '[]',
+    sent_at TEXT,
+    UNIQUE (team, kind, day)
+);
 CREATE TABLE IF NOT EXISTS editions (
     team TEXT PRIMARY KEY,
     subject TEXT NOT NULL,
@@ -68,6 +84,23 @@ class Edition:
     html: str
     text: str
     published_at: datetime
+
+
+@dataclass(frozen=True)
+class Draft:
+    """A built edition waiting for its send time (the owner may hold it or drop topics)."""
+
+    id: int
+    team: str
+    kind: str
+    day: str
+    label: str
+    newsletter_json: str
+    build_at: datetime
+    send_at: datetime
+    held: bool
+    removed_topics: list[int]
+    sent_at: datetime | None
 
 
 @dataclass(frozen=True)
@@ -287,6 +320,66 @@ class SubscriberStore:
             team: Edition(subject, html, text, datetime.fromisoformat(published_at))
             for team, subject, html, text, published_at in rows
         }
+
+    def save_draft(
+        self,
+        team: str,
+        kind: str,
+        day: str,
+        label: str,
+        newsletter_json: str,
+        build_at: datetime,
+        send_at: datetime,
+    ) -> bool:
+        """Keep a new draft; False (and the first one kept) when that edition already has one."""
+        rows = self._run(
+            "INSERT INTO drafts (team, kind, day, label, newsletter_json, build_at, send_at)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT (team, kind, day) DO NOTHING RETURNING id",
+            team,
+            kind,
+            day,
+            label,
+            newsletter_json,
+            build_at.isoformat(),
+            send_at.isoformat(),
+        )
+        return bool(rows)
+
+    def draft(self, team: str, kind: str, day: str) -> Draft | None:
+        rows = self._run(
+            "SELECT id, team, kind, day, label, newsletter_json, build_at, send_at, held,"
+            " removed_topics, sent_at FROM drafts WHERE team = ? AND kind = ? AND day = ?",
+            team,
+            kind,
+            day,
+        )
+        if not rows:
+            return None
+        id_, team, kind, day, label, body, build_at, send_at, held, removed, sent_at = rows[0]
+        return Draft(
+            id_,
+            team,
+            kind,
+            day,
+            label,
+            body,
+            datetime.fromisoformat(build_at),
+            datetime.fromisoformat(send_at),
+            bool(held),
+            json.loads(removed),
+            datetime.fromisoformat(sent_at) if sent_at else None,
+        )
+
+    def mark_draft_sent(self, team: str, kind: str, day: str, now: datetime) -> bool:
+        """False when there is no such draft."""
+        rows = self._run(
+            "UPDATE drafts SET sent_at = ? WHERE team = ? AND kind = ? AND day = ? RETURNING id",
+            now.isoformat(),
+            team,
+            kind,
+            day,
+        )
+        return bool(rows)
 
     def confirmations_sent_since(self, since: datetime) -> int:
         rows = self._run(

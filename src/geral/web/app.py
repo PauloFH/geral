@@ -7,6 +7,7 @@ Run with `uvicorn geral.web.app:create_app --factory`. Behind Caddy, start uvico
 import asyncio
 import hashlib
 import hmac
+import json
 import logging
 import os
 import random
@@ -14,7 +15,7 @@ import re
 import unicodedata
 from collections import defaultdict, deque
 from collections.abc import Callable
-from datetime import UTC, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Annotated, Literal
 from urllib.parse import urlencode
@@ -130,6 +131,13 @@ class EditionIn(BaseModel):
     subject: str
     html: str
     text: str
+
+
+class DraftIn(BaseModel):
+    label: str
+    newsletter: dict  # a geral.models.Newsletter dumped as JSON
+    build_at: datetime
+    send_at: datetime
 
 
 class BolaoMatchIn(BaseModel):
@@ -791,6 +799,52 @@ def create_app(
                 {"detail": "html must contain the unsubscribe placeholder"}, status_code=422
             )
         store.set_latest_edition(team, edition.subject, edition.html, edition.text, now())
+        return Response(status_code=204)
+
+    # --- drafts: built first, sent later (the owner reviews them in between) -------------------
+
+    DraftKind = Literal["pre", "post", "news"]
+
+    @app.put("/api/teams/{team}/drafts/{kind}/{day}", status_code=204)
+    def save_draft(request: Request, team: str, kind: DraftKind, day: date, draft: DraftIn):
+        if not authorized(request):
+            return unauthorized()
+        if team not in catalog:
+            return unknown_team()
+        saved = store.save_draft(
+            team,
+            kind,
+            day.isoformat(),
+            draft.label,
+            json.dumps(draft.newsletter, ensure_ascii=False),
+            draft.build_at,
+            draft.send_at,
+        )
+        if not saved:
+            return JSONResponse({"detail": "this edition already has a draft"}, status_code=409)
+        return Response(status_code=204)
+
+    @app.get("/api/teams/{team}/drafts/{kind}/{day}")
+    def get_draft(request: Request, team: str, kind: DraftKind, day: date):
+        if not authorized(request):
+            return unauthorized()
+        draft = store.draft(team, kind, day.isoformat()) if team in catalog else None
+        if draft is None:
+            return JSONResponse({"detail": "no draft"}, status_code=404)
+        return {
+            "label": draft.label,
+            "newsletter": json.loads(draft.newsletter_json),
+            "held": draft.held,
+            "removed_topics": draft.removed_topics,
+            "sent_at": draft.sent_at.isoformat() if draft.sent_at else None,
+        }
+
+    @app.post("/api/teams/{team}/drafts/{kind}/{day}/sent", status_code=204)
+    def draft_sent(request: Request, team: str, kind: DraftKind, day: date):
+        if not authorized(request):
+            return unauthorized()
+        if team not in catalog or not store.mark_draft_sent(team, kind, day.isoformat(), now()):
+            return JSONResponse({"detail": "no draft"}, status_code=404)
         return Response(status_code=204)
 
     # --- bolão ---------------------------------------------------------------------------------
