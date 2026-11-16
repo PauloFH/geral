@@ -1,7 +1,7 @@
 # Revisão das edições antes do envio
 
 - **Data:** 2026-11-16
-- **Status:** proposta
+- **Status:** aprovada
 - **ADRs:** —
 
 ## Objetivo
@@ -24,7 +24,9 @@ seções especiais (projeto B), em que a revisão é a última rede de seguranç
   08:00 do dia)`, `send_at = build_at + 2 h`; jogo antes das 11:00: montado às 18:00 da véspera,
   sai às 20:00. Jogos em dias seguidos: regra atual (o pré-jogo só entra se sair depois do pós-jogo
   anterior), com os horários novos. *(decisão do construtor)*
-- **`geral due --all`**: `slug<TAB>stage<TAB>kind<TAB>AAAA-MM-DD<TAB>label`, `stage` ∈ `build|send`.
+- **`geral due --all`**: `slug<TAB>kind<TAB>AAAA-MM-DD<TAB>label<TAB>stage`, `stage` ∈
+  `build|send|all` (`all` para a edição geral). Coluna no fim: o gatilho antigo segue lendo as 4
+  primeiras; o `infra` sobe antes da Geral. `AAAA-MM-DD` é o dia do `send_at` nas duas etapas.
 - **`geral run --stage build|send|all`** (padrão `all` = comportamento atual, para disparo manual).
   `build`: tudo até o render; grava o rascunho no site (`Newsletter` em JSON) e não envia. Roda
   uma vez por slot: já existe rascunho, não faz nada (reserva e janela de 3 h não chamam o Gemini de
@@ -42,9 +44,10 @@ seções especiais (projeto B), em que a revisão é a última rede de seguranç
   vencido. **Repo `infra`** (papel `geral_trigger`, fora deste repo, entra no PR 1): repassa a coluna `stage`; estado `slug|label|stage`.
 - **Banco**: tabela `drafts(id, team, label, kind, newsletter_json, build_at, send_at, held,
   removed_topics, sent_at)`, única por `(team, label)`.
-- **API (token `GERAL_API_TOKEN`)**: `PUT /api/teams/{team}/drafts/{label}` → 204 (`DraftIn`);
-  `GET /api/teams/{team}/drafts/{label}` → `DraftOut` (newsletter, `held`, `removed_topics`) ou 404.
-  `POST /api/teams/{team}/drafts/{label}/sent` → 204.
+- **API (token `GERAL_API_TOKEN`)**: `PUT /api/teams/{team}/drafts/{kind}/{day}` → 204 (`DraftIn`;
+  409 se já existe); `GET …/drafts/{kind}/{day}` → `DraftOut` (newsletter, `held`,
+  `removed_topics`) ou 404; `POST …/drafts/{kind}/{day}/sent` → 204. (`day` = AAAA-MM-DD: o
+  rótulo tem barras e não cabe no caminho.)
 - **Revisão (link assinado, `REVIEW_PURPOSE`, vale 7 dias, enviado a `NOTIFY_EMAIL`)**:
   `GET /revisao?t=` lista os rascunhos não enviados com a prévia (mesmo render do e-mail);
   `POST /revisao/{id}/segurar`, `/soltar`, `/topicos/{n}/tirar`, `/topicos/{n}/voltar` → 303 para
@@ -79,5 +82,6 @@ gh workflow run newsletter.yml -R dpontejs/geral -f team=abc -f edition=news -f 
 ## Riscos e dúvidas abertas
 
 - O pós-jogo às 13:00 chega bem depois do jogo: aceito pelo dono; aviso no quadro "Novidades".
-- Corte em PRs: (1) agenda + etapas + rascunho na API + `infra`; (2) página de revisão e e-mail.
-  Sem o (2), o (1) já roda no horário novo, mas sem revisão.
+- Corte em PRs: (1) agenda + etapas + rascunho na API + `infra`; (2) página de revisão, e-mail,
+  soltar depois do horário e janela ancorada no último envio real. Sem o (2), o (1) já roda no
+  horário novo, mas sem revisão.
