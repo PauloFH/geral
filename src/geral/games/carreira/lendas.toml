@@ -1,0 +1,285 @@
+# Lendas do draft da Carreira: de cada uma o torcedor rouba um atributo (1 a 99).
+# RASCUNHO de Claude (2026-11-16): notas a revisar pelo dev antes de ir ao ar.
+# edicoes: "geral" e/ou o slug do time em cuja edição a lenda aparece primeiro.
+
+[[lenda]]
+nome = "Pelé"
+wikidata = "Q12897"
+edicoes = ["geral"]
+notas = { velocidade = 92, finalizacao = 97, passe = 90, drible = 95, marcacao = 40, fisico = 85, cabeceio = 88, lideranca = 90 }
+
+[[lenda]]
+nome = "Garrincha"
+wikidata = "Q180642"
+edicoes = ["geral"]
+notas = { velocidade = 94, finalizacao = 80, passe = 78, drible = 99, marcacao = 20, fisico = 70, cabeceio = 55, lideranca = 60 }
+
+[[lenda]]
+nome = "Ronaldo"
+wikidata = "Q529207"
+edicoes = ["geral"]
+notas = { velocidade = 97, finalizacao = 96, passe = 75, drible = 95, marcacao = 20, fisico = 82, cabeceio = 72, lideranca = 70 }
+
+[[lenda]]
+nome = "Ronaldinho"
+wikidata = "Q39444"
+edicoes = ["geral"]
+notas = { velocidade = 85, finalizacao = 88, passe = 93, drible = 99, marcacao = 25, fisico = 72, cabeceio = 60, lideranca = 75 }
+
+[[lenda]]
+nome = "Kaká"
+wikidata = "Q531814"
+edicoes = ["geral"]
+notas = { velocidade = 91, finalizacao = 86, passe = 87, drible = 89, marcacao = 35, fisico = 78, cabeceio = 65, lideranca = 72 }
+
+[[lenda]]
+nome = "Neymar"
+wikidata = "Q142794"
+edicoes = ["geral"]
+notas = { velocidade = 92, finalizacao = 87, passe = 86, drible = 97, marcacao = 25, fisico = 62, cabeceio = 55, lideranca = 70 }
+
+[[lenda]]
+nome = "Vinícius Júnior"
+wikidata = "Q28973866"
+edicoes = ["geral"]
+notas = { velocidade = 96, finalizacao = 82, passe = 79, drible = 94, marcacao = 25, fisico = 68, cabeceio = 50, lideranca = 62 }
+
+[[lenda]]
+nome = "Romário"
+wikidata = "Q178649"
+edicoes = ["geral", "vasco", "flamengo"]
+notas = { velocidade = 88, finalizacao = 98, passe = 74, drible = 92, marcacao = 15, fisico = 62, cabeceio = 62, lideranca = 72 }
+
+[[lenda]]
+nome = "Zico"
+wikidata = "Q47526"
+edicoes = ["geral", "flamengo"]
+notas = { velocidade = 80, finalizacao = 93, passe = 95, drible = 93, marcacao = 30, fisico = 64, cabeceio = 62, lideranca = 90 }
+
+[[lenda]]
+nome = "Roberto Carlos"
+wikidata = "Q429039"
+edicoes = ["geral"]
+notas = { velocidade = 93, finalizacao = 78, passe = 82, drible = 80, marcacao = 74, fisico = 85, cabeceio = 62, lideranca = 74 }
+
+[[lenda]]
+nome = "Cafu"
+wikidata = "Q178683"
+edicoes = ["geral", "palmeiras"]
+notas = { velocidade = 90, finalizacao = 62, passe = 80, drible = 78, marcacao = 78, fisico = 88, cabeceio = 58, lideranca = 90 }
+
+[[lenda]]
+nome = "Sócrates"
+wikidata = "Q102331"
+edicoes = ["geral"]
+notas = { velocidade = 62, finalizacao = 85, passe = 94, drible = 84, marcacao = 45, fisico = 70, cabeceio = 82, lideranca = 94 }
+
+[[lenda]]
+nome = "Tostão"
+wikidata = "Q311407"
+edicoes = ["geral"]
+notas = { velocidade = 78, finalizacao = 86, passe = 88, drible = 90, marcacao = 30, fisico = 62, cabeceio = 66, lideranca = 72 }
+
+[[lenda]]
+nome = "Jairzinho"
+wikidata = "Q210102"
+edicoes = ["geral"]
+notas = { velocidade = 92, finalizacao = 88, passe = 74, drible = 88, marcacao = 28, fisico = 80, cabeceio = 66, lideranca = 70 }
+
+[[lenda]]
+nome = "Gérson"
+wikidata = "Q280306"
+edicoes = ["geral"]
+notas = { velocidade = 64, finalizacao = 80, passe = 96, drible = 80, marcacao = 62, fisico = 66, cabeceio = 54, lideranca = 88 }
+
+[[lenda]]
+nome = "Carlos Alberto Torres"
+wikidata = "Q295262"
+edicoes = ["geral"]
+notas = { velocidade = 80, finalizacao = 64, passe = 78, drible = 72, marcacao = 86, fisico = 82, cabeceio = 74, lideranca = 97 }
+
+[[lenda]]
+nome = "Didi"
+wikidata = "Q312486"
+edicoes = ["geral"]
+notas = { velocidade = 68, finalizacao = 84, passe = 96, drible = 86, marcacao = 50, fisico = 68, cabeceio = 60, lideranca = 88 }
+
+[[lenda]]
+nome = "Careca"
+wikidata = "Q342489"
+edicoes = ["geral"]
+notas = { velocidade = 86, finalizacao = 90, passe = 72, drible = 84, marcacao = 22, fisico = 78, cabeceio = 78, lideranca = 70 }
+
+[[lenda]]
+nome = "Djalma Santos"
+wikidata = "Q299693"
+edicoes = ["geral"]
+notas = { velocidade = 82, finalizacao = 52, passe = 74, drible = 70, marcacao = 90, fisico = 86, cabeceio = 70, lideranca = 86 }
+
+[[lenda]]
+nome = "Thiago Silva"
+wikidata = "Q210453"
+edicoes = ["geral"]
+notas = { velocidade = 76, finalizacao = 40, passe = 78, drible = 62, marcacao = 94, fisico = 82, cabeceio = 86, lideranca = 95 }
+
+[[lenda]]
+nome = "Lúcio"
+wikidata = "Q156822"
+edicoes = ["geral"]
+notas = { velocidade = 84, finalizacao = 52, passe = 66, drible = 70, marcacao = 90, fisico = 92, cabeceio = 84, lideranca = 86 }
+
+[[lenda]]
+nome = "Rivaldo"
+wikidata = "Q483577"
+edicoes = ["geral", "palmeiras"]
+notas = { velocidade = 82, finalizacao = 92, passe = 86, drible = 90, marcacao = 35, fisico = 76, cabeceio = 72, lideranca = 72 }
+
+[[lenda]]
+nome = "Roberto Dinamite"
+wikidata = "Q550019"
+edicoes = ["geral", "vasco"]
+notas = { velocidade = 78, finalizacao = 96, passe = 74, drible = 80, marcacao = 20, fisico = 84, cabeceio = 88, lideranca = 88 }
+
+[[lenda]]
+nome = "Edmundo"
+wikidata = "Q445541"
+edicoes = ["geral", "vasco", "palmeiras"]
+notas = { velocidade = 86, finalizacao = 90, passe = 78, drible = 92, marcacao = 30, fisico = 72, cabeceio = 60, lideranca = 65 }
+
+[[lenda]]
+nome = "Juninho Pernambucano"
+wikidata = "Q203451"
+edicoes = ["geral", "vasco"]
+notas = { velocidade = 72, finalizacao = 90, passe = 94, drible = 82, marcacao = 58, fisico = 68, cabeceio = 52, lideranca = 90 }
+
+[[lenda]]
+nome = "Bebeto"
+wikidata = "Q204825"
+edicoes = ["geral", "vasco", "flamengo"]
+notas = { velocidade = 86, finalizacao = 91, passe = 80, drible = 88, marcacao = 20, fisico = 64, cabeceio = 62, lideranca = 70 }
+
+[[lenda]]
+nome = "Ademir de Menezes"
+wikidata = "Q332012"
+edicoes = ["geral", "vasco"]
+notas = { velocidade = 88, finalizacao = 94, passe = 72, drible = 86, marcacao = 20, fisico = 74, cabeceio = 78, lideranca = 75 }
+
+[[lenda]]
+nome = "Bellini"
+wikidata = "Q262826"
+edicoes = ["geral", "vasco"]
+notas = { velocidade = 66, finalizacao = 30, passe = 62, drible = 48, marcacao = 88, fisico = 88, cabeceio = 90, lideranca = 96 }
+
+[[lenda]]
+nome = "Vavá"
+wikidata = "Q311445"
+edicoes = ["geral", "vasco"]
+notas = { velocidade = 80, finalizacao = 90, passe = 64, drible = 74, marcacao = 30, fisico = 90, cabeceio = 86, lideranca = 80 }
+
+[[lenda]]
+nome = "Philippe Coutinho"
+wikidata = "Q311872"
+edicoes = ["geral", "vasco"]
+notas = { velocidade = 80, finalizacao = 86, passe = 90, drible = 90, marcacao = 40, fisico = 58, cabeceio = 48, lideranca = 66 }
+
+[[lenda]]
+nome = "Zizinho"
+wikidata = "Q207085"
+edicoes = ["geral", "flamengo"]
+notas = { velocidade = 76, finalizacao = 86, passe = 92, drible = 92, marcacao = 40, fisico = 70, cabeceio = 62, lideranca = 86 }
+
+[[lenda]]
+nome = "Leônidas da Silva"
+wikidata = "Q311739"
+edicoes = ["geral", "flamengo"]
+notas = { velocidade = 88, finalizacao = 94, passe = 70, drible = 90, marcacao = 20, fisico = 74, cabeceio = 80, lideranca = 76 }
+
+[[lenda]]
+nome = "Júnior"
+wikidata = "Q311424"
+edicoes = ["geral", "flamengo"]
+notas = { velocidade = 80, finalizacao = 72, passe = 90, drible = 84, marcacao = 78, fisico = 80, cabeceio = 56, lideranca = 90 }
+
+[[lenda]]
+nome = "Mozer"
+wikidata = "Q927507"
+edicoes = ["geral", "flamengo"]
+notas = { velocidade = 76, finalizacao = 40, passe = 66, drible = 58, marcacao = 90, fisico = 90, cabeceio = 86, lideranca = 84 }
+
+[[lenda]]
+nome = "Aldair"
+wikidata = "Q297721"
+edicoes = ["geral", "flamengo"]
+notas = { velocidade = 74, finalizacao = 38, passe = 70, drible = 60, marcacao = 90, fisico = 86, cabeceio = 84, lideranca = 82 }
+
+[[lenda]]
+nome = "Zinho"
+wikidata = "Q204555"
+edicoes = ["geral", "flamengo", "palmeiras"]
+notas = { velocidade = 76, finalizacao = 74, passe = 86, drible = 82, marcacao = 58, fisico = 72, cabeceio = 50, lideranca = 70 }
+
+[[lenda]]
+nome = "Ademir da Guia"
+wikidata = "Q355742"
+edicoes = ["geral", "palmeiras"]
+notas = { velocidade = 66, finalizacao = 76, passe = 95, drible = 86, marcacao = 52, fisico = 64, cabeceio = 56, lideranca = 86 }
+
+[[lenda]]
+nome = "Evair"
+wikidata = "Q195426"
+edicoes = ["geral", "palmeiras"]
+notas = { velocidade = 70, finalizacao = 93, passe = 82, drible = 78, marcacao = 25, fisico = 80, cabeceio = 84, lideranca = 82 }
+
+[[lenda]]
+nome = "Djalminha"
+wikidata = "Q47489"
+edicoes = ["geral", "palmeiras"]
+notas = { velocidade = 74, finalizacao = 84, passe = 92, drible = 94, marcacao = 30, fisico = 58, cabeceio = 48, lideranca = 60 }
+
+[[lenda]]
+nome = "Mazinho"
+wikidata = "Q350761"
+edicoes = ["geral", "palmeiras"]
+notas = { velocidade = 72, finalizacao = 60, passe = 84, drible = 76, marcacao = 82, fisico = 78, cabeceio = 56, lideranca = 78 }
+
+[[lenda]]
+nome = "Dudu"
+wikidata = "Q1341709"
+edicoes = ["geral", "palmeiras"]
+notas = { velocidade = 88, finalizacao = 76, passe = 80, drible = 88, marcacao = 40, fisico = 62, cabeceio = 40, lideranca = 74 }
+
+[[lenda]]
+nome = "Raphael Veiga"
+wikidata = "Q27443365"
+edicoes = ["geral", "palmeiras"]
+notas = { velocidade = 70, finalizacao = 86, passe = 86, drible = 80, marcacao = 45, fisico = 66, cabeceio = 52, lideranca = 72 }
+
+[[lenda]]
+nome = "Endrick"
+wikidata = "Q110644260"
+edicoes = ["geral", "palmeiras"]
+notas = { velocidade = 88, finalizacao = 86, passe = 66, drible = 84, marcacao = 28, fisico = 82, cabeceio = 70, lideranca = 62 }
+
+[[lenda]]
+nome = "Marinho Chagas"
+wikidata = "Q929290"
+edicoes = ["geral", "abc"]
+notas = { velocidade = 86, finalizacao = 80, passe = 82, drible = 84, marcacao = 66, fisico = 80, cabeceio = 56, lideranca = 72 }
+
+[[lenda]]
+nome = "Kuki"
+wikidata = "Q3960898"
+edicoes = ["nautico"]
+notas = { velocidade = 78, finalizacao = 82, passe = 62, drible = 72, marcacao = 22, fisico = 70, cabeceio = 68, lideranca = 70 }
+
+[[lenda]]
+nome = "Kieza"
+wikidata = "Q2056485"
+edicoes = ["nautico"]
+notas = { velocidade = 80, finalizacao = 80, passe = 60, drible = 74, marcacao = 24, fisico = 76, cabeceio = 74, lideranca = 64 }
+
+[[lenda]]
+nome = "Bita"
+wikidata = "Q3640481"
+edicoes = ["nautico"]
+notas = { velocidade = 74, finalizacao = 84, passe = 64, drible = 72, marcacao = 24, fisico = 72, cabeceio = 78, lideranca = 70 }
