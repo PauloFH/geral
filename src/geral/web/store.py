@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS drafts (
     held INTEGER NOT NULL DEFAULT 0,
     removed_topics TEXT NOT NULL DEFAULT '[]',
     sent_at TEXT,
+    released_at TEXT,
     UNIQUE (team, kind, day)
 );
 CREATE TABLE IF NOT EXISTS editions (
@@ -101,12 +102,17 @@ class Draft:
     held: bool
     removed_topics: list[int]
     sent_at: datetime | None
+    released_at: datetime | None = None  # let go by the owner after holding it
 
 
 @dataclass(frozen=True)
 class Subscriber:
     email: str
     status: str
+
+
+def _when(text: str | None) -> datetime | None:
+    return datetime.fromisoformat(text) if text else None
 
 
 def normalize(email: str) -> str:
@@ -119,6 +125,10 @@ class SubscriberStore:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with closing(self._connect()) as db, db:
             db.executescript(SCHEMA)
+            # Columns added after a table already existed in production.
+            columns = {row[1] for row in db.execute("PRAGMA table_info(drafts)")}
+            if "released_at" not in columns:
+                db.execute("ALTER TABLE drafts ADD COLUMN released_at TEXT")
 
     def _connect(self) -> sqlite3.Connection:
         db = sqlite3.connect(self.path)
@@ -345,30 +355,88 @@ class SubscriberStore:
         )
         return bool(rows)
 
+    _DRAFT_COLUMNS = (
+        "id, team, kind, day, label, newsletter_json, build_at, send_at, held, removed_topics,"
+        " sent_at, released_at"
+    )
+
+    def _drafts(self, where: str, *params: object) -> list[Draft]:
+        rows = self._run(f"SELECT {self._DRAFT_COLUMNS} FROM drafts WHERE {where}", *params)
+        return [
+            Draft(
+                id_,
+                team,
+                kind,
+                day,
+                label,
+                body,
+                datetime.fromisoformat(build_at),
+                datetime.fromisoformat(send_at),
+                bool(held),
+                json.loads(removed),
+                _when(sent_at),
+                _when(released_at),
+            )
+            for (
+                id_,
+                team,
+                kind,
+                day,
+                label,
+                body,
+                build_at,
+                send_at,
+                held,
+                removed,
+                sent_at,
+                released_at,
+            ) in rows
+        ]
+
     def draft(self, team: str, kind: str, day: str) -> Draft | None:
-        rows = self._run(
-            "SELECT id, team, kind, day, label, newsletter_json, build_at, send_at, held,"
-            " removed_topics, sent_at FROM drafts WHERE team = ? AND kind = ? AND day = ?",
-            team,
-            kind,
-            day,
+        found = self._drafts("team = ? AND kind = ? AND day = ?", team, kind, day)
+        return found[0] if found else None
+
+    def draft_by_id(self, draft_id: int) -> Draft | None:
+        found = self._drafts("id = ?", draft_id)
+        return found[0] if found else None
+
+    def pending_drafts(self) -> list[Draft]:
+        """Drafts not sent yet, the next to go out first."""
+        return sorted(self._drafts("sent_at IS NULL"), key=lambda d: d.send_at)
+
+    def set_held(self, draft_id: int, held: bool, now: datetime) -> Draft | None:
+        """Hold or let go of a draft; letting go records when (a late one is sent right away)."""
+        self._run(
+            "UPDATE drafts SET held = ?, released_at = CASE WHEN ? THEN released_at ELSE ? END"
+            " WHERE id = ?",
+            int(held),
+            int(held),
+            now.isoformat(),
+            draft_id,
         )
-        if not rows:
+        return self.draft_by_id(draft_id)
+
+    def set_topic_removed(self, draft_id: int, topic: int, removed: bool) -> Draft | None:
+        draft = self.draft_by_id(draft_id)
+        if draft is None:
             return None
-        id_, team, kind, day, label, body, build_at, send_at, held, removed, sent_at = rows[0]
-        return Draft(
-            id_,
-            team,
-            kind,
-            day,
-            label,
-            body,
-            datetime.fromisoformat(build_at),
-            datetime.fromisoformat(send_at),
-            bool(held),
-            json.loads(removed),
-            datetime.fromisoformat(sent_at) if sent_at else None,
+        topics = set(draft.removed_topics)
+        topics = topics | {topic} if removed else topics - {topic}
+        self._run(
+            "UPDATE drafts SET removed_topics = ? WHERE id = ?",
+            json.dumps(sorted(topics)),
+            draft_id,
         )
+        return self.draft_by_id(draft_id)
+
+    def released_due(self, now: datetime) -> list[Draft]:
+        """Drafts let go after their send time and not sent yet: they go out at the next tick."""
+        return [
+            d
+            for d in self._drafts("sent_at IS NULL AND held = 0 AND released_at IS NOT NULL")
+            if d.released_at >= d.send_at and d.send_at <= now
+        ]
 
     def mark_draft_sent(self, team: str, kind: str, day: str, now: datetime) -> bool:
         """False when there is no such draft."""

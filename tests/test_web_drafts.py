@@ -78,3 +78,77 @@ def test_drafts_are_kept_per_team_kind_and_day(client) -> None:
 
     assert client.get("/api/teams/vasco/drafts/post/2026-11-16", headers=AUTH).status_code == 404
     assert client.get("/api/teams/abc/drafts/news/2026-11-16", headers=AUTH).status_code == 404
+
+
+# --- the owner's review decisions ----------------------------------------------------------
+
+
+def saved(store, kind: str = "news", day: str = "2026-11-16", send_hour: int = 13):
+    store.save_draft(
+        "vasco",
+        kind,
+        day,
+        f"{kind} {day}",
+        full_newsletter().model_dump_json(),
+        datetime(2026, 11, 16, 8, 0, tzinfo=TZ),
+        datetime(2026, 11, 16, send_hour, 0, tzinfo=TZ),
+    )
+    return store.draft("vasco", kind, day)
+
+
+def test_hold_then_release_records_released_at(store) -> None:
+    draft = saved(store)
+    late = datetime(2026, 11, 16, 15, 0, tzinfo=TZ)
+
+    assert store.set_held(draft.id, True, late).held is True
+    released = store.set_held(draft.id, False, late)
+
+    assert released.held is False and released.released_at == late
+
+
+def test_remove_and_restore_topic(store) -> None:
+    draft = saved(store)
+
+    assert store.set_topic_removed(draft.id, 1, True).removed_topics == [1]
+    assert store.set_topic_removed(draft.id, 0, True).removed_topics == [0, 1]
+    assert store.set_topic_removed(draft.id, 1, False).removed_topics == [0]
+
+
+def test_pending_drafts_leave_out_the_sent_ones(store) -> None:
+    news, post = saved(store), saved(store, "post", "2026-11-17")
+    store.mark_draft_sent("vasco", "news", "2026-11-16", datetime(2026, 11, 16, 13, 1, tzinfo=TZ))
+
+    assert [d.id for d in store.pending_drafts()] == [post.id]
+    assert store.draft_by_id(news.id).sent_at is not None
+
+
+def test_released_due_lists_only_late_releases(store) -> None:
+    early, late = saved(store), saved(store, "post", "2026-11-17")
+    store.set_held(early.id, True, datetime(2026, 11, 16, 9, 0, tzinfo=TZ))
+    store.set_held(early.id, False, datetime(2026, 11, 16, 10, 0, tzinfo=TZ))  # before 13:00
+    store.set_held(late.id, True, datetime(2026, 11, 16, 9, 0, tzinfo=TZ))
+    store.set_held(late.id, False, datetime(2026, 11, 16, 14, 0, tzinfo=TZ))  # after 13:00
+
+    due = store.released_due(datetime(2026, 11, 16, 14, 5, tzinfo=TZ))
+
+    assert [d.id for d in due] == [late.id]
+
+
+def test_store_adds_released_at_to_an_old_drafts_table(tmp_path) -> None:
+    import sqlite3
+
+    from geral.web.store import SubscriberStore
+
+    db = tmp_path / "old.db"
+    with sqlite3.connect(db) as old:
+        old.execute(
+            "CREATE TABLE drafts (id INTEGER PRIMARY KEY, team TEXT NOT NULL, kind TEXT NOT NULL,"
+            " day TEXT NOT NULL, label TEXT NOT NULL, newsletter_json TEXT NOT NULL,"
+            " build_at TEXT NOT NULL, send_at TEXT NOT NULL, held INTEGER NOT NULL DEFAULT 0,"
+            " removed_topics TEXT NOT NULL DEFAULT '[]', sent_at TEXT, UNIQUE (team, kind, day))"
+        )
+
+    store = SubscriberStore(db)
+    SubscriberStore(db)  # twice: the migration is idempotent
+
+    assert saved(store).released_at is None
