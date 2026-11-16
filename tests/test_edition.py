@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 
@@ -24,10 +24,12 @@ def test_resolve_match_edition_picks_slot_of_that_day() -> None:
 
     assert edition.kind == "pre"
     assert edition.label == "Pré-jogo — 18/10/2026"
-    assert (edition.start, edition.end) == (last_sent, datetime(2026, 10, 18, 14, 30, tzinfo=tz))
+    # from the build of the edition sent at last_sent (5 h before) to the pre-game send
+    assert edition.start == last_sent - timedelta(hours=5)
+    assert edition.end == datetime(2026, 10, 18, 14, 30, tzinfo=tz)
     assert (edition.match_id, edition.league) == ("bahia", "bra.1")
     post = resolve_match_edition("post", date(2026, 10, 19), [bahia], last_sent)
-    assert post.start == edition.end  # window runs from the pre-game send
+    assert post.start == datetime(2026, 10, 18, 12, 30, tzinfo=tz)  # from the pre-game build
     assert resolve_match_edition("pre", date(2026, 10, 19), [bahia], last_sent) is None
 
 

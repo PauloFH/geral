@@ -3,7 +3,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
-from geral.schedule import Fixture, Slot, due, due_stage, label_of, plan
+from geral.schedule import Fixture, Slot, due, due_stage, due_stages, label_of, plan
 
 TZ = ZoneInfo("America/Sao_Paulo")
 UTC = ZoneInfo("UTC")
@@ -149,11 +149,20 @@ def test_no_fixtures_means_weekly_monday_news() -> None:
     assert news == [("news", "26/10 13:00"), ("news", "02/11 13:00"), ("news", "09/11 13:00")]
 
 
-def test_window_starts_at_previous_send() -> None:
+def test_window_starts_when_the_previous_edition_was_built() -> None:
+    # The draft collects news up to its build: what comes out until the send goes in the next one.
     slots = plan(OCTOBER, NOW, LAST_SENT)
 
-    assert slots[0].window_start == LAST_SENT
-    assert all(b.window_start == a.send_at for a, b in zip(slots, slots[1:], strict=False))
+    assert slots[0].window_start == LAST_SENT - timedelta(hours=5)  # a news/post went at 13:00
+    assert all(b.window_start == a.build_at for a, b in zip(slots, slots[1:], strict=False))
+
+
+def test_window_after_a_pre_game_starts_2h_before_its_send() -> None:
+    sent = at("18/10/2026", "14:31")
+
+    slots = plan(OCTOBER, at("18/10/2026", "15:00"), sent, "Pré-jogo — 18/10/2026")
+
+    assert slots[0].window_start == sent - timedelta(hours=2)
 
 
 def test_utc_midnight_kickoff_uses_local_date() -> None:
@@ -177,7 +186,7 @@ def test_due_ignores_slots_before_last_send() -> None:
     slots = plan(OCTOBER, at("18/10/2026", "15:00"), sent)
 
     assert due(slots, at("18/10/2026", "15:00")) is None
-    assert slots[0].kind == "post" and slots[0].window_start == sent
+    assert slots[0].kind == "post" and slots[0].window_start == sent - timedelta(hours=5)
 
 
 def test_due_picks_the_latest_when_two_are_inside_the_window() -> None:
@@ -222,7 +231,7 @@ def test_rescheduled_kickoff_does_not_resend_the_pre_game() -> None:
     slots = plan([confirmed], at("18/11/2026", "14:05"), sent_at, "Pré-jogo — 18/11/2026")
 
     assert due(slots, at("18/11/2026", "14:05")) is None
-    assert slots[0].kind == "post" and slots[0].window_start == sent_at
+    assert slots[0].kind == "post" and slots[0].window_start == sent_at - timedelta(hours=2)
 
 
 def test_back_to_back_days_keep_the_post_game_and_drop_the_next_pre_game() -> None:
@@ -279,3 +288,18 @@ def test_due_stage_pre_game_send_wins_over_its_build_window() -> None:
 
     assert due_stage(slots, at("18/10/2026", "14:10"))[1] == "build"
     assert due_stage(slots, at("18/10/2026", "16:30"))[1] == "send"
+
+
+def test_a_later_build_does_not_hide_a_send_that_did_not_go_out() -> None:
+    # Post-game of yesterday's game at 13:00 (it failed); today's 19:30 game builds at 13:30.
+    games = [fixture(at("17/10/2026", "20:00"), "a"), fixture(at("18/10/2026", "19:30"), "b")]
+    slots = plan(games, at("17/10/2026", "12:00"), at("17/10/2026", "12:00"))
+
+    due_now = due_stages(slots, at("18/10/2026", "13:40"))
+
+    assert [(s.kind, s.match_id, stage) for s, stage in due_now] == [
+        ("post", "a", "send"),
+        ("pre", "b", "build"),
+    ]
+    slot, stage = due_stage(slots, at("18/10/2026", "13:40"))
+    assert (slot.kind, stage) == ("post", "send")  # the backup retries the send first

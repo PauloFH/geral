@@ -29,6 +29,7 @@ from geral.schedule import (
     Slot,
     Stage,
     due_stage,
+    due_stages,
     label_of,
     plan,
 )
@@ -245,10 +246,10 @@ def due(
             if edition
             else None
         )
-        due = _due_stage(club, settings, now, latest)
-        if due is not None:
-            slot, stage = due
-            # The stage goes last: a trigger that reads only 4 columns keeps working.
+        slots = _plan_for(club, settings, now, latest)
+        # Every stage due (a build must not hide a send that has not gone out); the stage goes
+        # last, so a trigger that reads only 4 columns keeps working.
+        for slot, stage in due_stages(slots, now) if slots is not None else []:
             typer.echo(f"{club.slug}\t{slot.kind}\t{slot.send_at:%Y-%m-%d}\t{slot.label}\t{stage}")
     if counts.get(GENERAL_SLUG):  # the edição geral: Mondays at 8h, for its subscribers
         edition = store.latest_edition(GENERAL_SLUG)
@@ -275,13 +276,6 @@ def _plan_for(
 def _due_slot(club: Team, settings, now: datetime, latest: LatestEdition | None) -> Slot | None:
     slots = _plan_for(club, settings, now, latest)
     return due_slot(slots, now) if slots is not None else None
-
-
-def _due_stage(
-    club: Team, settings, now: datetime, latest: LatestEdition | None
-) -> tuple[Slot, Stage] | None:
-    slots = _plan_for(club, settings, now, latest)
-    return due_stage(slots, now) if slots is not None else None
 
 
 @app.command()
@@ -417,6 +411,13 @@ def _run_stage(
             if resolved.kind == "post" and newsletter.last_match is None:
                 report.outcome = "não enviada: partida não encerrada"
                 typer.echo(f"{resolved.label}: partida não encerrada, nada a enviar.")
+                return
+            if draft is not None and draft.removed_topics and pipeline.is_empty(newsletter):
+                # The owner's choice, not a failure: marked done so the backup won't retry it.
+                report.outcome = "não enviada: todos os tópicos tirados na revisão"
+                typer.echo(f"{resolved.label}: todos os tópicos tirados na revisão, não enviada.")
+                if not settings.DRY_RUN:
+                    mark_draft_sent(settings, club.slug, resolved)
                 return
             if pipeline.is_empty(newsletter):
                 report.outcome = "nada para enviar (sem notícias e sem partida)"

@@ -191,6 +191,25 @@ def test_due_all_prints_build_then_send_for_the_same_slot(geral_db) -> None:
     assert due_at(14, 40) == "vasco\tpre\t2026-10-18\tPré-jogo — 18/10/2026\tsend\n"
 
 
+def test_due_all_prints_every_due_stage(geral_db) -> None:
+    follow(geral_db, "ana@example.com", ["vasco"])
+    yesterday = BAHIA.model_copy(
+        update={"match_id": "a", "kickoff": datetime(2026, 10, 17, 20, 0, tzinfo=TZ)}
+    )
+    today = BAHIA.model_copy(
+        update={"match_id": "b", "kickoff": datetime(2026, 10, 18, 19, 30, tzinfo=TZ)}
+    )
+    with pytest.MonkeyPatch.context() as m:
+        m.setattr(cli, "_fixtures", lambda team, settings, now: [yesterday, today])
+        m.setattr(cli, "_now", lambda: datetime(2026, 10, 18, 13, 40, tzinfo=TZ))
+        result = CliRunner().invoke(cli.app, ["due", "--all"])
+
+    assert result.stdout.splitlines() == [
+        "vasco\tpost\t2026-10-18\tPós-jogo — 18/10/2026\tsend",
+        "vasco\tpre\t2026-10-18\tPré-jogo — 18/10/2026\tbuild",
+    ]
+
+
 def test_due_all_stage_is_the_last_column(geral_db) -> None:
     follow(geral_db, "ana@example.com", ["vasco"])
 

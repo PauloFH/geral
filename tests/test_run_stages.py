@@ -221,16 +221,19 @@ def test_run_send_held_draft_sends_nothing(env) -> None:
 
 
 @respx.mock
-def test_run_send_all_topics_removed_is_empty(env) -> None:
+def test_run_send_all_topics_removed_is_done_without_sending(env) -> None:
     enable_subscriptions(env)
     env.setattr(pipeline, "build_newsletter", no_build)
     respx.get(DRAFT).mock(return_value=httpx.Response(200, json=drafted(removed=[0, 1])))
+    done = respx.post(f"{DRAFT}/sent").mock(return_value=httpx.Response(204))
     resend = respx.post(RESEND_URL)
 
     result = run("send")
 
-    assert result.exit_code == 1
+    assert result.exit_code == 0, result.output  # the owner's choice, not a failure
     assert not resend.called
+    assert done.called  # the backup won't try it again
+    assert "todos os tópicos tirados" in result.output
 
 
 @respx.mock

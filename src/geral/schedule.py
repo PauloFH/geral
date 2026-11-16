@@ -17,6 +17,7 @@ BUILD_TIME = time(8, 0)
 SEND_TIME = time(13, 0)  # news and post-game: the morning is the review window
 PRE_GAME_LEAD = timedelta(hours=6)  # the pre-game is built 6 h before the kick-off...
 REVIEW_TIME = timedelta(hours=2)  # ...and sent 2 h later
+MORNING_REVIEW = timedelta(hours=5)  # news and post-game: BUILD_TIME to SEND_TIME
 EARLY_KICKOFF = time(11, 0)  # before this, the pre-game goes out the night before
 EARLY_BUILD = time(18, 0)
 NIGHT_BEFORE = time(20, 0)
@@ -128,7 +129,7 @@ def plan(
     last_sent: datetime | None,
     sent_label: str | None = None,
 ) -> list[Slot]:
-    """Every slot after the last real send, in order; `window_start` is the previous send.
+    """Every slot after the last real send, in order; `window_start` is the previous build.
 
     `sent_label` is the last edition's label: a reschedule that moves that slot later
     does not make it due again.
@@ -167,7 +168,8 @@ def plan(
     timeline += [("news", day, None) for day in _mondays(previous, now + WEEKLY_UNTIL)]
 
     slots: list[Slot] = []
-    start = anchor
+    # Each draft collects news up to its build: the next window starts there, not at the send.
+    start = _built_before(last_sent, sent_label) if last_sent else anchor
     for kind, send_at, match in timeline:
         build_at = pre_builds[match.match_id] if kind == "pre" and match else None
         slots.append(
@@ -181,8 +183,15 @@ def plan(
                 label=_label(kind, send_at),
             )
         )
-        start = send_at
+        start = slots[-1].build_at
     return slots
+
+
+def _built_before(sent: datetime, label: str | None) -> datetime:
+    """When the edition sent at `sent` was built: 2 h before for a pre-game, 5 h otherwise."""
+    if label and label.startswith(LABELS["pre"]):
+        return sent - REVIEW_TIME
+    return sent - MORNING_REVIEW
 
 
 def due(slots: list[Slot], now: datetime, grace: timedelta = timedelta(hours=3)) -> Slot | None:
@@ -191,15 +200,31 @@ def due(slots: list[Slot], now: datetime, grace: timedelta = timedelta(hours=3))
     return max(ready, key=lambda s: s.send_at, default=None)
 
 
-def due_stage(
+def due_stages(
     slots: list[Slot], now: datetime, grace: timedelta = timedelta(hours=3)
-) -> tuple[Slot, Stage] | None:
-    """The latest build or send whose time passed less than `grace` ago; a tie goes to send."""
+) -> list[tuple[Slot, Stage]]:
+    """Every build and send whose time passed less than `grace` ago, in time order.
+
+    All of them, not the latest only: a build must not hide a send that has not gone out yet.
+    A build is left out once the same slot's send is due.
+    """
     events = [(s.build_at, 0, s, "build") for s in slots] + [
         (s.send_at, 1, s, "send") for s in slots
     ]
-    ready = [e for e in events if e[0] <= now < e[0] + grace]
-    if not ready:
-        return None
-    _, _, slot, stage = max(ready, key=lambda e: (e[0], e[1]))
-    return slot, stage
+    ready = sorted((e for e in events if e[0] <= now < e[0] + grace), key=lambda e: e[:2])
+    # Once a slot's send is due its build is moot (a send without a draft builds it).
+    sending = {slot.label for _, _, slot, stage in ready if stage == "send"}
+    return [
+        (slot, stage) for _, _, slot, stage in ready if stage == "send" or slot.label not in sending
+    ]
+
+
+def due_stage(
+    slots: list[Slot], now: datetime, grace: timedelta = timedelta(hours=3)
+) -> tuple[Slot, Stage] | None:
+    """One stage to run now (the hourly backup): the oldest pending send, else the latest build."""
+    ready = due_stages(slots, now, grace)
+    sends = [r for r in ready if r[1] == "send"]
+    if sends:
+        return sends[0]
+    return ready[-1] if ready else None
