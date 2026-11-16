@@ -67,9 +67,9 @@ seções especiais (projeto B), em que a revisão é a última rede de seguranç
 - [x] `test_run_send_drops_removed_topics_and_rewrites_the_opening`
 - [x] `test_run_send_without_draft_builds_and_sends`; `test_run_send_held_draft_sends_nothing`
 - [x] `test_send_twice_sends_once` (o rascunho marcado como enviado e o `--skip-if-sent` atual)
-- [ ] `test_review_page_rejects_token_of_other_purpose` e `test_review_page_rejects_expired_token`
-- [ ] `test_remove_topic_after_sent_is_409`
-- [ ] `test_released_draft_after_send_at_is_due_for_send` e `test_next_window_starts_at_last_real_send`
+- [x] `test_review_page_rejects_token_of_other_purpose` e `test_review_page_rejects_expired_token`
+- [x] `test_remove_topic_after_sent_is_409`
+- [x] `test_released_draft_after_send_at_is_due_for_send` e `test_next_window_starts_at_last_real_send`
 - [x] `test_run_build_twice_keeps_first_draft`
 
 ## Verificação ponta a ponta

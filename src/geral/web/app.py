@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import Annotated, Literal
 from urllib.parse import urlencode
 
-from fastapi import FastAPI, Form, Query, Request, Response
+from fastapi import BackgroundTasks, FastAPI, Form, Query, Request, Response
 from fastapi.responses import (
     FileResponse,
     HTMLResponse,
@@ -42,6 +42,8 @@ from geral.games.velha import diario as velha_diario
 from geral.games.velha import duelo as velha_duelo
 from geral.games.velha import judge as velha_judge
 from geral.general import GENERAL_EDITION, GENERAL_SLUG
+from geral.models import Newsletter
+from geral.render.renderer import render
 from geral.send.resend_sender import UNSUBSCRIBE_PLACEHOLDER, personalize
 from geral.teams import Team, load_teams
 from geral.web.bolao import TZ, BolaoStore
@@ -81,6 +83,8 @@ TOP_REQUESTS = 10
 REQUESTS_IN_EMAIL = 5
 PANEL_PURPOSE = "team-requests"
 PANEL_MAX_AGE = timedelta(days=30)
+REVIEW_PURPOSE = "review"  # the owner's review page (one link per draft e-mail)
+REVIEW_MAX_AGE = timedelta(days=7)
 SCORE_RE = re.compile(r"^(\d)-(\d)$")
 # Shown in every follower's e-mail: letters, digits, spaces, hyphens and apostrophes only (no
 # links, no line breaks).
@@ -136,8 +140,8 @@ class EditionIn(BaseModel):
 class DraftIn(BaseModel):
     label: str
     newsletter: dict  # a geral.models.Newsletter dumped as JSON
-    build_at: datetime
-    send_at: datetime
+    build_at: AwareDatetime
+    send_at: AwareDatetime
 
 
 class BolaoMatchIn(BaseModel):
@@ -806,7 +810,14 @@ def create_app(
     DraftKind = Literal["pre", "post", "news"]
 
     @app.put("/api/teams/{team}/drafts/{kind}/{day}", status_code=204)
-    def save_draft(request: Request, team: str, kind: DraftKind, day: date, draft: DraftIn):
+    def save_draft(
+        request: Request,
+        team: str,
+        kind: DraftKind,
+        day: date,
+        draft: DraftIn,
+        background: BackgroundTasks,
+    ):
         if not authorized(request):
             return unauthorized()
         if team not in catalog:
@@ -822,7 +833,32 @@ def create_app(
         )
         if not saved:
             return JSONResponse({"detail": "this edition already has a draft"}, status_code=409)
+        # After the response: a slow mail provider must not fail the build that saved the draft.
+        background.add_task(notify_review, team, draft)
         return Response(status_code=204)
+
+    def notify_review(team: str, draft: DraftIn) -> None:
+        """One e-mail per draft to the owner, with the review link; a failure keeps the draft."""
+        if not settings.NOTIFY_EMAIL:
+            return
+        newsletter = Newsletter.model_validate(draft.newsletter)
+        send_at = draft.send_at.astimezone(BRASILIA)
+        topics = "\n".join(f"{i}. {t.title}" for i, t in enumerate(newsletter.topics, 1))
+        edition = f"{newsletter.team.newsletter} — {draft.label}"
+        text = (
+            f"{edition} sai às {send_at:%H:%M} se você não mexer.\n\n"
+            f"{topics or '(sem tópicos de notícia)'}\n\n"
+            f"Revisar (segurar ou tirar tópicos; o link vale {REVIEW_MAX_AGE.days} dias):\n"
+            f"{review_link()}\n"
+        )
+        try:
+            mailer.send_notification(
+                settings.NOTIFY_EMAIL,
+                f"Revisar: {edition}, sai às {send_at:%H:%M}",
+                text,
+            )
+        except MailError as e:
+            logger.error("Review notice for %s failed: %s", team, e)
 
     @app.get("/api/teams/{team}/drafts/{kind}/{day}")
     def get_draft(request: Request, team: str, kind: DraftKind, day: date):
@@ -846,6 +882,122 @@ def create_app(
         if team not in catalog or not store.mark_draft_sent(team, kind, day.isoformat(), now()):
             return JSONResponse({"detail": "no draft"}, status_code=404)
         return Response(status_code=204)
+
+    # --- review: the owner holds an edition or drops topics before it goes out ----------------
+
+    def review_owner(token: str) -> bool:
+        owner = read_token(secret, REVIEW_PURPOSE, token, now(), max_age=REVIEW_MAX_AGE)
+        return bool(settings.NOTIFY_EMAIL) and owner == settings.NOTIFY_EMAIL
+
+    def review_link() -> str:
+        token = make_token(secret, REVIEW_PURPOSE, settings.NOTIFY_EMAIL, now())
+        return f"{public_url}/revisao?{urlencode({'t': token})}"
+
+    def not_found(request: Request) -> HTMLResponse:
+        return message(request, "Página não encontrada", "Volte para a Geral.", status=404)
+
+    def private(response):
+        response.headers["Cache-Control"] = "no-store"
+        response.headers["Referrer-Policy"] = "no-referrer"  # the link carries the token
+        return response
+
+    def kept_newsletter(draft) -> Newsletter:
+        newsletter = Newsletter.model_validate_json(draft.newsletter_json)
+        removed = set(draft.removed_topics)
+        kept = [t for i, t in enumerate(newsletter.topics) if i not in removed]
+        return newsletter.model_copy(update={"topics": kept})
+
+    @app.get("/revisao", response_class=HTMLResponse)
+    def review_page(request: Request, t: str = ""):
+        if not review_owner(t):
+            return not_found(request)
+        drafts = []
+        going = {d.id for d in store.released_due(now())}
+        for d in store.pending_drafts():
+            newsletter = Newsletter.model_validate_json(d.newsletter_json)
+            drafts.append(
+                {
+                    "id": d.id,
+                    "label": d.label,
+                    "newsletter": newsletter.team.newsletter,
+                    "held": d.held,
+                    "late": d.send_at <= now(),
+                    "going": d.id in going,
+                    "send_at": d.send_at,
+                    "topics": [
+                        {"title": topic.title, "removed": i in d.removed_topics}
+                        for i, topic in enumerate(newsletter.topics)
+                    ],
+                }
+            )
+        return private(page(request, "revisao.html.j2", drafts=drafts, token=t, timezone=BRASILIA))
+
+    @app.get("/revisao/{draft_id}/previa", response_class=HTMLResponse)
+    def review_preview(request: Request, draft_id: int, t: str = ""):
+        draft = store.draft_by_id(draft_id) if review_owner(t) else None
+        if draft is None:
+            return not_found(request)
+        html, _ = render(
+            kept_newsletter(draft),
+            unsubscribe_url=UNSUBSCRIBE_PLACEHOLDER,
+            subscribe_url=public_url,
+            page_url=public_url,
+        )
+        html = personalize(html, None).replace(UNSUBSCRIBE_PLACEHOLDER, f"{public_url}/")
+        return private(HTMLResponse(html))
+
+    def review_action(request: Request, draft_id: int, token: str, change) -> Response:
+        draft = store.draft_by_id(draft_id) if review_owner(token) else None
+        if draft is None:
+            return not_found(request)
+        if draft.sent_at is not None:
+            return message(request, "Já saiu", "Essa edição já foi enviada.", status=409)
+        refused = change(draft)
+        if refused is not None:
+            return refused
+        return RedirectResponse(f"/revisao?{urlencode({'t': token})}", status_code=303)
+
+    @app.post("/revisao/{draft_id}/segurar")
+    def review_hold(request: Request, draft_id: int, t: Annotated[str, Form()] = ""):
+        def hold(draft):
+            store.set_held(draft.id, True, now())
+
+        return review_action(request, draft_id, t, hold)
+
+    @app.post("/revisao/{draft_id}/soltar")
+    def review_release(request: Request, draft_id: int, t: Annotated[str, Form()] = ""):
+        def release(draft):
+            if any(d.build_at > draft.build_at for d in store.team_drafts(draft.team)):
+                # A newer draft already carries this one's news (its window reaches back).
+                text = "Já existe uma edição mais nova dessa torcida; esta fica segurada."
+                return message(request, "Edição antiga", text, status=409)
+            latest = store.latest_edition(draft.team)
+            if latest is not None and latest.published_at > draft.send_at:
+                # A newer edition went out meanwhile: this one would arrive out of order.
+                text = "Já saiu uma edição mais nova dessa torcida; esta fica segurada."
+                return message(request, "Edição antiga", text, status=409)
+            store.set_held(draft.id, False, now())
+            return None
+
+        return review_action(request, draft_id, t, release)
+
+    def topic_action(request: Request, draft_id: int, n: int, t: str, removed: bool):
+        def change(draft):
+            topics = Newsletter.model_validate_json(draft.newsletter_json).topics
+            if not 0 <= n < len(topics):
+                return not_found(request)
+            store.set_topic_removed(draft.id, n, removed)
+            return None
+
+        return review_action(request, draft_id, t, change)
+
+    @app.post("/revisao/{draft_id}/topicos/{n}/tirar")
+    def review_remove(request: Request, draft_id: int, n: int, t: Annotated[str, Form()] = ""):
+        return topic_action(request, draft_id, n, t, True)
+
+    @app.post("/revisao/{draft_id}/topicos/{n}/voltar")
+    def review_restore(request: Request, draft_id: int, n: int, t: Annotated[str, Form()] = ""):
+        return topic_action(request, draft_id, n, t, False)
 
     # --- bolão ---------------------------------------------------------------------------------
 

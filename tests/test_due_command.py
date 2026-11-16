@@ -356,3 +356,68 @@ def test_rerun_of_todays_extra_edition_keeps_the_window_before_todays_send(calen
 
     assert seen["edition"].start == now - timedelta(days=3)  # not 18:05 today
     assert seen["edition"].label == "Notícias — 20/10/2026"
+
+
+def test_released_draft_after_send_at_is_due_for_send(geral_db) -> None:
+    follow(geral_db, "ana@example.com", ["vasco"])
+    geral_db.save_draft(
+        "vasco",
+        "post",
+        "2026-10-17",
+        "Pós-jogo — 17/10/2026",
+        "{}",
+        datetime(2026, 10, 17, 8, 0, tzinfo=TZ),
+        datetime(2026, 10, 17, 13, 0, tzinfo=TZ),
+    )
+    draft = geral_db.draft("vasco", "post", "2026-10-17")
+    geral_db.set_held(draft.id, True, datetime(2026, 10, 17, 9, 0, tzinfo=TZ))
+    geral_db.set_held(draft.id, False, datetime(2026, 10, 18, 14, 40, tzinfo=TZ))  # a day late
+
+    lines = CliRunner().invoke(cli.app, ["due", "--all"]).stdout.splitlines()
+
+    assert "vasco\tpost\t2026-10-17\tPós-jogo — 17/10/2026 (solta 18/10 14:40)\trelease" in lines
+
+
+def test_next_window_starts_at_last_real_send() -> None:
+    from geral.models import Edition
+
+    edition = Edition(
+        kind="news",
+        start=datetime(2026, 10, 21, 8, 0, tzinfo=TZ),  # the build of a held edition never sent
+        end=datetime(2026, 10, 25, 13, 0, tzinfo=TZ),
+        label="Notícias — 25/10/2026",
+    )
+    sent = LatestEdition(subject="Urubu News — Pós-jogo — 19/10/2026: x", published_at=LAST_SENT)
+
+    widened = cli._since_last_send(edition, sent)
+
+    assert widened.start == LAST_SENT - timedelta(hours=5)
+    assert cli._since_last_send(edition, None) == edition
+    later = LatestEdition(subject="x", published_at=datetime(2026, 10, 25, 13, 2, tzinfo=TZ))
+    assert cli._since_last_send(edition, later) == edition
+
+
+def test_a_second_late_release_is_a_new_row(geral_db) -> None:
+    follow(geral_db, "ana@example.com", ["vasco"])
+    geral_db.save_draft(
+        "vasco",
+        "post",
+        "2026-10-18",
+        "Pós-jogo — 18/10/2026",
+        "{}",
+        datetime(2026, 10, 18, 8, 0, tzinfo=TZ),
+        datetime(2026, 10, 18, 13, 0, tzinfo=TZ),
+    )
+    draft = geral_db.draft("vasco", "post", "2026-10-18")
+
+    def release_row(at: datetime) -> str:
+        geral_db.set_held(draft.id, True, at)
+        geral_db.set_held(draft.id, False, at)
+        out = CliRunner().invoke(cli.app, ["due", "--all"]).stdout.splitlines()
+        return next(line for line in out if line.endswith("\trelease"))
+
+    first = release_row(datetime(2026, 10, 18, 14, 0, tzinfo=TZ))
+    second = release_row(datetime(2026, 10, 18, 14, 40, tzinfo=TZ))
+
+    assert first != second  # the trigger dispatches each row once: a new release is a new row
+    assert second.split("\t")[:3] == ["vasco", "post", "2026-10-18"]
