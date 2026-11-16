@@ -1,0 +1,76 @@
+# Escolhas da Carreira: perguntas que aparecem entre temporadas, conforme a condição.
+# {nome}, {clube}, {idade} e {destino} (o clube que a primeira opção com destino propõe).
+# destino: ficar, europa, maior, emprestimo, arabia, casa, aposentar, mais_um.
+# Nunca reuse um id: carreiras compartilhadas guardam a ordem das respostas.
+
+[[escolha]]
+id = "proposta-europa"
+pergunta = "O {destino} quer {nome}, de {idade} anos. E agora?"
+peso = 3
+condicao = { idade_min = 19, idade_max = 28, nota_min = 66, forca_max = 79 }
+[[escolha.opcao]]
+texto = "Aceitar e ir para o {destino}"
+destino = "europa"
+[[escolha.opcao]]
+texto = "Ficar e virar ídolo no {clube}"
+destino = "ficar"
+
+[[escolha]]
+id = "emprestimo-ou-banco"
+pergunta = "Pouco espaço no {clube}. O {destino} pede {nome} emprestado por um ano."
+peso = 2
+condicao = { idade_min = 18, idade_max = 23, jogos_max = 15 }
+[[escolha.opcao]]
+texto = "Ir emprestado para jogar"
+destino = "emprestimo"
+[[escolha.opcao]]
+texto = "Ficar e brigar por posição"
+destino = "ficar"
+
+[[escolha]]
+id = "proposta-maior"
+pergunta = "O {destino} faz uma proposta alta por {nome}."
+peso = 2
+condicao = { idade_min = 20, idade_max = 30, nota_min = 58 }
+[[escolha.opcao]]
+texto = "Dar o salto para o {destino}"
+destino = "maior"
+[[escolha.opcao]]
+texto = "Recusar e seguir no {clube}"
+destino = "ficar"
+
+[[escolha]]
+id = "proposta-arabia"
+pergunta = "Os petrodólares do {destino} batem à porta de {nome}, {idade} anos."
+peso = 1.5
+condicao = { idade_min = 28, idade_max = 34, nota_min = 68 }
+[[escolha.opcao]]
+texto = "Topar e ir para o {destino}"
+destino = "arabia"
+[[escolha.opcao]]
+texto = "Seguir no {clube}"
+destino = "ficar"
+
+[[escolha]]
+id = "voltar-para-casa"
+pergunta = "A torcida do {destino} pede a volta de {nome}."
+peso = 2
+condicao = { idade_min = 30, idade_max = 36, no_clube_inicial = false }
+[[escolha.opcao]]
+texto = "Voltar para o {destino}"
+destino = "casa"
+[[escolha.opcao]]
+texto = "Ficar no {clube}"
+destino = "ficar"
+
+[[escolha]]
+id = "parar-ou-mais-um"
+pergunta = "{nome} tem {idade} anos e o corpo começa a cobrar."
+peso = 3
+condicao = { idade_min = 33, idade_max = 39 }
+[[escolha.opcao]]
+texto = "Pendurar as chuteiras"
+destino = "aposentar"
+[[escolha.opcao]]
+texto = "Mais um ano"
+destino = "mais_um"

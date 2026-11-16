@@ -7,96 +7,140 @@ id = "bra-a"
 pais = "Brasil"
 divisao = 1
 forca = 72
+campeonato = "Brasileirão"
+copa = "Copa do Brasil"
+continental = "Libertadores"
 
 [[liga]]
 id = "bra-b"
 pais = "Brasil"
 divisao = 2
 forca = 55
+campeonato = "Série B"
+copa = "Copa do Brasil"
 
 [[liga]]
 id = "bra-c"
 pais = "Brasil"
 divisao = 3
 forca = 42
+campeonato = "Série C"
+copa = "Copa do Brasil"
 
 [[liga]]
 id = "arg"
 pais = "Argentina"
 divisao = 1
 forca = 68
+campeonato = "Campeonato Argentino"
+copa = "Copa Argentina"
+continental = "Libertadores"
 
 [[liga]]
 id = "por"
 pais = "Portugal"
 divisao = 1
 forca = 72
+campeonato = "Campeonato Português"
+copa = "Taça de Portugal"
+continental = "Champions League"
 
 [[liga]]
 id = "esp"
 pais = "Espanha"
 divisao = 1
 forca = 90
+campeonato = "La Liga"
+copa = "Copa do Rei"
+continental = "Champions League"
 
 [[liga]]
 id = "ing"
 pais = "Inglaterra"
 divisao = 1
 forca = 95
+campeonato = "Premier League"
+copa = "Copa da Inglaterra"
+continental = "Champions League"
 
 [[liga]]
 id = "ita"
 pais = "Itália"
 divisao = 1
 forca = 86
+campeonato = "Campeonato Italiano"
+copa = "Copa da Itália"
+continental = "Champions League"
 
 [[liga]]
 id = "ale"
 pais = "Alemanha"
 divisao = 1
 forca = 85
+campeonato = "Bundesliga"
+copa = "Copa da Alemanha"
+continental = "Champions League"
 
 [[liga]]
 id = "fra"
 pais = "França"
 divisao = 1
 forca = 80
+campeonato = "Campeonato Francês"
+copa = "Copa da França"
+continental = "Champions League"
 
 [[liga]]
 id = "hol"
 pais = "Holanda"
 divisao = 1
 forca = 72
+campeonato = "Campeonato Holandês"
+copa = "Copa da Holanda"
+continental = "Champions League"
 
 [[liga]]
 id = "tur"
 pais = "Turquia"
 divisao = 1
 forca = 64
+campeonato = "Campeonato Turco"
+copa = "Copa da Turquia"
 
 [[liga]]
 id = "ara"
 pais = "Arábia Saudita"
 divisao = 1
 forca = 62
+campeonato = "Campeonato Saudita"
+copa = "Copa do Rei Saudita"
+continental = "Champions da Ásia"
 
 [[liga]]
 id = "jap"
 pais = "Japão"
 divisao = 1
 forca = 56
+campeonato = "J-League"
+copa = "Copa do Imperador"
+continental = "Champions da Ásia"
 
 [[liga]]
 id = "eua"
 pais = "Estados Unidos"
 divisao = 1
 forca = 60
+campeonato = "MLS"
+copa = "US Open Cup"
 
 [[liga]]
 id = "mex"
 pais = "México"
 divisao = 1
 forca = 62
+campeonato = "Campeonato Mexicano"
+copa = "Copa MX"
+continental = "Champions da Concacaf"
 
 [[clube]]
 id = "flamengo"

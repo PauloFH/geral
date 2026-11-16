@@ -1,0 +1,100 @@
+# Eventos da Carreira: o que pode acontecer numa temporada, com manchete de jornal.
+# momento "antes" vem antes dos números da temporada (pode tirar jogos: efeito.jogos);
+# "depois" pode exigir gols, jogos ou título. Campos das manchetes: {nome}, {clube},
+# {liga}, {campeonato}, {gols}, {jogos}, {idade}. Nunca reuse um id.
+
+[[evento]]
+id = "temporada-comum"
+peso = 0.5
+unico = false
+condicao = { idade_min = 17 }
+manchetes = [
+  "{nome} cumpre mais uma temporada pelo {clube}",
+  "Ano discreto de {nome} no {clube}",
+  "{nome} faz {jogos} jogos e segue no elenco do {clube}",
+]
+
+[[evento]]
+id = "base-destaque"
+peso = 3
+momento = "antes"
+condicao = { idade_max = 16 }
+manchetes = ["Joia da base do {clube}, {nome} chama a atenção", "{nome}, 16 anos, treina com os profissionais do {clube}"]
+efeito = { nota = 2 }
+
+[[evento]]
+id = "estreia-com-gol"
+peso = 2
+condicao = { idade_max = 19, gols_min = 1, fases = ["inicio"] }
+manchetes = ["{nome} estreia com gol pelo {clube}", "Garoto {nome} marca na estreia e a torcida do {clube} já canta o nome"]
+efeito = { nota = 2 }
+
+[[evento]]
+id = "lesao-grave"
+peso = 1
+momento = "antes"
+condicao = { idade_min = 18 }
+manchetes = ["{nome} rompe o ligamento do joelho e desfalca o {clube}", "Lesão grave tira {nome} de quase toda a temporada"]
+efeito = { nota = -5, jogos = 0.25 }
+
+[[evento]]
+id = "artilheiro"
+peso = 4
+condicao = { gols_min = 20 }
+manchetes = ["{nome} é o artilheiro do {campeonato} com {gols} gols", "Ninguém para {nome}: {gols} gols e a artilharia do {campeonato}"]
+efeito = { nota = 1, saida = 0.2 }
+
+[[evento]]
+id = "titulo-decisivo"
+peso = 4
+unico = false
+condicao = { titulo = true, jogos_min = 15 }
+manchetes = ["{nome} decide e o {clube} é campeão", "Com {nome} em campo, o {clube} levanta a taça"]
+
+[[evento]]
+id = "reserva"
+peso = 2
+unico = false
+condicao = { jogos_max = 10, idade_min = 18 }
+manchetes = ["{nome} esquenta o banco do {clube}", "Só {jogos} jogos: {nome} vive temporada de reserva no {clube}"]
+efeito = { saida = 0.3 }
+
+[[evento]]
+id = "briga-com-tecnico"
+peso = 1
+condicao = { idade_min = 20 }
+manchetes = ["{nome} bate boca com o técnico e é afastado no {clube}", "Clima pesado: {nome} e o técnico do {clube} não se falam"]
+efeito = { saida = 0.5, nota = -1 }
+
+[[evento]]
+id = "convocado"
+peso = 3
+condicao = { selecao = true, exclui = ["convocado"] }
+manchetes = ["{nome} é convocado pela primeira vez para a Seleção", "Seleção chama {nome}, do {clube}"]
+
+[[evento]]
+id = "declinio"
+peso = 2
+unico = false
+condicao = { idade_min = 33 }
+manchetes = ["Aos {idade}, {nome} já não tem o mesmo fôlego", "{nome} sente o peso da idade no {clube}"]
+
+[[evento]]
+id = "golaco"
+peso = 1.5
+unico = false
+condicao = { gols_min = 5 }
+manchetes = ["Golaço de {nome} roda o mundo nas redes", "{nome} marca de bicicleta e para o {campeonato}"]
+
+[[evento]]
+id = "craque-do-campeonato"
+peso = 2
+condicao = { nota_min = 85, jogos_min = 25 }
+manchetes = ["{nome} é eleito o craque do {campeonato}", "Melhor do {campeonato}: dá {nome}"]
+efeito = { saida = 0.2 }
+
+[[evento]]
+id = "base-formacao"
+peso = 5
+condicao = { idade_max = 16 }
+manchetes = ["{nome} faz a primeira temporada na base do {clube}", "Na base do {clube}, {nome} já usa a camisa {camisa}"]
