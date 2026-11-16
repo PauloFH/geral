@@ -196,3 +196,55 @@ def test_a_story_that_never_names_the_club_is_refused() -> None:
     )
 
     assert job.refusal(story, p, get_team("nautico")) == "não fala do clube"
+
+
+@respx.mock
+def test_job_cuts_a_fact_date_to_the_year_when_day_and_month_are_not_in_the_source(sources) -> None:
+    route = page(unused=7, seen=[])
+
+    def dated(prompt, schema):
+        return faithful(prompt, schema) | {"fact_date": "1947-06-14"}
+
+    job.top_up(get_team("nautico"), settings(), FakeLLMClient(dated), httpx.Client(), MONDAY)
+
+    assert posted(route)[0]["fact_date"] == "1947"
+
+
+def test_fact_date_keeps_day_and_month_found_in_the_source() -> None:
+    text = "Em 14 de junho de 1947 o Náutico venceu. Em 19/08/1934 nasceu o Timbu."
+
+    assert job.checked_date("1947-06-14", text) == "1947-06-14"
+    assert job.checked_date("1934-08-19", text) == "1934-08-19"
+    assert job.checked_date("1947-06-15", text) == "1947"
+    assert job.checked_date("1950", text) == ""
+
+
+@respx.mock
+def test_a_duplicate_story_is_not_counted_as_accepted(sources) -> None:
+    respx.get(f"{API}/count").mock(return_value=httpx.Response(200, json={"unused": 7}))
+    respx.get(f"{API}/sources").mock(return_value=httpx.Response(200, json=[]))
+    respx.post(API).mock(return_value=httpx.Response(409))
+
+    report = job.top_up(
+        get_team("nautico"), settings(), FakeLLMClient(faithful), httpx.Client(), MONDAY
+    )
+
+    assert report.accepted == 0
+
+
+@respx.mock
+def test_a_wikipedia_error_skips_only_that_team(monkeypatch) -> None:
+    page(unused=0, seen=[])
+
+    def down(client, team):
+        raise httpx.HTTPStatusError(
+            "503", request=httpx.Request("GET", "u"), response=httpx.Response(503)
+        )
+
+    monkeypatch.setattr(job.sources, "passages", down)
+
+    report = job.top_up(
+        get_team("nautico"), settings(), FakeLLMClient(faithful), httpx.Client(), MONDAY
+    )
+
+    assert report.skipped_reason == "Wikipédia fora do ar"

@@ -58,3 +58,8 @@ def test_sources_list_every_key_seen(client) -> None:
 
 def test_story_kind_is_checked(client) -> None:
     assert client.post(BASE, json=story(kind="poema"), headers=AUTH).status_code == 422
+
+
+def test_fact_date_format_is_checked(client) -> None:
+    assert client.post(BASE, json=story(fact_date="ontem"), headers=AUTH).status_code == 422
+    assert client.post(BASE, json=story("y", fact_date="1934"), headers=AUTH).status_code == 204

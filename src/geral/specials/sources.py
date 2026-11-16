@@ -23,7 +23,7 @@ MIN_WORDS = 80
 MAX_WORDS = 600
 IDOL_DISTANCE = 150  # characters between "ídolo" and a club term
 IDOL_CANDIDATES = 50
-HEADING = re.compile(r"^(={2,3}) *(.+?) *\1 *$", re.MULTILINE)
+HEADING = re.compile(r"^(={2,}) *(.+?) *\1 *$", re.MULTILINE)
 CLUB_SECTIONS = re.compile(r"símbolo|mascote|estádio|sede|torcida|hino|uniforme", re.IGNORECASE)
 GAME_SECTIONS = re.compile(
     r"jogos? históricos?|goleadas?|primeiro jogo|finais|final\b", re.IGNORECASE
@@ -49,6 +49,10 @@ class Section(BaseModel):
     def name(self) -> str:
         return self.h3 or self.h2
 
+    @property
+    def path(self) -> str:
+        return f"{self.h2}/{self.h3}" if self.h3 else self.h2
+
 
 def url_of(title: str) -> str:
     return "https://pt.wikipedia.org/wiki/" + quote(title.replace(" ", "_"))
@@ -68,8 +72,10 @@ def extract(client: httpx.Client, title: str) -> str:
 def sections(text: str) -> list[Section]:
     found, h2, h3, start = [], "", None, 0
     for heading in HEADING.finditer(text):
-        found.append(Section(h2=h2, h3=h3, text=text[start : heading.start()].strip()))
         level, name = heading.groups()
+        if len(level) > 3:
+            continue  # deeper headings stay inside their section
+        found.append(Section(h2=h2, h3=h3, text=text[start : heading.start()].strip()))
         if len(level) == 2:
             h2, h3 = name, None
         else:
@@ -79,12 +85,15 @@ def sections(text: str) -> list[Section]:
     return found
 
 
-def _passage(kind: Kind, title: str, section: str | None, text: str) -> Passage | None:
+def _passage(
+    kind: Kind, title: str, section: str | None, text: str, path: str | None = None
+) -> Passage | None:
+    """`path` ("História/Anos 60") makes the key; `section` is what the reader sees."""
     words = text.split()
     if len(words) < MIN_WORDS:
         return None
     url = url_of(title)
-    key = f"{url}#{section.replace(' ', '_')}" if section else url
+    key = f"{url}#{(path or section).replace(' ', '_')}" if section else url
     shown = f"{title} — {section}" if section else title
     return Passage(kind=kind, key=key, title=shown, url=url, text=" ".join(words[:MAX_WORDS]))
 
@@ -93,15 +102,15 @@ def _club(title: str, text: str) -> list[Passage]:
     found = []
     for s in sections(text):
         if s.h2 == "História" and s.h3:
-            found.append(_passage("jogo", title, s.h3, s.text))
+            found.append(_passage("jogo", title, s.h3, s.text, s.path))
         elif s.h2 and CLUB_SECTIONS.search(s.name):
-            found.append(_passage("clube", title, s.name, s.text))
+            found.append(_passage("clube", title, s.name, s.text, s.path))
     return [p for p in found if p]
 
 
 def _classic(title: str, text: str) -> list[Passage]:
     found = [
-        _passage("jogo", title, s.name, s.text)
+        _passage("jogo", title, s.name, s.text, s.path)
         for s in sections(text)
         if s.h2 and GAME_SECTIONS.search(s.name)
     ]
@@ -120,7 +129,15 @@ def _idol(title: str, text: str, club_terms: tuple[str, ...]) -> Passage | None:
     if not career or not _is_idol(text, club_terms):
         return None  # without a career section it is not a player's article
     body = "\n\n".join([parts[0].text, *(s.text for s in career)])
-    return _passage("idolo", title, None, body)
+    passage = _passage("idolo", title, None, body)
+    # The part about the club may be past the cut: then the model would only see other clubs.
+    if passage is None or not _names_club(passage.text, club_terms):
+        return None
+    return passage
+
+
+def _names_club(text: str, club_terms: tuple[str, ...]) -> bool:
+    return any(re.search(rf"\b{re.escape(t)}\b", text, re.IGNORECASE) for t in club_terms)
 
 
 def idol_titles(client: httpx.Client, team: Team) -> list[str]:

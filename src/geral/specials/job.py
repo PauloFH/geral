@@ -51,6 +51,27 @@ def _interleaved(found: list[Passage], today: date) -> list[Passage]:
     return [p for row in zip_longest(*by_kind.values()) for p in row if p is not None]
 
 
+MONTHS = (
+    "janeiro fevereiro março abril maio junho julho agosto setembro outubro novembro dezembro"
+).split()
+
+
+def checked_date(fact_date: str, source: str) -> str:
+    """The fact's date as far as the source backs it: day and month only when they are in it
+    ("14 de junho" or "14/06"), the year only when it is in it, else nothing."""
+    match = re.fullmatch(r"(\d{4})(?:-(\d{2})-(\d{2}))?", fact_date.strip())
+    if not match or match.group(1) not in NUMBER.findall(source):
+        return ""
+    year, month, day = match.groups()
+    if month is None:
+        return year
+    d, m = int(day), int(month)
+    spelled = rf"\b0?{d}º? de {MONTHS[m - 1]}\b" if 1 <= m <= 12 else None
+    numeric = rf"\b0?{d}/0?{m}\b"
+    found = (spelled and re.search(spelled, source, re.IGNORECASE)) or re.search(numeric, source)
+    return fact_date if found else year
+
+
 def refusal(story: StoryDraft, passage: Passage, team: Team) -> str | None:
     """Why the verifier refuses the story, or None."""
     allowed = [team.name, team.newsletter, team.fans, *team.club_terms]
@@ -89,7 +110,13 @@ def top_up(
     if need <= 0:
         report.skipped_reason = f"acervo com {unused} histórias"
         return report
-    fresh = [p for p in sources.passages(wiki, team) if p.key not in seen]
+    try:
+        found = sources.passages(wiki, team)
+    except httpx.HTTPError as e:
+        logger.error("Stories of %s: Wikipedia did not answer: %s", team.slug, e)
+        report.skipped_reason = "Wikipédia fora do ar"
+        return report
+    fresh = [p for p in found if p.key not in seen]
     for calls, passage in enumerate(_interleaved(fresh, today)):
         if report.accepted >= need or calls >= MAX_CALLS:
             break
@@ -98,17 +125,20 @@ def top_up(
         except LLMError as e:
             report.problems.append(f"Gemini: {e}")
             break
-        if story.fact_date and story.fact_date[:4] not in NUMBER.findall(passage.text):
-            story = story.model_copy(update={"fact_date": ""})
+        story = story.model_copy(
+            update={"fact_date": checked_date(story.fact_date, f"{passage.title}\n{passage.text}")}
+        )
         reason = refusal(story, passage, team)
         if keep:
             try:
-                recipients.add_story(
+                kept = recipients.add_story(
                     settings, team.slug, story.model_dump() | {"rejected_reason": reason}
                 )
             except httpx.HTTPError as e:
                 report.problems.append(f"portal: {e}")
                 break
+            if not kept:
+                continue  # its source was already there (another run): not a new story
         if reason:
             report.rejected += 1
             logger.info("Story refused (%s): %s", passage.title, reason)

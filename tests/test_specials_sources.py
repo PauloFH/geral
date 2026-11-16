@@ -81,7 +81,9 @@ def test_club_sections_become_clube_passages(found) -> None:
     [mascot] = [p for p in found if p.kind == "clube"]
 
     assert mascot.title == "Clube Náutico Capibaribe — Mascote"
-    assert mascot.key == "https://pt.wikipedia.org/wiki/Clube_N%C3%A1utico_Capibaribe#Mascote"
+    assert (
+        mascot.key == "https://pt.wikipedia.org/wiki/Clube_N%C3%A1utico_Capibaribe#Símbolos/Mascote"
+    )
     assert "19 de agosto de 1934" in mascot.text
 
 
@@ -105,3 +107,39 @@ def test_idol_needs_idolo_near_the_club_name(found) -> None:
 def test_short_passages_are_skipped(found) -> None:
     assert not any("Curta" in p.title for p in found)
     assert all(len(p.text.split()) >= 80 for p in found)
+
+
+def test_level_4_headings_stay_inside_their_section() -> None:
+    text = (
+        "Intro.\n\n== História ==\n\n=== Anos 60 ===\nA.\n\n"
+        "==== O hexa ====\nB.\n\n== Títulos ==\nC."
+    )
+
+    parts = sources.sections(text)
+
+    assert [(s.h2, s.h3) for s in parts] == [
+        ("", None),
+        ("História", None),
+        ("História", "Anos 60"),
+        ("Títulos", None),
+    ]
+    assert "B." in parts[2].text
+
+
+def test_keys_carry_both_heading_levels() -> None:
+    text = (
+        f"== História ==\n\n=== Torcida ===\n{FILLER}\n\n"
+        f"== Símbolos ==\n\n=== Torcida ===\n{FILLER}"
+    )
+
+    keys = {p.key for p in sources._club("ABC Futebol Clube", text)}
+
+    assert len(keys) == 2
+
+
+def test_idol_passage_must_name_the_club_after_the_cut() -> None:
+    career = " ".join(["Brilhou no Botafogo, alvinegro carioca."] * 120)
+    text = f"Ídolo do Botafogo e do ABC. {FILLER}\n\n== Carreira ==\n{career} Encerrou no ABC."
+
+    assert sources._idol("Fulano", text, ("ABC",)) is not None  # the intro names the club
+    assert sources._idol("Fulano", text.replace("e do ABC", ""), ("ABC",)) is None

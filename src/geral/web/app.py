@@ -149,7 +149,7 @@ class StoryIn(BaseModel):
     title: str
     body: str
     summary: str
-    fact_date: str = ""
+    fact_date: str = Field(default="", pattern=r"^(\d{4}(-\d{2}-\d{2})?)?$")
     source_key: str
     source_url: str
     source_title: str

@@ -53,7 +53,7 @@ cbf_id = 20042
 specials = true
 wikipedia = "ABC Futebol Clube"
 classics = ["Clássico-Rei"]
-club_terms = ["ABC", "alvinegro"]
+club_terms = ["ABC"]  # "alvinegro" is also Botafogo, Santos…
 [abc.ge_tables]
 "Série C" = "https://ge.globo.com/futebol/brasileirao-serie-c/"
 # Série D 2026: the last matches (form, last game) until the 2027 season; drop it then.
@@ -80,7 +80,7 @@ ge_id = 343
 specials = true
 wikipedia = "Clube Náutico Capibaribe"
 classics = ["Clássico dos Clássicos", "Clássico das Emoções (Pernambuco)"]
-club_terms = ["Náutico", "Timbu", "alvirrubro"]
+club_terms = ["Náutico", "Timbu"]  # "alvirrubro" is also the América-RN…
 [nautico.ge_tables]
 "Pernambucano" = "https://ge.globo.com/pe/futebol/campeonato-pernambucano/"
 
