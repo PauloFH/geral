@@ -34,7 +34,7 @@ def calendar(monkeypatch):
 
 
 def test_due_prints_the_due_slot(calendar) -> None:
-    calendar.setattr(cli, "_now", lambda: datetime(2026, 10, 18, 12, 45, tzinfo=TZ))
+    calendar.setattr(cli, "_now", lambda: datetime(2026, 10, 18, 14, 45, tzinfo=TZ))
     result = CliRunner().invoke(cli.app, ["due", "--team", "flamengo"])
 
     assert result.exit_code == 0, result.output
@@ -50,7 +50,7 @@ def test_due_prints_nothing_when_nothing_is_due(calendar) -> None:
 
 
 def test_due_prints_nothing_when_espn_fails(calendar) -> None:
-    calendar.setattr(cli, "_now", lambda: datetime(2026, 10, 18, 12, 45, tzinfo=TZ))
+    calendar.setattr(cli, "_now", lambda: datetime(2026, 10, 18, 14, 45, tzinfo=TZ))
 
     def down(team, settings, now):
         raise StatsUnavailable("espn down")
@@ -73,15 +73,15 @@ def test_run_pre_without_slot_that_day_exits_1(calendar) -> None:
 
 
 def test_due_does_not_repeat_the_edition_just_sent(calendar) -> None:
-    # Sent at 12:31; ESPN then moves the kickoff to 19:00, so the pre-game slot becomes 13:00.
+    # Sent at 14:31; ESPN then moves the kickoff to 19:00, so the pre-game slot becomes 15:00.
     moved = BAHIA.model_copy(update={"kickoff": datetime(2026, 10, 18, 19, 0, tzinfo=TZ)})
     sent = LatestEdition(
         subject="Urubu News — Pré-jogo — 18/10/2026: Flamengo visita o Bahia",
-        published_at=datetime(2026, 10, 18, 12, 31, tzinfo=TZ),
+        published_at=datetime(2026, 10, 18, 14, 31, tzinfo=TZ),
     )
     calendar.setattr(cli, "_fixtures", lambda team, settings, now: [moved])
     calendar.setattr(cli, "_latest", lambda settings, team: sent)
-    calendar.setattr(cli, "_now", lambda: datetime(2026, 10, 18, 13, 5, tzinfo=TZ))
+    calendar.setattr(cli, "_now", lambda: datetime(2026, 10, 18, 15, 5, tzinfo=TZ))
 
     result = CliRunner().invoke(cli.app, ["due", "--team", "flamengo"])
 
@@ -128,7 +128,7 @@ def test_run_auto_resolves_the_due_slot(calendar) -> None:
         seen["edition"] = edition
         raise RuntimeError("stop after resolving")
 
-    calendar.setattr(cli, "_now", lambda: datetime(2026, 10, 18, 12, 45, tzinfo=TZ))
+    calendar.setattr(cli, "_now", lambda: datetime(2026, 10, 18, 14, 45, tzinfo=TZ))
     calendar.setattr(pipeline, "build_newsletter", fake_build)
 
     CliRunner().invoke(cli.app, ["run", "--team", "flamengo", "--edition", "auto"])
@@ -157,7 +157,7 @@ def geral_db(monkeypatch, tmp_path):
     db = tmp_path / "subscribers.db"
     monkeypatch.setenv("SUBSCRIBERS_DB", str(db))
     monkeypatch.setattr(cli, "_fixtures", lambda team, settings, now: [match_for(team.slug)])
-    monkeypatch.setattr(cli, "_now", lambda: datetime(2026, 10, 18, 12, 45, tzinfo=TZ))
+    monkeypatch.setattr(cli, "_now", lambda: datetime(2026, 10, 18, 14, 45, tzinfo=TZ))
     return SubscriberStore(db)
 
 
@@ -180,7 +180,7 @@ def test_due_all_lists_only_teams_with_subscribers(geral_db) -> None:
 
 def test_due_all_uses_each_team_latest_edition(geral_db) -> None:
     follow(geral_db, "ana@example.com", ["vasco", "nautico"])
-    sent = datetime(2026, 10, 18, 12, 30, tzinfo=TZ)
+    sent = datetime(2026, 10, 18, 14, 30, tzinfo=TZ)
     geral_db.set_latest_edition(
         "vasco", "Almirante News — Pré-jogo — 18/10/2026: x", "h", "t", sent
     )

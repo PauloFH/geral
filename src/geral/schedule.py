@@ -12,9 +12,13 @@ from zoneinfo import ZoneInfo
 from pydantic import BaseModel
 
 TZ = ZoneInfo("America/Sao_Paulo")
-SEND_TIME = time(8, 0)
-PRE_GAME_LEAD = timedelta(hours=6)
+# Each edition is built first (a draft the owner reviews) and sent later.
+BUILD_TIME = time(8, 0)
+SEND_TIME = time(13, 0)  # news and post-game: the morning is the review window
+PRE_GAME_LEAD = timedelta(hours=6)  # the pre-game is built 6 h before the kick-off...
+REVIEW_TIME = timedelta(hours=2)  # ...and sent 2 h later
 EARLY_KICKOFF = time(11, 0)  # before this, the pre-game goes out the night before
+EARLY_BUILD = time(18, 0)
 NIGHT_BEFORE = time(20, 0)
 MIN_NEWS_GAP = timedelta(hours=72)
 NEWS_EVERY = timedelta(hours=84)
@@ -39,6 +43,7 @@ class Fixture(BaseModel):
 
 class Slot(BaseModel):
     kind: Kind
+    build_at: datetime
     send_at: datetime
     window_start: datetime
     match_id: str | None = None
@@ -50,21 +55,28 @@ def _at(day: date, at: time) -> datetime:
     return datetime.combine(day, at, tzinfo=TZ)
 
 
-def _pre_game(match: Fixture) -> datetime:
+def _pre_game(match: Fixture) -> tuple[datetime, datetime]:
+    """(build, send) of the pre-game."""
     kickoff = match.kickoff.astimezone(TZ)
-    if not match.time_valid:
-        return _at(kickoff.date(), SEND_TIME)
-    if kickoff.time() < EARLY_KICKOFF:
-        return _at(kickoff.date() - timedelta(days=1), NIGHT_BEFORE)
-    return max(kickoff - PRE_GAME_LEAD, _at(kickoff.date(), SEND_TIME))
+    if match.time_valid and kickoff.time() < EARLY_KICKOFF:
+        eve = kickoff.date() - timedelta(days=1)
+        return _at(eve, EARLY_BUILD), _at(eve, NIGHT_BEFORE)
+    morning = _at(kickoff.date(), BUILD_TIME)
+    build = max(kickoff - PRE_GAME_LEAD, morning) if match.time_valid else morning
+    return build, build + REVIEW_TIME
 
 
 def _post_game(match: Fixture) -> datetime:
     return _at(match.kickoff.astimezone(TZ).date() + timedelta(days=1), SEND_TIME)
 
 
+def _morning_build(send_at: datetime) -> datetime:
+    """News and post-game: built at 08:00 of the day they go out."""
+    return _at(send_at.astimezone(TZ).date(), BUILD_TIME)
+
+
 def _nearest_send_time(moment: datetime) -> datetime:
-    """08:00 of the closest day; a tie goes to the later day."""
+    """SEND_TIME of the closest day; a tie goes to the later day."""
     moment = moment.astimezone(TZ)
     same_day = _at(moment.date(), SEND_TIME)
     before, after = (
@@ -122,11 +134,13 @@ def plan(
     """
     anchor = last_sent or now - DEFAULT_WINDOW
     match_slots: list[tuple[Kind, datetime, Fixture]] = []
+    pre_builds: dict[str, datetime] = {}
     previous_post: datetime | None = None
     for match in sorted(fixtures, key=lambda f: f.kickoff):
         if match.state == "postponed":
             continue
-        pre, post = _pre_game(match), _post_game(match)
+        (pre_build, pre), post = _pre_game(match), _post_game(match)
+        pre_builds[match.match_id] = pre_build
         # Games on consecutive days: the post-game (with the next match card) wins.
         if previous_post is None or pre > previous_post:
             match_slots.append(("pre", pre, match))
@@ -154,9 +168,11 @@ def plan(
     slots: list[Slot] = []
     start = anchor
     for kind, send_at, match in timeline:
+        build_at = pre_builds[match.match_id] if kind == "pre" and match else None
         slots.append(
             Slot(
                 kind=kind,
+                build_at=build_at or _morning_build(send_at),
                 send_at=send_at,
                 window_start=start,
                 match_id=match.match_id if match else None,
