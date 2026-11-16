@@ -331,6 +331,26 @@
   </td></tr>
   {% endif %}
 
+  {% if n.story %}
+  <tr><td class="block font">
+    <table role="presentation" class="card" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td class="card-body">
+      <p class="card-title">História</p>
+      <p class="topic-title">{{ n.story.title }}</p>
+      <p class="text">{{ n.story.body }}</p>
+      <p class="muted" style="margin-top: 6px;">Fonte: <a class="link" href="{{ n.story.source_url }}">{{ n.story.source_title }}</a> (Wikipédia)</p>
+    </td></tr></table>
+  </td></tr>
+  {% endif %}
+
+  {% if n.on_this_day %}
+  <tr><td class="block font">
+    <table role="presentation" class="card" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td class="card-body">
+      <p class="card-title">Neste dia</p>
+      {% for line in n.on_this_day %}<p class="text" style="margin-top: 4px;">{{ line }}</p>{% endfor %}
+    </td></tr></table>
+  </td></tr>
+  {% endif %}
+
   {% for section_title, items in [("Saiba mais", n.learn_more), ("Brasil afora", n.around_brazil)] if items %}
   <tr><td class="block font">
     <table role="presentation" class="card" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td class="card-body">

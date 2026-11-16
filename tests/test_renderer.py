@@ -737,3 +737,36 @@ def test_prompts_tell_the_model_about_the_shootout() -> None:
 
     assert "pênaltis 2 x 4" in intro
     assert "pênaltis 2 x 4" in analysis
+
+
+def test_story_and_on_this_day_are_rendered() -> None:
+    from geral.models import Story
+
+    story = Story(
+        id=1,
+        kind="clube",
+        title="Como o Náutico virou Timbu",
+        body="Em 19 de agosto de 1934, a torcida gritou Timbu & o apelido ficou.",
+        summary="A provocação que virou mascote.",
+        fact_date="1934-08-19",
+        source_title="Clube Náutico Capibaribe — Mascote",
+        source_url="https://pt.wikipedia.org/wiki/Clube_N%C3%A1utico_Capibaribe",
+    )
+    newsletter = full_newsletter().model_copy(
+        update={"story": story, "on_this_day": ["Há 92 anos, em 19/08/1934: O apelido."]}
+    )
+
+    html, text = render(newsletter)
+
+    assert "Como o Náutico virou Timbu" in html and "Timbu &amp; o apelido" in html
+    assert "História" in html and "Neste dia" in html
+    assert "https://pt.wikipedia.org/wiki/Clube_N%C3%A1utico_Capibaribe" in html
+    assert "== História ==" in text and "== Neste dia ==" in text
+    assert "Fonte: Clube Náutico Capibaribe — Mascote (Wikipédia)" in text
+    assert html.index("Notícias") < html.index("Como o Náutico virou Timbu")
+
+
+def test_no_special_sections_without_them() -> None:
+    html, text = render(full_newsletter())
+
+    assert "Neste dia" not in html and "== História ==" not in text
