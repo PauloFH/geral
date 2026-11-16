@@ -82,6 +82,7 @@ class Efeito:
     jogos: float = 1.0  # share of the season played ("antes" events only)
     selecao: bool = False  # called up this season
     titulo: str = ""  # a trophy this event gives
+    atributos: dict[str, int] = field(default_factory=dict, hash=False)  # added to the ratings
 
 
 @dataclass(frozen=True)
@@ -99,6 +100,26 @@ class Evento:
 class Opcao:
     texto: str
     destino: str
+
+
+@dataclass(frozen=True)
+class OpcaoRotina:
+    texto: str
+    chance: int = 100  # % of sucesso, before the bonus
+    bonus: str = ""  # an attribute that adds (rating - 70) / 2 to the chance
+    sucesso: Efeito = Efeito()
+    fracasso: Efeito = Efeito()
+
+
+@dataclass(frozen=True)
+class Rotina:
+    """A day-to-day situation of the Completa mode: one per season, the result counts next."""
+
+    id: str
+    texto: str
+    opcoes: tuple[OpcaoRotina, ...]
+    peso: float = 1.0
+    condicao: Condicao = Condicao()
 
 
 @dataclass(frozen=True)
@@ -130,6 +151,7 @@ class Dados:
     eventos: tuple[Evento, ...] = ()
     decisoes: tuple[Decisao, ...] = ()
     finais: tuple[dict, ...] = ()  # read by final.py
+    rotinas: tuple[Rotina, ...] = ()
 
 
 def _toml(pasta: Path, nome: str) -> dict:
@@ -177,13 +199,44 @@ def _evento(entry: dict) -> Evento:
     entry = dict(entry)
     condicao = _condicao(entry.pop("condicao", {}), onde)
     try:
-        efeito = Efeito(**entry.pop("efeito", {}))
+        efeito = _efeito(entry.pop("efeito", {}), onde)
         evento = Evento(condicao=condicao, efeito=efeito, **entry)
     except TypeError as erro:
         raise ValueError(f"{onde}: {erro}") from None
     if not evento.manchetes or evento.momento not in ("antes", "depois"):
         raise ValueError(f"{onde}: needs manchetes and momento antes/depois")
     return Evento(**{**evento.__dict__, "manchetes": tuple(evento.manchetes)})
+
+
+def _efeito(raw: dict, onde: str) -> Efeito:
+    try:
+        efeito = Efeito(**raw)
+    except TypeError as erro:
+        raise ValueError(f"{onde}: {erro}") from None
+    if set(efeito.atributos) - set(ATRIBUTOS):
+        raise ValueError(f"{onde}: unknown atributos {efeito.atributos}")
+    return efeito
+
+
+def _rotina(entry: dict) -> Rotina:
+    onde = f"rotina.toml: {entry.get('id')!r}"
+    entry = dict(entry)
+    condicao = _condicao(entry.pop("condicao", {}), onde)
+    opcoes = []
+    for raw in entry.pop("opcao", []):
+        raw = dict(raw)
+        sucesso = _efeito(raw.pop("sucesso", {}), onde)
+        fracasso = _efeito(raw.pop("fracasso", {}), onde)
+        opcao = OpcaoRotina(sucesso=sucesso, fracasso=fracasso, **raw)
+        if not 1 <= opcao.chance <= 100 or opcao.bonus not in ("", *ATRIBUTOS):
+            raise ValueError(f"{onde}: chance 1-100 and bonus an attribute")
+        opcoes.append(opcao)
+    if len(opcoes) < 2:
+        raise ValueError(f"{onde}: needs 2+ opcoes")
+    try:
+        return Rotina(condicao=condicao, opcoes=tuple(opcoes), **entry)
+    except TypeError as erro:
+        raise ValueError(f"{onde}: {erro}") from None
 
 
 def _decisao(entry: dict) -> Decisao:
@@ -217,8 +270,9 @@ def _carregar(pasta: Path, versao: str) -> Dados:
     ligas, clubes = _mundo(pasta)
     eventos = tuple(_evento(e) for e in _toml(pasta, "eventos.toml").get("evento", []))
     decisoes = tuple(_decisao(e) for e in _toml(pasta, "escolhas.toml").get("escolha", []))
-    ids = [e.id for e in eventos] + [d.id for d in decisoes]
+    rotinas = tuple(_rotina(e) for e in _toml(pasta, "rotina.toml").get("rotina", []))
+    ids = [e.id for e in eventos] + [d.id for d in decisoes] + [r.id for r in rotinas]
     if len(ids) != len(set(ids)):
         raise ValueError("eventos.toml/escolhas.toml: repeated id")
     finais = tuple(_toml(pasta, "finais.toml").get("final", []))
-    return Dados(lendas, ligas, clubes, versao, eventos, decisoes, finais)
+    return Dados(lendas, ligas, clubes, versao, eventos, decisoes, finais, rotinas)

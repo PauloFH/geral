@@ -197,7 +197,7 @@ class CarreiraIn(BaseModel):
     semente: str | None = Field(default=None, min_length=1, max_length=40)  # drawn when absent
     craque: carreira_motor.Craque
     roubos: list[carreira_draft.Roubo] = Field(max_length=9)
-    escolhas: list[int] = Field(default=[], max_length=carreira_motor.MAX_ESCOLHAS + 2)
+    escolhas: list[int] = Field(default=[], max_length=carreira_motor.MAX_RESPOSTAS)
 
 
 class VelhaIn(BaseModel):

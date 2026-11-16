@@ -11,13 +11,23 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 from geral.games.carreira import final
-from geral.games.carreira.dados import COM_CLUBE, Clube, Condicao, Dados, Decisao, Evento
+from geral.games.carreira.dados import (
+    COM_CLUBE,
+    Clube,
+    Condicao,
+    Dados,
+    Decisao,
+    Efeito,
+    Evento,
+    OpcaoRotina,
+)
 from geral.games.carreira.draft import JogadaInvalida, Roubo, montar, oferta
-from geral.games.carreira.regras import POSICOES, geral
+from geral.games.carreira.regras import NOMES, POSICOES, geral
 
 PRIMEIRO_ANO = 2027
 IDADE_INICIAL, IDADE_MAXIMA = 16, 42
-MAX_ESCOLHAS = 4  # questions per career
+MAX_ESCOLHAS = 4  # decision questions per career (both modes)
+MAX_RESPOSTAS = 60  # every answer of a Completa career: a day-to-day one per season, the market
 CHANCE_ESCOLHA = 0.4  # per season, when one fits
 EUROPA = 80  # league strength from which a league counts as the top of Europe
 EXOTICAS = ("ara", "jap", "eua", "tur", "mex")
@@ -38,7 +48,8 @@ class Entrada(BaseModel):
     semente: str = Field(min_length=1, max_length=40)
     craque: Craque
     roubos: list[Roubo] = Field(max_length=9)
-    escolhas: list[int] = Field(default=[], max_length=MAX_ESCOLHAS + 2)
+    escolhas: list[int] = Field(default=[], max_length=MAX_RESPOSTAS)
+    modo: Literal["rapida", "completa"] = "rapida"
 
 
 class Temporada(BaseModel):
@@ -57,12 +68,28 @@ class Temporada(BaseModel):
     copa: bool  # played a World Cup
     manchete: str
     eventos: list[str]
+    chegada: str | None = None  # "Chegou do Vasco": every change of club says so
+    rotina: "ResultadoRotina | None" = None  # the day-to-day choice before this season
+
+
+class ResultadoRotina(BaseModel):
+    situacao: str
+    escolha: str
+    deu_certo: bool
+    efeito: str  # "+3 finalização", "" when nothing changed
+
+
+class InfoOpcao(BaseModel):
+    chance: int | None = None  # % of it going well; None when there is no risk
+    efeitos: str = ""  # "certo: +3 finalização · errado: lesão leve"
 
 
 class Escolha(BaseModel):
     id: str
+    tipo: Literal["dia", "mercado", "decisao"] = "decisao"
     pergunta: str
     opcoes: list[str]
+    info: list[InfoOpcao] = []  # chance and effects of each option (day-to-day ones)
     destinos: list[str]  # the kind of each option (ficar, europa, aposentar…)
     clubes: list[str | None]  # the club each option moves to, None when it stays put
 
@@ -85,6 +112,39 @@ class Carreira(BaseModel):
     temporadas: list[Temporada]
     pendente: Escolha | None = None
     final: Final | None = None
+
+
+def chance_de(opcao: OpcaoRotina, notas: dict[str, int]) -> int:
+    """The % shown to the fan and rolled by the engine: one source for both."""
+    if opcao.chance >= 100:
+        return 100
+    bonus = (notas[opcao.bonus] - 70) // 2 if opcao.bonus else 0
+    return max(5, min(95, opcao.chance + bonus))
+
+
+def descrever(efeito: Efeito) -> str:
+    partes = [
+        f"{'+' if d > 0 else '−'}{abs(d)} {NOMES[a].lower()}" for a, d in efeito.atributos.items()
+    ]
+    if efeito.nota:
+        partes.append(f"{'+' if efeito.nota > 0 else '−'}{abs(efeito.nota)} de forma")
+    if efeito.jogos < 1:
+        partes.append("lesão: perde parte da temporada" if efeito.jogos <= 0.7 else "lesão leve")
+    if efeito.saida > 0:
+        partes.append("clima ruim no clube")
+    if efeito.selecao:
+        partes.append("olho da Seleção")
+    return ", ".join(partes)
+
+
+def _info(opcao: OpcaoRotina, notas: dict[str, int]) -> InfoOpcao:
+    chance = chance_de(opcao, notas)
+    certo, errado = descrever(opcao.sucesso), descrever(opcao.fracasso)
+    if chance >= 100:
+        return InfoOpcao(chance=None, efeitos=certo or "nada muda")
+    return InfoOpcao(
+        chance=chance, efeitos=f"certo: {certo or 'nada muda'} · errado: {errado or 'nada muda'}"
+    )
 
 
 def clube_inicial(dados: Dados, edicao: str, escolhido: str | None) -> Clube:
@@ -176,6 +236,10 @@ class _Simulacao:
     respondidas: int = 0
     emprestado_de: Clube | None = None
     aposentou: bool = False
+    chegada: str | None = None  # how he got to the current club, for the next season
+    efeito: Efeito = Efeito()  # the day-to-day result, for the next season
+    resultado: ResultadoRotina | None = None
+    rotinas_vistas: list[str] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         self.rng = random.Random(f"carreira:{self.entrada.semente}")
@@ -185,11 +249,16 @@ class _Simulacao:
         self.nota = max(30, self.teto - 25)
         self.aposenta_aos = self.rng.randint(33, 38) + (2 if self.notas["fisico"] >= 85 else 0)
         self.idade, self.ano, self.clube = IDADE_INICIAL, PRIMEIRO_ANO, self.inicio
+        self.completa = self.entrada.modo == "completa"
 
     # -- the loop --------------------------------------------------------------------------
 
     def rodar(self) -> Carreira:
         while True:
+            if self.completa and self.idade > IDADE_INICIAL:
+                pendente = self._dia_a_dia()
+                if pendente:
+                    return Carreira(temporadas=self.temporadas, pendente=pendente)
             temporada, saida = self._temporada()
             self.temporadas.append(temporada)
             if not self._encerra():
@@ -197,7 +266,9 @@ class _Simulacao:
                 if pendente:
                     return Carreira(temporadas=self.temporadas, pendente=pendente)
                 if not (self.aposentou or decidiu):  # the fan's answer holds this winter
-                    self._mercado(saida)
+                    pendente = self._mercado(saida)
+                    if pendente:
+                        return Carreira(temporadas=self.temporadas, pendente=pendente)
             if self.aposentou or self._encerra():
                 break
             self.idade, self.ano = self.idade + 1, self.ano + 1
@@ -262,7 +333,7 @@ class _Simulacao:
         liga = self.dados.ligas[self.clube.liga]
         nivel = self._nivel(self.clube)
         antes = self._sortear_eventos("antes", self._contexto())
-        efeito_jogos = min([e.efeito.jogos for e in antes], default=1.0)
+        efeito_jogos = min([e.efeito.jogos for e in antes] + [self.efeito.jogos])
         jogos = gols = assist = selecao = 0
         titulos: list[str] = []
         copa = False
@@ -289,7 +360,7 @@ class _Simulacao:
                 and self.rng.random() < chance * 0.35
             ):
                 titulos.append(liga.continental)
-            convocado = any(e.efeito.selecao for e in antes)
+            convocado = any(e.efeito.selecao for e in antes) or self.efeito.selecao
             if 18 <= self.idade <= 35 and self.nota >= 78 and parte > 0.4:
                 convocado = convocado or self.rng.random() < min(0.95, (self.nota - 76) / 14)
             if convocado:
@@ -335,8 +406,12 @@ class _Simulacao:
             copa=copa,
             manchete=manchete,
             eventos=[e.id for e in eventos],
+            chegada=self.chegada,
+            rotina=self.resultado,
         )
-        return temporada, sum(e.efeito.saida for e in eventos)
+        saida = sum(e.efeito.saida for e in eventos) + self.efeito.saida
+        self.chegada, self.efeito, self.resultado = None, Efeito(), None
+        return temporada, saida
 
     # -- between seasons -------------------------------------------------------------------
 
@@ -366,26 +441,122 @@ class _Simulacao:
                 cabem = perto
         return self.rng.choice(cabem) if cabem else None
 
-    def _mudar(self, clube: Clube | None, emprestimo: bool = False) -> None:
+    def _mudar(
+        self, clube: Clube | None, emprestimo: bool = False, motivo: str | None = None
+    ) -> None:
         if clube is None:
             return
+        if motivo is None:
+            de = artigos("c", self.clube)
+            motivo = f"Emprestado {de['pelo_c']}" if emprestimo else f"Chegou {de['do_c']}"
         self.emprestado_de = (self.emprestado_de or self.clube) if emprestimo else None
-        self.clube = clube
+        self.clube, self.chegada = clube, motivo
 
-    def _mercado(self, saida: float) -> None:
+    def _mercado(self, saida: float) -> Escolha | None:
+        """The winter's market. Rápida moves him by itself; Completa asks, save for the end of a
+        loan and a release (both told in the next season's line)."""
         if self.emprestado_de:
-            self._mudar(self.emprestado_de)
-            return
+            de = artigos("c", self.clube)["ao_c"]
+            self._mudar(self.emprestado_de, motivo=f"Voltou do empréstimo {de}")
+            return None
         diff = self.nota - self._nivel(self.clube)
         sorte = self.rng.random()
+        destino = None
         if self.idade >= 31 and sorte < 0.08 + saida / 2:
-            self._mudar(self._destino(self.rng.choice(("exotico", "casa", "menor"))))
+            destino = self._destino(self.rng.choice(("exotico", "casa", "menor")))
         elif diff >= 8 and sorte < 0.35 + saida:
-            self._mudar(self._destino("maior"))
+            destino = self._destino("maior")
         elif diff <= -10 and sorte < (0.85 if diff <= -18 else 0.5) + saida:
-            self._mudar(self._destino("menor"))
+            destino = self._destino("menor")
+            if self.completa and diff <= -18 and destino:  # no room: released, no question
+                saiu = artigos("c", self.clube)["pelo_c"]
+                self._mudar(destino, motivo=f"Dispensado {saiu}")
+                return None
         elif sorte < 0.08 + saida:
-            self._mudar(self._destino("lado"))
+            destino = self._destino("lado")
+        if destino is None:
+            return None
+        if not self.completa:
+            self._mudar(destino)
+            return None
+        return self._proposta(destino)
+
+    def _proposta(self, destino: Clube) -> Escolha | None:
+        campos = artigos("clube", self.clube) | artigos("destino", destino)
+        campos |= {"nome": self.entrada.craque.nome, "idade": self.idade}
+        pais = self.dados.ligas[destino.liga].pais
+        onde = "" if pais == self.dados.ligas[self.clube.liga].pais else f" ({pais})"
+        escolha = Escolha(
+            id="proposta",
+            tipo="mercado",
+            pergunta="{O_destino}{onde} faz uma proposta por {nome}.".format_map(
+                campos | {"onde": onde}
+            ),
+            opcoes=[
+                "Aceitar e ir {para_o_destino}".format_map(campos),
+                "Ficar {no_clube}".format_map(campos),
+            ],
+            destinos=["maior", "ficar"],
+            clubes=[destino.id, None],
+        )
+        resposta = self._resposta(len(escolha.opcoes))
+        if resposta is None:
+            return escolha
+        if resposta == 0:
+            self._mudar(destino)
+        return None
+
+    def _resposta(self, opcoes: int) -> int | None:
+        """The fan's next answer, or None when the career waits for it."""
+        if self.respondidas >= len(self.entrada.escolhas):
+            return None
+        resposta = self.entrada.escolhas[self.respondidas]
+        self.respondidas += 1
+        if not 0 <= resposta < opcoes:
+            raise JogadaInvalida("essa opção não existe")
+        return resposta
+
+    def _dia_a_dia(self) -> Escolha | None:
+        """Completa: the season's day-to-day situation; its result counts for this season."""
+        ctx = self._contexto()
+        if self.temporadas:
+            ctx.gols, ctx.jogos = self.temporadas[-1].gols, self.temporadas[-1].jogos
+        cabem = [r for r in self.dados.rotinas if ctx.casa(r.condicao)]
+        novas = [r for r in cabem if r.id not in self.rotinas_vistas] or cabem
+        if not novas:
+            return None
+        rotina = self.rng.choices(novas, weights=[r.peso for r in novas])[0]
+        self.rotinas_vistas.append(rotina.id)
+        campos = artigos("clube", self.clube) | {
+            "nome": self.entrada.craque.nome,
+            "idade": self.idade,
+        }
+        texto = rotina.texto.format_map(campos)
+        resposta = self._resposta(len(rotina.opcoes))
+        if resposta is None:
+            return Escolha(
+                id=rotina.id,
+                tipo="dia",
+                pergunta=texto,
+                opcoes=[o.texto for o in rotina.opcoes],
+                info=[_info(o, self.notas) for o in rotina.opcoes],
+                destinos=["ficar"] * len(rotina.opcoes),
+                clubes=[None] * len(rotina.opcoes),
+            )
+        opcao = rotina.opcoes[resposta]
+        deu_certo = self.rng.random() * 100 < chance_de(opcao, self.notas)
+        efeito = opcao.sucesso if deu_certo else opcao.fracasso
+        antes = geral(self.notas, self.posicao)
+        for atributo, delta in efeito.atributos.items():
+            self.notas[atributo] = max(1, min(99, self.notas[atributo] + delta))
+        ganho = geral(self.notas, self.posicao) - antes + efeito.nota
+        self.nota = max(20, min(99, self.nota + ganho))
+        self.teto = max(35, min(99, self.teto + geral(self.notas, self.posicao) - antes))
+        self.efeito = efeito
+        self.resultado = ResultadoRotina(
+            situacao=texto, escolha=opcao.texto, deu_certo=deu_certo, efeito=descrever(efeito)
+        )
+        return None
 
     def _pergunta(self, temporada: Temporada) -> tuple[Escolha | None, bool]:
         """Maybe a question this season: (pending question, the fan settled this winter)."""
@@ -407,12 +578,9 @@ class _Simulacao:
         if any(clube is None for clube in destinos.values()):
             return None, False
         self.perguntadas.append(decisao.id)
-        if self.respondidas >= len(self.entrada.escolhas):
+        resposta = self._resposta(len(decisao.opcoes))
+        if resposta is None:
             return self._escolha(decisao, destinos), False
-        resposta = self.entrada.escolhas[self.respondidas]
-        self.respondidas += 1
-        if not 0 <= resposta < len(decisao.opcoes):
-            raise JogadaInvalida("essa opção não existe")
         destino = decisao.opcoes[resposta].destino
         if destino == "aposentar":
             self.aposentou = True
@@ -456,3 +624,6 @@ class _Simulacao:
             parecido=final.parecido(self.dados, final.base_real(), self.temporadas, self.posicao),
             perguntas=list(self.perguntadas),
         )
+
+
+Temporada.model_rebuild()
