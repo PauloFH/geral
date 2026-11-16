@@ -6,15 +6,15 @@
 <section class="jogo wall">
   <div class="wrap" id="cd" data-edition="{{ edition }}" data-number="{{ number }}" data-archive="{{ '1' if archive else '0' }}" data-label="{{ label }}" data-max="{{ max_guesses }}" data-letters="{{ letters }}">
     {% include "_game_tabs.html.j2" %}
-    <h1>Craque do dia</h1>
+    <div class="game-title"><h1>Craque do dia</h1><button type="button" class="rules-open" aria-label="Como jogar">?</button></div>
     {% if archive %}<p class="archive-note">Jogo de {{ day }} · não conta na sequência · <a href="{{ today_url }}">Jogar o de hoje →</a></p>{% endif %}
-    <p class="lead">Um ídolo ou artilheiro por dia, o mesmo para todo mundo. Chute o nome do craque, como a torcida chama: você tem {{ max_guesses }} tentativas, e cada letra diz se está no lugar certo.</p>
-    <nav class="editions" aria-label="Edições">
-      {% for slug, t in editions %}
-      <a href="/jogos/craque-do-dia{% if slug != 'geral' %}/{{ slug }}{% endif %}"{% if slug == edition and not archive %} aria-current="page"{% endif %}>{{ t.name if t else "Geral" }}</a>
-      {% endfor %}
-    </nav>
 
+    <div class="stage">
+      <nav class="editions" aria-label="Edições">
+        {% for slug, t in editions %}
+        <a href="/jogos/craque-do-dia{% if slug != 'geral' %}/{{ slug }}{% endif %}"{% if slug == edition and not archive %} aria-current="page"{% endif %}>{{ t.name if t else "Geral" }}</a>
+        {% endfor %}
+      </nav>
     <div class="board match cd-board">
       <span class="lamp meta">#{{ number }} · {{ label }} · {{ letters }} letras</span>
       <div class="grid" id="cd-grid" role="group" style="--n: {{ letters }}" aria-label="Seus chutes: {{ max_guesses }} linhas de {{ letters }} letras">
@@ -29,6 +29,7 @@
     <div class="keys" id="cd-keys" aria-label="Teclado">
       {% for line in ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"] %}<div class="keyrow">{% if loop.last %}<button type="button" class="key wide" data-key="Backspace" aria-label="Apagar"><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M9 5h11v14H9l-6-7z M12 9l5 6 M17 9l-5 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/></svg></button>{% endif %}{% for k in line %}<button type="button" class="key" data-key="{{ k }}">{{ k }}</button>{% endfor %}{% if loop.last %}<button type="button" class="key wide" data-key="Enter">Chutar</button>{% endif %}</div>{% endfor %}
     </div>
+    </div>
 
     <div class="result" id="cd-result" hidden>
       <h2 id="cd-title"></h2>
@@ -38,9 +39,9 @@
       {% if not archive %}<div class="stats"><span><b id="cd-streak">0</b>sequência</span><span><b id="cd-wins">0</b>acertos</span><span><b id="cd-played">0</b>jogos</span></div>{% endif %}
     </div>
 
-    <p class="how">Verde: letra no lugar certo. Amarelo: a letra está no nome, em outro lugar. Cinza: não está. Acentos não contam. Depois de 3 erros aparece a posição; depois de 4, a época. Amanhã tem outro.</p>
     {% if past %}<nav class="past" aria-label="Jogos anteriores"><h2>Jogos anteriores</h2><ul>{% for p in past %}<li><a href="{{ p.url }}"{% if archive and p.number == number %} aria-current="page"{% endif %}>#{{ p.number }} <small>{{ p.day }}</small></a></li>{% endfor %}</ul></nav>{% endif %}
     <p class="credit">Listas montadas à mão pela Geral. Achou um erro? Responda qualquer newsletter.</p>
+    {% set rules_key = "craque-do-dia" %}{% set rules %}Adivinhe o craque do dia em {{ max_guesses }} chutes, pelo nome que a torcida usa.|Verde: letra no lugar certo. Amarelo: está no nome, em outro lugar. Cinza: não está. Acentos não contam.|Depois de 3 erros aparece a posição; depois de 4, a época.|Um craque novo por dia, o mesmo para todo mundo.{% endset %}{% set rules = rules.split("|") %}{% include "_regras.html.j2" %}
   </div>
 </section>
 <script src="/static/geral/craque.js?v={{ asset_version }}" defer></script>

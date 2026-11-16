@@ -8,6 +8,7 @@ import hashlib
 import hmac
 import logging
 import os
+import random
 import re
 import unicodedata
 from collections import defaultdict, deque
@@ -27,8 +28,10 @@ from pydantic import AwareDatetime, BaseModel, Field, model_validator
 from geral.config import Settings, get_settings
 from geral.games import calendario, craque, onde_jogou, quem_e
 from geral.games.velha import base as velha_base
+from geral.games.velha import board as velha_tabuleiro
 from geral.games.velha import busca as velha_busca
 from geral.games.velha import diario as velha_diario
+from geral.games.velha import duelo as velha_duelo
 from geral.games.velha import judge as velha_judge
 from geral.general import GENERAL_EDITION, GENERAL_SLUG
 from geral.send.resend_sender import UNSUBSCRIBE_PLACEHOLDER, personalize
@@ -158,6 +161,11 @@ class ClubGuessesIn(BaseModel):
 
 class VelhaIn(BaseModel):
     chutes: list[velha_judge.Guess] = Field(max_length=velha_judge.MAX_GUESSES + 1)
+
+
+class DuelIn(BaseModel):
+    tabuleiro: str = Field(max_length=200)
+    jogadas: list[velha_duelo.Move] = Field(max_length=60)
 
 
 class WordGuessesIn(BaseModel):
@@ -1004,6 +1012,38 @@ def create_app(
             clubs.append(club)
         jogador = daily_player("onde-jogou", edition, players, number)
         return onde_jogou.judge(data, jogador, clubs, body.desistiu, given_clubs(edition))
+
+    # The duel before `/jogos/velha/{edition}`, or "duelo" would be read as an edition.
+    @app.get("/jogos/velha/duelo", response_class=HTMLResponse)
+    def velha_duel_page(request: Request):
+        return page(
+            request,
+            "velha_duelo.html.j2",
+            edition="geral",
+            tabs=game_tabs("velha", "geral"),
+            archive=False,
+            seconds=velha_duelo.SECONDS,
+        )
+
+    @app.get("/api/jogos/velha/tabuleiro")
+    def velha_new_board():
+        board = velha_tabuleiro.make_board(velha(), random.Random())  # fresh, not the day's
+        return {
+            "codigo": board.code,
+            "linhas": [c.label for c in board.rows],
+            "colunas": [c.label for c in board.cols],
+        }
+
+    @app.post("/api/jogos/velha/duelo")
+    def velha_duel(body: DuelIn):
+        base = velha()
+        try:
+            board = velha_tabuleiro.parse_board(base, body.tabuleiro)
+            state = velha_duelo.judge_duel(base, board, body.jogadas)
+        except ValueError as error:  # GuessError too: a bad board or move
+            return JSONResponse({"detail": str(error)}, status_code=422)
+        names = {q: base.players[q].nome for q in state.jogadores.values()}
+        return state.model_dump() | {"nomes": names}
 
     @app.get("/jogos/velha", response_class=HTMLResponse)
     @app.get("/jogos/velha/{edition}", response_class=HTMLResponse)

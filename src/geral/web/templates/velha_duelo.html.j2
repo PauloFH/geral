@@ -1,0 +1,58 @@
+{% extends "base.html.j2" %}
+{% block title %}Duelo · Jogo da velha · Geral{% endblock %}
+{% block head %}<link rel="stylesheet" href="/static/geral/jogos.css?v={{ asset_version }}">{% endblock %}
+{% block content %}
+<section class="jogo wall">
+  <div class="wrap" id="jd" data-seconds="{{ seconds }}">
+    {% include "_game_tabs.html.j2" %}
+    <div class="game-title"><h1>Jogo da velha</h1><button type="button" class="rules-open" aria-label="Como jogar">?</button></div>
+    {% set mode = "duelo" %}{% include "_velha_modos.html.j2" %}
+
+    <div class="stage">
+    <div class="duel-score" aria-live="polite">
+      <span class="plate duel-side" id="jd-p1"><span class="duel-name"><span class="long">Jogador </span><span class="short">J</span>1 <i id="jd-p1-mark">X</i></span><b id="jd-p1-wins">0</b></span>
+      <span class="plate duel-clock" id="jd-clock"><span id="jd-turn">Partida 1</span><b id="jd-seconds">{{ seconds }}</b></span>
+      <span class="plate duel-side" id="jd-p2"><span class="duel-name"><span class="long">Jogador </span><span class="short">J</span>2 <i id="jd-p2-mark">O</i></span><b id="jd-p2-wins">0</b></span>
+    </div>
+
+    <p class="duel-status" id="jd-status" role="status"></p>
+
+    <div class="duel-stage">
+    <div class="result duel-start" id="jd-start">
+      <h2 id="jd-start-title">Jogador 1 é X e começa</h2>
+      <div class="actions"><button class="btn" type="button" id="jd-go">Começar</button></div>
+    </div>
+    <div class="velha-board" role="grid" aria-label="Tabuleiro do duelo">
+      <span class="plate velha-corner" id="jd-corner">VS</span>
+      {% for n in range(3) %}<span class="plate velha-head col" role="columnheader">?</span>{% endfor %}
+      {% for row in range(3) %}
+      <span class="plate velha-head row" role="rowheader">?</span>
+      {% for col in range(3) %}<button type="button" class="vcell" data-casa="{{ row * 3 + col }}" disabled><span class="vcell-mark"></span><span class="vcell-name"></span><small class="vcell-note"></small></button>{% endfor %}
+      {% endfor %}
+    </div>
+    </div>
+    </div>
+
+    <dialog class="game-dialog" id="jv-dialog" aria-labelledby="jv-cell-label">
+      <form class="picker" id="jv-form" role="search">
+        <div class="picker-top">
+          <h2 class="velha-dialog-title" id="jv-cell-label">Buscar jogador</h2>
+          <button class="velha-close" type="button" id="jv-close" aria-label="Fechar">✕</button>
+        </div>
+        <label class="picker-search"><span class="sr-only">Nome do jogador</span><input id="jv-search" type="search" autocomplete="off" spellcheck="false" placeholder="Digite o nome"></label>
+        <p class="velha-error" id="jv-error" role="alert" hidden></p>
+        <ul class="velha-results" id="jv-results" aria-live="polite"></ul>
+      </form>
+    </dialog>
+
+    <div class="result" id="jd-result" hidden>
+      <h2 id="jd-title"></h2>
+      <div class="actions"><button class="btn" type="button" id="jd-again">Revanche</button></div>
+    </div>
+
+    <p class="credit">Jogadores: <a href="https://en.wikipedia.org/">Wikipédia</a> (<a href="https://creativecommons.org/licenses/by-sa/4.0/deed.pt-br">CC BY-SA</a>) e <a href="https://www.wikidata.org/">Wikidata</a>.</p>
+    {% set rules_key = "velha-duelo" %}{% set rules %}Dois jogadores no mesmo aparelho, X contra O; o X começa.|{{ seconds }} segundos por vez para achar um jogador do cruzamento. Errou ou estourou, passa a vez.|Cada jogador vale uma vez só, para os dois.|Três em linha vence. Seis vezes seguidas sem casa, ou tabuleiro cheio: vence quem tem mais casas.|Na revanche, quem não começou começa.{% endset %}{% set rules = rules.split("|") %}{% include "_regras.html.j2" %}
+  </div>
+</section>
+<script src="/static/geral/velha-duelo.js?v={{ asset_version }}" defer></script>
+{% endblock %}

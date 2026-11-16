@@ -6,15 +6,15 @@
 <section class="jogo wall">
   <div class="wrap" id="oj" data-edition="{{ edition }}" data-number="{{ number }}" data-archive="{{ '1' if archive else '0' }}" data-label="{{ label }}" data-player="{{ player_key }}" data-max="{{ max_wrong }}">
     {% include "_game_tabs.html.j2" %}
-    <h1>Onde jogou?</h1>
+    <div class="game-title"><h1>Onde jogou?</h1><button type="button" class="rules-open" aria-label="Como jogar">?</button></div>
     {% if archive %}<p class="archive-note">Jogo de {{ day }} · não conta na sequência · <a href="{{ today_url }}">Jogar o de hoje →</a></p>{% endif %}
-    <p class="lead">Um jogador por dia, o mesmo para todo mundo. Diga por quais clubes ele passou: cada acerto acende as passagens daquele clube. Você pode errar {{ max_wrong }} vezes.{% if team %} As passagens pelo {{ team.name }} já vêm acesas e não contam no placar.{% endif %}</p>
-    <nav class="editions" aria-label="Edições">
-      {% for slug, t in editions %}
-      <a href="/jogos/onde-jogou{% if slug != 'geral' %}/{{ slug }}{% endif %}"{% if slug == edition and not archive %} aria-current="page"{% endif %}>{{ t.name if t else "Geral" }}</a>
-      {% endfor %}
-    </nav>
 
+    <div class="stage">
+      <nav class="editions" aria-label="Edições">
+        {% for slug, t in editions %}
+        <a href="/jogos/onde-jogou{% if slug != 'geral' %}/{{ slug }}{% endif %}"{% if slug == edition and not archive %} aria-current="page"{% endif %}>{{ t.name if t else "Geral" }}</a>
+        {% endfor %}
+      </nav>
     <div class="board match">
       <span class="lamp meta">#{{ number }} · {{ label }}{% if jogador.posicao %} · {{ jogador.posicao }}{% endif %}</span>
       <span class="lamp player">{{ jogador.nome }}</span>
@@ -24,18 +24,27 @@
       </ol>
     </div>
 
+    <div class="search-bar" id="oj-bar">
+      <button type="button" class="search-open" id="oj-open">Buscar clube…</button>
+      <button class="btn secondary" type="button" id="oj-give-up">Desistir</button>
+    </div>
+    <dialog class="game-dialog" id="oj-dialog" aria-label="Buscar clube">
     <form class="picker" id="oj-form" role="search">
       <div class="picker-top">
-        <label class="picker-search">Buscar clube<input id="oj-search" type="search" autocomplete="off" spellcheck="false" placeholder="Digite o nome ou o apelido"></label>
-        <button class="btn secondary" type="button" id="oj-give-up">Desistir</button>
+        <h2 class="velha-dialog-title">Buscar clube</h2>
+        <button class="velha-close" type="button" id="oj-close" aria-label="Fechar">✕</button>
       </div>
+      <p class="velha-error" id="oj-dialog-error" role="alert" hidden></p>
+      <label class="picker-search"><span class="sr-only">Buscar clube</span><input id="oj-search" type="search" autocomplete="off" spellcheck="false" placeholder="Digite o nome ou o apelido"></label>
       <div class="countries" id="oj-countries" role="group" aria-label="Filtrar por país"></div>
       <ul class="club-grid" id="oj-results" aria-live="polite"></ul>
       <nav class="pager" aria-label="Páginas"><button type="button" id="oj-prev" aria-label="Página anterior">‹</button><span id="oj-page"></span><button type="button" id="oj-next" aria-label="Próxima página">›</button></nav>
     </form>
+    </dialog>
     <script type="application/json" id="oj-club-data">{{ clubs | tojson }}</script>
     <p class="how" id="oj-error" role="alert" hidden></p>
     <p class="how" id="oj-wrong" aria-live="polite"></p>
+    </div>
 
     <div class="result" id="oj-result" hidden>
       <h2 id="oj-title"></h2>
@@ -44,9 +53,9 @@
       {% if not archive %}<div class="stats"><span><b id="oj-streak">0</b>sequência</span><span><b id="oj-wins">0</b>completos</span><span><b id="oj-played">0</b>jogos</span></div>{% endif %}
     </div>
 
-    <p class="how">Busque pelo nome ou filtre pelo país e toque no clube. Clube que ele não defendeu conta como erro; com {{ max_wrong }} erros, ou desistindo, a carreira inteira aparece. Só clubes profissionais, sem seleção. Amanhã tem outro.</p>
     {% if past %}<nav class="past" aria-label="Jogos anteriores"><h2>Jogos anteriores</h2><ul>{% for p in past %}<li><a href="{{ p.url }}"{% if archive and p.number == number %} aria-current="page"{% endif %}>#{{ p.number }} <small>{{ p.day }}</small></a></li>{% endfor %}</ul></nav>{% endif %}
     <p class="credit">Carreiras: <a href="https://en.wikipedia.org/">Wikipédia</a> (<a href="https://creativecommons.org/licenses/by-sa/4.0/deed.pt-br">CC BY-SA</a>) e <a href="https://www.wikidata.org/">Wikidata</a>, revisadas pela Geral. Achou um erro? Responda qualquer newsletter.</p>
+    {% set rules_key = "onde-jogou" %}{% set rules %}Diga por quais clubes o jogador do dia passou: cada acerto acende as passagens daquele clube.|Você pode errar {{ max_wrong }} vezes; quem desiste vê a carreira inteira.|Só clubes profissionais, sem seleção.|{% if team %}As passagens pelo {{ team.name }} já vêm acesas e não contam.{% else %}Um jogador novo por dia, o mesmo para todo mundo.{% endif %}{% endset %}{% set rules = rules.split("|") %}{% include "_regras.html.j2" %}
   </div>
 </section>
 <script src="/static/geral/onde-jogou.js?v={{ asset_version }}" defer></script>

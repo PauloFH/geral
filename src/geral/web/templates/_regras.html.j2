@@ -1,0 +1,9 @@
+{# The rules of a game, short: opens by itself on the first visit, then by the "?" by the title. #}
+<dialog class="game-dialog rules" id="regras" data-game="{{ rules_key }}" aria-labelledby="regras-title">
+  <div class="picker">
+    <div class="picker-top"><h2 class="velha-dialog-title" id="regras-title">Como jogar</h2><button class="velha-close" type="button" data-close aria-label="Fechar">✕</button></div>
+    <ul class="rules-list">{% for r in rules %}<li>{{ r }}</li>{% endfor %}</ul>
+    <button class="btn" type="button" data-close>Entendi</button>
+  </div>
+</dialog>
+<script src="/static/geral/regras.js?v={{ asset_version }}" defer></script>
