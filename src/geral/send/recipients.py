@@ -15,7 +15,8 @@ from tenacity import Retrying, retry_if_exception, stop_after_attempt, wait_expo
 from tenacity.wait import wait_base
 
 from geral.config import Settings
-from geral.models import BolaoSummary
+from geral.models import BolaoSummary, Edition, Newsletter
+from geral.schedule import TZ
 
 logger = logging.getLogger(__name__)
 
@@ -167,6 +168,70 @@ def latest_edition(
         return None
     response.raise_for_status()
     return LatestEdition.model_validate(response.json())
+
+
+class DraftOut(BaseModel):
+    """A built edition kept on the page, with what the owner decided about it."""
+
+    label: str
+    newsletter: Newsletter
+    held: bool = False
+    removed_topics: list[int] = []
+    sent_at: datetime | None = None
+
+
+def _draft_url(settings: Settings, team: str, edition: Edition, suffix: str = "") -> str:
+    """Drafts are kept per kind and send day (the label has slashes: it can't be in the path)."""
+    day = edition.end.astimezone(TZ).date()
+    base = settings.PUBLIC_URL.rstrip("/")
+    return f"{base}/api/teams/{team}/drafts/{edition.kind}/{day:%Y-%m-%d}{suffix}"
+
+
+def save_draft(
+    settings: Settings,
+    team: str,
+    newsletter: Newsletter,
+    built_at: datetime,
+    client: httpx.Client | None = None,
+) -> bool:
+    """PUT the built edition; False when it already has a draft. Raises httpx.HTTPError."""
+    edition = newsletter.edition
+    response = (client or httpx.Client(timeout=TIMEOUT)).put(
+        _draft_url(settings, team, edition),
+        json={
+            "label": edition.label,
+            "newsletter": newsletter.model_dump(mode="json"),
+            "build_at": built_at.isoformat(),
+            "send_at": edition.end.isoformat(),
+        },
+        headers=_auth(settings),
+    )
+    if response.status_code == 409:
+        return False
+    response.raise_for_status()
+    return True
+
+
+def fetch_draft(
+    settings: Settings, team: str, edition: Edition, client: httpx.Client | None = None
+) -> DraftOut | None:
+    """The edition's draft, None if it was never built. Raises httpx.HTTPError."""
+    response = (client or httpx.Client(timeout=TIMEOUT)).get(
+        _draft_url(settings, team, edition), headers=_auth(settings)
+    )
+    if response.status_code == 404:
+        return None
+    response.raise_for_status()
+    return DraftOut.model_validate(response.json())
+
+
+def mark_draft_sent(
+    settings: Settings, team: str, edition: Edition, client: httpx.Client | None = None
+) -> None:
+    response = (client or httpx.Client(timeout=TIMEOUT)).post(
+        _draft_url(settings, team, edition, "/sent"), headers=_auth(settings)
+    )
+    response.raise_for_status()
 
 
 def _bolao_url(settings: Settings, team: str, match_id: str, suffix: str = "") -> str:

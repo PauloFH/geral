@@ -210,3 +210,103 @@ def test_register_match_and_report_result_go_to_the_team_bolao() -> None:
     }
     assert json.loads(result.calls.last.request.content) == {"our_goals": 2, "their_goals": 1}
     assert summary.exact == ["Ana"] and previewed == summary and preview.called
+
+
+# --- drafts --------------------------------------------------------------------------------
+
+DRAFT_URL = "https://news.test/api/teams/vasco/drafts/news/2026-11-16"
+
+
+def draft_newsletter():
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    from fakes import FLAMENGO
+
+    from geral.models import Edition, Newsletter
+
+    tz = ZoneInfo("America/Sao_Paulo")
+    edition = Edition(
+        kind="news",
+        start=datetime(2026, 11, 9, 13, tzinfo=tz),
+        end=datetime(2026, 11, 16, 13, tzinfo=tz),
+        label="Notícias — 16/11/2026",
+    )
+    return Newsletter(team=FLAMENGO, edition=edition, intro="Semana sem jogos.")
+
+
+@respx.mock
+def test_save_draft_puts_the_newsletter_under_kind_and_send_day() -> None:
+    from datetime import datetime
+
+    from geral.send.recipients import save_draft
+
+    route = respx.put(DRAFT_URL).mock(return_value=httpx.Response(204))
+    newsletter = draft_newsletter()
+
+    assert save_draft(settings(), "vasco", newsletter, datetime(2026, 11, 16, 11, 0)) is True
+
+    body = json.loads(route.calls.last.request.content)
+    assert body["label"] == "Notícias — 16/11/2026"
+    assert body["newsletter"]["intro"] == "Semana sem jogos."
+    assert body["send_at"].startswith("2026-11-16T13:00")
+    assert route.calls.last.request.headers["authorization"] == "Bearer api-token"
+
+
+@respx.mock
+def test_save_draft_already_there_is_false() -> None:
+    from datetime import datetime
+
+    from geral.send.recipients import save_draft
+
+    respx.put(DRAFT_URL).mock(return_value=httpx.Response(409))
+
+    assert save_draft(settings(), "vasco", draft_newsletter(), datetime(2026, 11, 16, 11)) is False
+
+
+@respx.mock
+def test_fetch_draft_reads_the_newsletter_and_the_review() -> None:
+    from geral.send.recipients import fetch_draft
+
+    newsletter = draft_newsletter()
+    respx.get(DRAFT_URL).mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "label": "Notícias — 16/11/2026",
+                "newsletter": newsletter.model_dump(mode="json"),
+                "held": True,
+                "removed_topics": [1],
+                "sent_at": None,
+            },
+        )
+    )
+
+    draft = fetch_draft(settings(), "vasco", newsletter.edition)
+
+    assert draft.newsletter == newsletter
+    assert (draft.held, draft.removed_topics, draft.sent_at) == (True, [1], None)
+
+
+@respx.mock
+def test_fetch_draft_missing_is_none_and_page_down_raises() -> None:
+    from geral.send.recipients import fetch_draft
+
+    edition = draft_newsletter().edition
+    respx.get(DRAFT_URL).mock(return_value=httpx.Response(404))
+    assert fetch_draft(settings(), "vasco", edition) is None
+
+    respx.get(DRAFT_URL).mock(return_value=httpx.Response(503))
+    with pytest.raises(httpx.HTTPError):
+        fetch_draft(settings(), "vasco", edition)
+
+
+@respx.mock
+def test_mark_draft_sent_posts_to_the_draft() -> None:
+    from geral.send.recipients import mark_draft_sent
+
+    route = respx.post(f"{DRAFT_URL}/sent").mock(return_value=httpx.Response(204))
+
+    mark_draft_sent(settings(), "vasco", draft_newsletter().edition)
+
+    assert route.called
