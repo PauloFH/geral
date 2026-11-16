@@ -63,3 +63,39 @@ def test_a_new_line_starts_a_sentence() -> None:
         unsupported("Como o Náutico virou Timbu\nNascido na Jaqueira, o apelido ficou.", SOURCE)
         == []
     )
+
+
+# --- holes found by the branch review (each returned [] before) ------------------------------
+
+MATCH = (
+    "Em 10 de maio de 1971, diante de 35.000 pessoas, o ABC venceu o América com um gol de "
+    "Alberi. Foram duas vitórias seguidas no Machadão."
+)
+
+
+def test_a_score_needs_the_same_pair_in_the_source() -> None:
+    assert unsupported("O ABC venceu por 2 a 1.", MATCH) == ["2 a 1"]
+    assert unsupported("O Náutico venceu por 1 a 3.", SOURCE) == []  # 3–1 in the source
+    assert (
+        unsupported("Entre 1929 e 1938, o ABC jogou de 1932 a 1941.", "1929 1938 1932 1941 ABC")
+        == []
+    )
+
+
+def test_numbers_with_separators_are_compared_whole() -> None:
+    assert unsupported("Diante de 10.000 pessoas, o ABC venceu.", MATCH) == ["10.000"]
+    assert unsupported("Diante de 35.000 pessoas, o ABC venceu.", MATCH) == []
+
+
+def test_spelled_out_numbers_in_the_story_are_checked() -> None:
+    story = "O ABC marcou seis gols e foi hexacampeão, com trinta mil torcedores."
+
+    # "mil" alone passes (the source has 35.000): the invented "trinta" is what gives it away
+    assert unsupported(story, MATCH) == ["seis", "hexacampeão", "trinta"]
+    assert unsupported("Foram duas vitórias do ABC.", MATCH) == []
+
+
+def test_names_after_dashes_parentheses_and_colons_are_checked() -> None:
+    story = "O ABC venceu — Marinho marcou (Zico assistiu): Pelé viu."
+
+    assert unsupported(story, MATCH) == ["Marinho", "Zico", "Pelé"]
