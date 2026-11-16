@@ -22,7 +22,19 @@ def test_duel_page_has_the_board_and_the_clock(game) -> None:
 
     assert page.status_code == 200
     assert page.text.count('class="vcell"') == 9 and 'data-seconds="30"' in page.text
-    assert 'href="/jogos/velha/duelo"' in game.get("/jogos/velha").text  # from the solo page
+    assert 'id="jd-start"' in page.text  # nothing runs before "Começar"
+    assert page.text.count('class="duel-name"') == 2  # a score per player, not per cell
+    assert "Jogador 1 é X e começa" in page.text
+
+
+@pytest.mark.parametrize(
+    "path, current", [("/jogos/velha", "Solo do dia"), ("/jogos/velha/duelo", "Duelo")]
+)
+def test_both_modes_offer_the_choice_between_solo_and_duel(game, path, current) -> None:
+    modes = game.get(path).text.split('class="velha-modes"', 1)[1].split("</nav>", 1)[0]
+
+    assert 'href="/jogos/velha"' in modes and 'href="/jogos/velha/duelo"' in modes
+    assert f'aria-current="page">{current}<' in modes
 
 
 def test_new_board_gives_six_labels_and_a_code(game) -> None:

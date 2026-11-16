@@ -1,4 +1,8 @@
 /* Shared by the Geral games: page, board, guesses, result. */
+/* The stage: the game itself (editions, board and controls), its pieces sized by the screen's
+   height so that, scrolled to, the whole game shows at once; title and texts stay around it. */
+.stage { display: flex; flex-direction: column; gap: 16px; }
+.stage > :empty { display: none; } /* hints and guesses before the first one */
 .jogo .wrap { display: flex; flex-direction: column; gap: 22px; padding-block: 36px 48px; }
 .jogo h1 { font-size: clamp(52px, 8vw, 104px); color: #fff; text-shadow: 5px 5px 0 var(--turf); text-align: center; }
 .jogo .lead { margin: 0; max-width: none; background: var(--paper); border: 3px solid var(--ink); padding: 12px 16px; }
@@ -34,12 +38,12 @@
 
 /* Craque do dia: a Termo on the board. Every guess fills its own row in place. */
 .grid { container-type: inline-size; display: flex; flex-direction: column; gap: 6px; align-items: center; }
-.guessrow { --gap: clamp(3px, 1.2cqw, 6px); display: grid; grid-template-columns: repeat(var(--n), min(56px, calc((100cqw - (var(--n) - 1) * var(--gap)) / var(--n)))); gap: var(--gap); }
+.guessrow { --gap: clamp(3px, 1.2cqw, 6px); display: grid; grid-template-columns: repeat(var(--n), min(72px, calc((100svh - 470px) / 6 - var(--gap)), calc((100cqw - (var(--n) - 1) * var(--gap)) / var(--n)))); gap: var(--gap); }
 .guessrow.active .sq { border-color: rgba(255, 194, 26, .45); cursor: pointer; }
 .guessrow.active .sq.cursor { border-color: var(--lamp); box-shadow: inset 0 -5px 0 var(--lamp); }
 .guessrow.shake { animation: shake .3s; }
 @media (max-width: 480px) { .cd-board { padding: 14px 10px 16px; border-width: 6px; } }
-.sq { aspect-ratio: 1; display: grid; place-items: center; border: 2px solid #3A3833; background: rgba(255, 255, 255, .03); font: 900 min(34px, calc(60cqw / var(--n)))/1 var(--dots); color: var(--lamp); text-transform: uppercase; user-select: none; }
+.sq { aspect-ratio: 1; display: grid; place-items: center; border: 2px solid #3A3833; background: rgba(255, 255, 255, .03); font: 900 min(40px, calc(60cqw / var(--n)))/1 var(--dots); color: var(--lamp); text-transform: uppercase; user-select: none; }
 @keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
 .sq.certo, .sq.existe, .sq.nao { border: 3px solid var(--ink); font-family: var(--display); color: var(--ink); }
 .sq.certo { background: #2F7D3A; color: #fff; }
@@ -152,18 +156,19 @@ select.chip { appearance: auto; }
 .vcell:disabled { cursor: default; }
 .vcell-name { font: 800 clamp(12px, 3.6cqw, 22px)/1.1 var(--display); text-transform: uppercase; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 /* Full width like the other games: wide cells on a wide board, square ones on a phone. */
-@container (min-width: 700px) { .vcell { aspect-ratio: 3 / 2; } }
+@container (min-width: 700px) { .vcell { aspect-ratio: auto; height: clamp(80px, calc((100svh - 220px) / 3), 200px); } .duel-stage .vcell { height: clamp(70px, calc((100svh - 330px) / 3), 190px); } }
 .vcell-note { font: 700 clamp(10px, 2cqw, 13px)/1 var(--body); letter-spacing: .04em; color: var(--ink-soft); }
 .vcell.filled { background: #2F7D3A; color: #fff; }
 .vcell.filled .vcell-note { color: #E6F4E8; }
 .vcell.revealed { background: var(--concrete-lt); color: var(--ink-soft); }
-/* The search opens over the board (a sheet from the bottom on a phone). */
-.velha-dialog { padding: 0; border: 0; background: transparent; width: min(640px, calc(100vw - 32px)); max-width: none; }
-.velha-dialog::backdrop { background: rgba(0, 0, 0, .55); }
-.velha-dialog .picker { max-height: min(80vh, 640px); overflow: auto; box-shadow: 6px 6px 0 rgba(0, 0, 0, .35); }
-.velha-dialog .picker-top { flex-wrap: nowrap; align-items: center; justify-content: space-between; }
-.velha-dialog .picker-search { flex: none; }
-.velha-dialog-title { margin: 0; font-size: clamp(22px, 5vw, 30px); }
+/* A search opens over the board (a sheet from the bottom on a phone): jogo da velha, Onde jogou?,
+   Quem é?. */
+.game-dialog { padding: 0; border: 0; background: transparent; width: min(640px, calc(100vw - 32px)); max-width: none; }
+.game-dialog::backdrop { background: rgba(0, 0, 0, .55); }
+.game-dialog .picker { max-height: min(80vh, 640px); overflow: auto; box-shadow: 6px 6px 0 rgba(0, 0, 0, .35); }
+.game-dialog .picker-top { flex-wrap: nowrap; align-items: center; justify-content: space-between; }
+.game-dialog .picker-search { flex: none; }
+.game-dialog-title { margin: 0; font-size: clamp(22px, 5vw, 30px); }
 .velha-close { flex: none; width: 44px; height: 44px; border: 3px solid var(--ink); background: transparent; color: var(--ink); font: 900 20px/1 var(--display); cursor: pointer; }
 .velha-error { margin: 0; background: var(--ink); color: var(--lamp); padding: 10px 14px; font-weight: 600; }
 .velha-results { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); grid-auto-rows: minmax(76px, auto); gap: 8px; }
@@ -171,6 +176,84 @@ select.chip { appearance: auto; }
 .velha-results .club-name { -webkit-line-clamp: 3; line-clamp: 3; }
 .velha-results .empty { grid-column: 1 / -1; color: var(--ink-soft); align-self: center; }
 @media (max-width: 600px) {
-  .velha-dialog { width: 100vw; margin: auto 0 0; }
-  .velha-dialog .picker { max-height: 78vh; border-bottom: 0; box-shadow: none; }
+  .game-dialog { width: 100vw; margin: auto 0 0; }
+  .game-dialog .picker { max-height: 78vh; border-bottom: 0; box-shadow: none; }
 }
+
+/* Jogo da velha, duel: X and O scores around the clock; marks stamped on the cards. */
+.duel-score { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: stretch; }
+.duel-side { font-size: clamp(22px, 5vw, 40px); padding: 10px 16px; gap: 10px; grid-auto-flow: column; justify-content: center; color: rgba(255, 194, 26, .35); }
+.duel-side b { font-size: 1.2em; }
+.duel-side.turn { color: var(--lamp); outline: 4px solid var(--lamp); outline-offset: 2px; }
+.duel-clock { min-width: 120px; padding: 8px 14px; font-size: clamp(12px, 2.6vw, 16px); }
+.duel-clock b { display: block; font-size: clamp(30px, 7vw, 52px); }
+.duel-clock.hurry b { color: #FF6B4A; }
+.duel-status:empty { display: none; }
+.duel-status { margin: 0; color: #fff; font-weight: 700; text-align: center; text-shadow: var(--on-grass); }
+.vcell-mark { font: 900 clamp(28px, 9cqw, 64px)/1 var(--display); }
+.vcell-mark:empty { display: none; }
+.vcell.mark-x { background: var(--board); color: var(--lamp); }
+.vcell.mark-o { background: var(--ticket); color: var(--ink); }
+.vcell.line { outline: 5px solid #fff; outline-offset: -9px; }
+
+/* Jogo da velha: solo or duel, right under the title. */
+.velha-modes { display: flex; justify-content: center; }
+.velha-modes a { font: 800 15px/1 var(--display); text-transform: uppercase; letter-spacing: .05em; text-decoration: none; padding: 8px 16px; background: var(--paper); color: var(--ink); border: 3px solid var(--ink); }
+.velha-modes a + a { border-left: 0; }
+.velha-modes a[aria-current] { background: var(--ink); color: var(--lamp); }
+.duel-name { font-size: clamp(11px, 2.4vw, 15px); }
+.duel-name i { font-style: normal; }
+.duel-name .short { display: none; }
+.duel-side { font-size: clamp(22px, 4vw, 32px); padding: 6px 12px; grid-auto-flow: column; align-items: center; gap: 12px; }
+.duel-clock { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.duel-clock b { display: inline; font-size: clamp(22px, 5vw, 36px); }
+.duel-start { align-items: center; text-align: center; }
+.duel-start .actions { justify-content: center; }
+
+/* Duel: "Começar" over the board, which waits with its categories hidden. */
+.duel-stage { position: relative; }
+.duel-stage .duel-start { position: absolute; inset: 50% auto auto 50%; transform: translate(-50%, -50%); width: min(560px, 92%); box-shadow: 6px 6px 0 rgba(0, 0, 0, .35); z-index: 1; }
+.duel-start h2 { font-size: clamp(22px, 4vw, 34px); }
+@media (max-width: 600px) {
+  .duel-name .long { display: none; } /* "J1 X" on a phone */
+  .duel-name .short { display: inline; }
+}
+
+/* Onde jogou? and Quem é? on a phone: the career three a row, search and give-up on one line,
+   the countries in a row that scrolls sideways, so the stage stays about one screen. */
+@media (max-width: 600px) {
+  .career { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .slot { min-height: 48px; padding: 6px 8px; }
+  .slot .years { font-size: 12px; }
+  .slot-club { font-size: 15px; }
+  .picker-top { flex-wrap: nowrap; align-items: stretch; }
+  .picker-search { flex: 1 1 auto; min-width: 0; }
+  .picker .btn.secondary { padding-inline: 12px; }
+  .countries { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .countries > * { flex: none; }
+  .club-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: minmax(66px, auto); }
+  .club { padding: 8px 10px; }
+  .club .club-name { font-size: 14px; }
+}
+
+/* Onde jogou? and Quem é?: on the stage only a search bar (it opens the picker) and "Desistir". */
+.search-bar { display: flex; gap: 8px; }
+.search-open { flex: 1; min-width: 0; text-align: left; font: 18px var(--body); padding: 12px 14px; border: 3px solid var(--ink); background: #fff; color: var(--ink-soft); cursor: pointer; }
+.search-open:hover { border-color: var(--lamp); }
+.game-dialog .club-grid { grid-auto-rows: 78px; }
+/* Room between the game tabs and the title; the editions sit with the game, not the title. */
+.jogo h1 { margin: 26px 0 4px; }
+.jogo .stage { margin-top: 18px; }
+.jogo .past { margin-top: 36px; } /* the past games apart from today's */
+.search-bar .btn.secondary { background: var(--paper); }
+.game-dialog #qe-results { grid-auto-rows: minmax(52px, auto); }
+.game-dialog #qe-results .club-name { -webkit-line-clamp: 2; line-clamp: 2; }
+
+/* The title with its "?" (the rules dialog), centred together. */
+.game-title { display: flex; justify-content: center; align-items: center; gap: 14px; margin: 44px 0 14px; }
+.game-title h1 { margin: 0; }
+.rules-open { flex: none; width: 44px; height: 44px; border-radius: 50%; border: 3px solid var(--ink); background: var(--paper); color: var(--ink); font: 900 24px/1 var(--display); cursor: pointer; box-shadow: 3px 3px 0 rgba(0, 0, 0, .35); }
+.rules-open:hover { background: var(--lamp); }
+.rules .picker { gap: 14px; }
+.rules-list { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; font-size: 17px; line-height: 1.4; }
+.rules .btn { align-self: flex-start; }

@@ -6,15 +6,15 @@
 <section class="jogo wall">
   <div class="wrap" id="qe" data-edition="{{ edition }}" data-number="{{ number }}" data-archive="{{ '1' if archive else '0' }}" data-label="{{ label }}" data-player="{{ player_key }}" data-max="{{ max_guesses }}">
     {% include "_game_tabs.html.j2" %}
-    <h1>Quem é?</h1>
+    <div class="game-title"><h1>Quem é?</h1><button type="button" class="rules-open" aria-label="Como jogar">?</button></div>
     {% if archive %}<p class="archive-note">Jogo de {{ day }} · não conta na sequência · <a href="{{ today_url }}">Jogar o de hoje →</a></p>{% endif %}
-    <p class="lead">Um jogador por dia, o mesmo para todo mundo. A carreira inteira está no placar: adivinhe quem é em até {{ max_guesses }} chutes.</p>
-    <nav class="editions" aria-label="Edições">
-      {% for slug, t in editions %}
-      <a href="/jogos/quem-e{% if slug != 'geral' %}/{{ slug }}{% endif %}"{% if slug == edition and not archive %} aria-current="page"{% endif %}>{{ t.name if t else "Geral" }}</a>
-      {% endfor %}
-    </nav>
 
+    <div class="stage">
+      <nav class="editions" aria-label="Edições">
+        {% for slug, t in editions %}
+        <a href="/jogos/quem-e{% if slug != 'geral' %}/{{ slug }}{% endif %}"{% if slug == edition and not archive %} aria-current="page"{% endif %}>{{ t.name if t else "Geral" }}</a>
+        {% endfor %}
+      </nav>
     <div class="board match">
       <span class="lamp meta">#{{ number }} · {{ label }} · {{ jogador.clubes | length }} passagens</span>
       <span class="lamp player blink" id="qe-name">? ? ?</span>
@@ -27,16 +27,24 @@
     <ul class="hints" id="qe-hints"></ul>
     <ol class="tries" id="qe-tries" aria-live="polite"></ol>
 
+    <div class="search-bar" id="qe-bar">
+      <button type="button" class="search-open" id="qe-open">Buscar jogador…</button>
+      <button class="btn secondary" type="button" id="qe-give-up">Desistir</button>
+    </div>
+    <dialog class="game-dialog" id="qe-dialog" aria-label="Buscar jogador">
     <form class="picker" id="qe-form" role="search">
       <div class="picker-top">
-        <label class="picker-search">Buscar jogador<input id="qe-search" type="search" autocomplete="off" spellcheck="false" placeholder="Digite o nome"></label>
-        <button class="btn secondary" type="button" id="qe-give-up">Desistir</button>
+        <h2 class="velha-dialog-title">Buscar jogador</h2>
+        <button class="velha-close" type="button" id="qe-close" aria-label="Fechar">✕</button>
       </div>
+      <label class="picker-search"><span class="sr-only">Buscar jogador</span><input id="qe-search" type="search" autocomplete="off" spellcheck="false" placeholder="Digite o nome"></label>
       <ul class="club-grid" id="qe-results" aria-live="polite"></ul>
       <nav class="pager" aria-label="Páginas"><button type="button" id="qe-prev" aria-label="Página anterior">‹</button><span id="qe-page"></span><button type="button" id="qe-next" aria-label="Próxima página">›</button></nav>
     </form>
+    </dialog>
     <script type="application/json" id="qe-player-data">{{ players | tojson }}</script>
     <p class="how" id="qe-error" role="alert" hidden></p>
+    </div>
 
     <div class="result" id="qe-result" hidden>
       <h2 id="qe-title"></h2>
@@ -45,9 +53,9 @@
       {% if not archive %}<div class="stats"><span><b id="qe-streak">0</b>sequência</span><span><b id="qe-wins">0</b>acertos</span><span><b id="qe-played">0</b>jogos</span></div>{% endif %}
     </div>
 
-    <p class="how">Busque o jogador e toque no nome. Depois de 3 erros aparece a posição; depois de 4, a inicial do nome. Só clubes profissionais, sem seleção. Amanhã tem outro.</p>
     {% if past %}<nav class="past" aria-label="Jogos anteriores"><h2>Jogos anteriores</h2><ul>{% for p in past %}<li><a href="{{ p.url }}"{% if archive and p.number == number %} aria-current="page"{% endif %}>#{{ p.number }} <small>{{ p.day }}</small></a></li>{% endfor %}</ul></nav>{% endif %}
     <p class="credit">Carreiras: <a href="https://en.wikipedia.org/">Wikipédia</a> (<a href="https://creativecommons.org/licenses/by-sa/4.0/deed.pt-br">CC BY-SA</a>) e <a href="https://www.wikidata.org/">Wikidata</a>, revisadas pela Geral. Achou um erro? Responda qualquer newsletter.</p>
+    {% set rules_key = "quem-e" %}{% set rules %}A carreira inteira está no placar: descubra o jogador em até {{ max_guesses }} chutes.|Depois de 3 erros aparece a posição; depois de 4, a inicial do nome.|Só clubes profissionais, sem seleção.|Um jogador novo por dia, o mesmo para todo mundo.{% endset %}{% set rules = rules.split("|") %}{% include "_regras.html.j2" %}
   </div>
 </section>
 <script src="/static/geral/quem-e.js?v={{ asset_version }}" defer></script>

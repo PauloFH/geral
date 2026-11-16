@@ -9,10 +9,11 @@
   const archive = root.dataset.archive === "1"; // a past puzzle: its own save, no streak
   const max = Number(root.dataset.max);
   const $ = (id) => document.getElementById(id);
-  const form = $("qe-form");
+  const form = $("qe-bar"); // the search bar; the picker itself opens in a dialog
+  const dialog = $("qe-dialog");
   const search = $("qe-search");
   const KEY = archive ? `quem-e:${edition}:${number}` : `quem-e:${edition}`;
-  const PAGE = 12;
+  const PAGE = matchMedia("(max-width: 600px)").matches ? 6 : 12; // a phone keeps the list on one screen
 
   const read = (key, fallback) => {
     try {
@@ -125,6 +126,7 @@
     );
     $("qe-hints").replaceChildren(...verdict.hints.map((hint) => el("li", "", hint)));
     form.hidden = verdict.over;
+    if (verdict.over && dialog.open) dialog.close();
     $("qe-result").hidden = !verdict.over;
     drawResults();
     if (!verdict.over) return;
@@ -170,6 +172,7 @@
       await judge();
       save();
       error("");
+      if (dialog.open) dialog.close(); // show the board light up
       search.value = "";
       page = 0;
     } catch (problem) {
@@ -196,7 +199,7 @@
     page = 0;
     drawResults();
   });
-  form.addEventListener("submit", (event) => {
+  $("qe-form").addEventListener("submit", (event) => {
     event.preventDefault(); // Enter picks the player when the search leaves only one
     const found = matches();
     if (found.length === 1 && !day.palpites.includes(found[0].id)) guess(found[0].id);
@@ -241,4 +244,12 @@
       drawResults();
     });
   }
+  $("qe-open").addEventListener("click", () => {
+    dialog.showModal();
+    search.focus();
+  });
+  $("qe-close").addEventListener("click", () => dialog.close());
+  dialog.addEventListener("click", (event) => {
+    if (event.target === dialog) dialog.close(); // a tap on the dimmed page around it
+  });
 })();
