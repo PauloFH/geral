@@ -17,6 +17,7 @@ def player(
     posicoes: tuple[str, ...] = (),
     fama: int = 10,
     anos: str = "",
+    completo: str = "",
 ) -> Player:
     return Player(
         id=id,
@@ -28,6 +29,7 @@ def player(
         clubes=frozenset(clubes),
         selecao=selecao,
         copa=copa,
+        completo=completo,
     )
 
 

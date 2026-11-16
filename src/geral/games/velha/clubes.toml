@@ -1,5 +1,6 @@
 # Clubes do tabuleiro do jogo da velha (só brasileiros): os 20 da Série A de 2026 e grandes
 # históricos fora dela. Nunca apague um clube: tabuleiros já jogados (calendario.json) usam o id.
+# Antes de editar: uv run python scripts/congelar_calendario.py (o sorteio do dia muda com a lista).
 # Depois de editar: uv run python scripts/import_base.py
 
 [Q270995]

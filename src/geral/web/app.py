@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Annotated
 from urllib.parse import urlencode
 
-from fastapi import FastAPI, Form, Request, Response
+from fastapi import FastAPI, Form, Query, Request, Response
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -26,6 +26,10 @@ from pydantic import AwareDatetime, BaseModel, Field, model_validator
 
 from geral.config import Settings, get_settings
 from geral.games import calendario, craque, onde_jogou, quem_e
+from geral.games.velha import base as velha_base
+from geral.games.velha import busca as velha_busca
+from geral.games.velha import diario as velha_diario
+from geral.games.velha import judge as velha_judge
 from geral.general import GENERAL_EDITION, GENERAL_SLUG
 from geral.send.resend_sender import UNSUBSCRIBE_PLACEHOLDER, personalize
 from geral.teams import Team, load_teams
@@ -150,6 +154,10 @@ class PlayerGuessesIn(BaseModel):
 class ClubGuessesIn(BaseModel):
     palpites: list[Annotated[str, Field(max_length=60)]] = Field(max_length=40)
     desistiu: bool = False
+
+
+class VelhaIn(BaseModel):
+    chutes: list[velha_judge.Guess] = Field(max_length=velha_judge.MAX_GUESSES + 1)
 
 
 class WordGuessesIn(BaseModel):
@@ -295,6 +303,23 @@ def create_app(
         frozen = calendario.answers(career_state["calendar"], "craque-do-dia", edition)
         return calendario.pick(games, number, frozen, key=lambda c: c.answer)
 
+    velha_state: dict[str, velha_base.Base] = {}
+
+    def velha() -> velha_base.Base:
+        if "base" not in velha_state:
+            velha_state["base"] = velha_base.load()
+        return velha_state["base"]
+
+    def velha_number() -> int:
+        return max(1, velha_diario.puzzle_number(now().astimezone(BRASILIA).date()))
+
+    def velha_board(number: int):
+        """Board #number: frozen in the calendar once played, else the seeded draw."""
+        if "calendar" not in career_state:
+            career_state["calendar"] = calendario.load()
+        frozen = calendario.answers(career_state["calendar"], velha_diario.GAME, "geral")
+        return velha_diario.daily_board(velha(), number, frozen)
+
     def game_url(path: str, edition: str, number: int | None = None) -> str:
         if number is not None:
             return f"/jogos/{path}/{edition}/{number}"
@@ -363,6 +388,14 @@ def create_app(
                 "chutes.",
                 "editions": who_editions(),
                 "number": who_number(),
+            },
+            {
+                "path": "velha",
+                "name": "Jogo da velha",
+                "desc": "Três linhas, três colunas: ache um jogador para cada cruzamento em até "
+                f"{velha_judge.MAX_GUESSES} chutes.",
+                "editions": {"geral": True},  # no team edition
+                "number": velha_number(),
             },
         ]
 
@@ -971,6 +1004,61 @@ def create_app(
             clubs.append(club)
         jogador = daily_player("onde-jogou", edition, players, number)
         return onde_jogou.judge(data, jogador, clubs, body.desistiu, given_clubs(edition))
+
+    @app.get("/jogos/velha", response_class=HTMLResponse)
+    @app.get("/jogos/velha/{edition}", response_class=HTMLResponse)
+    @app.get("/jogos/velha/{edition}/{number}", response_class=HTMLResponse)
+    def velha_page(request: Request, edition: str = "geral", number: str | None = None):
+        if edition != "geral":
+            return message(
+                request,
+                "Jogo não encontrado",
+                "O jogo da velha é um só para todas as torcidas. Jogue o de hoje.",
+                status=404,
+                link_url=game_url("velha", "geral"),
+                link_label="Jogar o de hoje",
+            )
+        found = which_puzzle(request, "velha", edition, number, velha_number(), velha_diario.LAUNCH)
+        if isinstance(found, Response):
+            return found
+        number, when = found
+        board = velha_board(number)
+        return page(
+            request,
+            "velha.html.j2",
+            edition=edition,
+            tabs=game_tabs("velha", edition),
+            number=number,
+            **when,
+            board=board,
+            max_guesses=velha_judge.MAX_GUESSES,
+        )
+
+    @app.get("/api/jogos/velha/jogadores")
+    def velha_search(q: Annotated[str, Query(max_length=60)] = ""):
+        return [
+            {
+                "id": p.id,
+                "nome": p.nome,
+                "anos": p.anos,
+                "posicao": velha_base.POSITIONS[p.posicoes[0]] if p.posicoes else "",
+            }
+            for p in velha_busca.search(velha(), q)
+        ]
+
+    @app.post("/api/jogos/velha/{edition}/{number}")
+    def velha_guess(edition: str, number: int, body: VelhaIn):
+        if edition != "geral" or not 1 <= number <= velha_number():
+            return JSONResponse({"detail": "puzzle not found"}, status_code=404)
+        base = velha()
+        try:
+            verdict = velha_judge.judge_solo(base, velha_board(number), body.chutes)
+        except velha_judge.GuessError as error:
+            return JSONResponse({"detail": str(error)}, status_code=422)
+        shown = set(verdict.casas.values())
+        for cell in verdict.revelacao or []:
+            shown |= {a.id for a in cell.top}
+        return verdict.model_dump() | {"nomes": {q: base.players[q].nome for q in shown}}
 
     @app.get("/jogos/quem-e", response_class=HTMLResponse)
     @app.get("/jogos/quem-e/{edition}", response_class=HTMLResponse)

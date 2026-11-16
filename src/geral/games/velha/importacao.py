@@ -87,6 +87,13 @@ def _common_name(sitelinks: dict) -> str:
     return ""
 
 
+def _birth_name(entity: dict) -> str:
+    """P1477, the registered name ("Edson Arantes do Nascimento"), Portuguese first."""
+    names = [_value(c["mainsnak"]) for c in _values(entity, "P1477")]
+    names.sort(key=lambda n: n.get("language") not in ("pt", "pt-br"))
+    return names[0].get("text", "") if names else ""
+
+
 def _label(entity: dict) -> str:
     found = entity.get("labels", {})
     return next((found[lang]["value"] for lang in ("pt-br", "pt", "en") if lang in found), "")
@@ -110,7 +117,7 @@ def build_base(
         if "enwiki" in links[q]["sitelinks"]
     }
     about = entities(client, ids, "labels|claims", "pt-br|pt|en")
-    full = {q: _label(about.get(q, {})) for q in ids}
+    full = {q: _birth_name(about.get(q, {})) or _label(about.get(q, {})) for q in ids}
     names = {q: _common_name(links[q]["sitelinks"]) or full[q] for q in ids}
     facts = {
         q: {p: _ids(about.get(q, {}), p) for p in ("P413", "P1532", "P27", "P1344")} for q in ids
@@ -200,6 +207,11 @@ def build_base(
     report += [f"  {clubs[c]}: {by_club[c]}" for c in sorted(clubs, key=lambda c: by_club[c])]
     report += [f"position without group: {pos} ({n})" for pos, n in ungrouped.most_common()]
     return {"paises": country_names, "jogadores": players}, report
+
+
+def keep_countries(old: dict, new: dict) -> dict:
+    """`new` keeping every country of `old`: a frozen board may name one nobody has now."""
+    return new | {"paises": old["paises"] | new["paises"]}
 
 
 def dump(data: dict) -> str:
