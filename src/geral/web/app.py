@@ -990,6 +990,8 @@ def create_app(
                         {"title": topic.title, "removed": i in d.removed_topics}
                         for i, topic in enumerate(newsletter.topics)
                     ],
+                    "story": newsletter.story.title if newsletter.story else None,
+                    "on_this_day": newsletter.on_this_day,
                 }
             )
         return private(page(request, "revisao.html.j2", drafts=drafts, token=t, timezone=BRASILIA))
@@ -1052,6 +1054,29 @@ def create_app(
             return None
 
         return review_action(request, draft_id, t, change)
+
+    def section_action(request: Request, draft_id: int, t: str, section: str):
+        def change(draft):
+            newsletter = Newsletter.model_validate_json(draft.newsletter_json)
+            if section == "historia":
+                if newsletter.story is None:
+                    return not_found(request)
+                store.discard_story(newsletter.story.id)  # never drawn again
+                newsletter = newsletter.model_copy(update={"story": None})
+            else:
+                newsletter = newsletter.model_copy(update={"on_this_day": []})
+            store.set_draft_newsletter(draft.id, newsletter.model_dump_json())
+            return None
+
+        return review_action(request, draft_id, t, change)
+
+    @app.post("/revisao/{draft_id}/historia/tirar")
+    def review_remove_story(request: Request, draft_id: int, t: Annotated[str, Form()] = ""):
+        return section_action(request, draft_id, t, "historia")
+
+    @app.post("/revisao/{draft_id}/neste-dia/tirar")
+    def review_remove_on_this_day(request: Request, draft_id: int, t: Annotated[str, Form()] = ""):
+        return section_action(request, draft_id, t, "neste-dia")
 
     @app.post("/revisao/{draft_id}/topicos/{n}/tirar")
     def review_remove(request: Request, draft_id: int, n: int, t: Annotated[str, Form()] = ""):

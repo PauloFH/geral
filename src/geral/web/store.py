@@ -453,6 +453,10 @@ class SubscriberStore:
         )
         return self.draft_by_id(draft_id)
 
+    def set_draft_newsletter(self, draft_id: int, newsletter_json: str) -> None:
+        """The draft's edition after the owner took a special section out of it."""
+        self._run("UPDATE drafts SET newsletter_json = ? WHERE id = ?", newsletter_json, draft_id)
+
     def released_due(self, now: datetime) -> list[Draft]:
         """Drafts let go after their send time and not sent yet: they go out at the next tick."""
         return [
