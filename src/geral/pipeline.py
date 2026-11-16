@@ -31,6 +31,7 @@ from geral.summarizer.pipeline import (
     PreviewResponse,
     summarize_edition,
     write_analysis,
+    write_intro,
     write_preview,
 )
 from geral.teams import Team
@@ -237,6 +238,37 @@ def build_newsletter(
         outlook=notes.outlook,
         broadcast=notes.broadcast,
     )
+
+
+def drop_topics(newsletter: Newsletter, removed: list[int], llm: LLMClient | None) -> Newsletter:
+    """The edition without the topics the owner removed in the review.
+
+    The headline and the opening were written over every topic, so they are written again over
+    the ones left; without the model, the headline is the first topic left and there's no opening.
+    """
+    if not removed:
+        return newsletter
+    kept = [t for i, t in enumerate(newsletter.topics) if i not in set(removed)]
+    edited = newsletter.model_copy(update={"topics": kept})
+    if not kept and newsletter.last_match is None and newsletter.preview is None:
+        return edited
+    pre_game = newsletter.edition.kind == "pre"
+    try:
+        if llm is None:
+            raise LLMError("no model")
+        opening = write_intro(
+            kept,
+            newsletter.last_match,
+            llm,
+            newsletter.edition.label,
+            newsletter.next_match if pre_game else None,
+            team=newsletter.team,
+        )
+        return edited.model_copy(update={"headline": opening.headline, "intro": opening.intro})
+    except LLMError as e:
+        logger.error("Opening not rewritten after the review, using the first topic: %s", e)
+        headline = kept[0].title if kept else ""
+        return edited.model_copy(update={"headline": headline, "intro": ""})
 
 
 def is_empty(newsletter: Newsletter) -> bool:
