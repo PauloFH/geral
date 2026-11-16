@@ -34,7 +34,19 @@ class Liga:
 
 
 FASES = ("inicio", "auge", "fim")  # under 21, 21 to 30, 31 and over
-DESTINOS = ("ficar", "europa", "maior", "emprestimo", "arabia", "casa", "aposentar", "mais_um")
+DESTINOS = (
+    "ficar",
+    "europa",
+    "maior",
+    "menor",
+    "emprestimo",
+    "arabia",
+    "exotico",
+    "casa",
+    "aposentar",
+    "mais_um",
+)
+COM_CLUBE = ("europa", "maior", "menor", "emprestimo", "arabia", "exotico", "casa")
 
 
 @dataclass(frozen=True)
@@ -52,11 +64,15 @@ class Condicao:
     requer: tuple[str, ...] = ()  # event ids that must have happened before
     exclui: tuple[str, ...] = ()  # event ids that must not
     gols_min: int = 0  # this season (only for events after the season's numbers)
+    gols_max: int = 999
     jogos_min: int = 0
     jogos_max: int = 99
     titulo: bool | None = None  # won something this season
     no_clube_inicial: bool | None = None
     selecao: bool | None = None  # called up this season
+    copa: bool | None = None  # played a World Cup this season
+    mundial: bool | None = None  # won it
+    paises: tuple[str, ...] = ()  # country of the current league
 
 
 @dataclass(frozen=True)

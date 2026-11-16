@@ -74,3 +74,129 @@ destino = "aposentar"
 [[escolha.opcao]]
 texto = "Mais um ano"
 destino = "mais_um"
+
+[[escolha]]
+id = "volta-por-cima"
+pergunta = "{nome} volta de lesão grave. O {destino} oferece minutos para recuperar o ritmo."
+peso = 4
+condicao = { idade_min = 19, idade_max = 33, requer = ["lesao-grave"] }
+[[escolha.opcao]]
+texto = "Ir para o {destino} jogar"
+destino = "emprestimo"
+[[escolha.opcao]]
+texto = "Recuperar no {clube}"
+destino = "ficar"
+
+[[escolha]]
+id = "promessa-cedo"
+pergunta = "Aos {idade}, {nome} recebe sondagem do {destino}."
+peso = 2
+condicao = { idade_min = 17, idade_max = 19, nota_min = 52 }
+[[escolha.opcao]]
+texto = "Embarcar cedo para o {destino}"
+destino = "europa"
+[[escolha.opcao]]
+texto = "Amadurecer no {clube}"
+destino = "ficar"
+
+[[escolha]]
+id = "fim-de-contrato"
+pergunta = "O contrato de {nome} com o {clube} acaba. Tem proposta do {destino} e do exterior."
+peso = 2
+condicao = { idade_min = 24, idade_max = 32 }
+[[escolha.opcao]]
+texto = "Assinar com o {destino}"
+destino = "maior"
+[[escolha.opcao]]
+texto = "Topar a aventura no exterior"
+destino = "exotico"
+[[escolha.opcao]]
+texto = "Renovar com o {clube}"
+destino = "ficar"
+
+[[escolha]]
+id = "reserva-na-europa"
+pergunta = "{nome} perdeu espaço no {clube}. O {destino} pede o empréstimo."
+peso = 3
+condicao = { forca_min = 80, jogos_max = 18, idade_max = 31 }
+[[escolha.opcao]]
+texto = "Ir emprestado para o {destino}"
+destino = "emprestimo"
+[[escolha.opcao]]
+texto = "Ficar e lutar pela vaga"
+destino = "ficar"
+
+[[escolha]]
+id = "capitao-ou-dinheiro"
+pergunta = "Capitão do {clube}, {nome} recebe uma oferta milionária do {destino}."
+peso = 2
+condicao = { idade_min = 26, idade_max = 32, nota_min = 70, requer = ["capitao"] }
+[[escolha.opcao]]
+texto = "Aceitar o dinheiro do {destino}"
+destino = "arabia"
+[[escolha.opcao]]
+texto = "Seguir capitão do {clube}"
+destino = "ficar"
+
+[[escolha]]
+id = "aventura-no-fim"
+pergunta = "Aos {idade}, {nome} pode encerrar a carreira longe: o {destino} quer ele."
+peso = 2
+condicao = { idade_min = 31, idade_max = 36 }
+[[escolha.opcao]]
+texto = "Viver a aventura no {destino}"
+destino = "exotico"
+[[escolha.opcao]]
+texto = "Ficar no {clube}"
+destino = "ficar"
+
+[[escolha]]
+id = "parar-cedo"
+pergunta = "Aos {idade}, sem espaço, {nome} pensa em parar."
+peso = 3
+condicao = { idade_min = 30, idade_max = 33, nota_max = 56 }
+[[escolha.opcao]]
+texto = "Parar e abrir uma escolinha"
+destino = "aposentar"
+[[escolha.opcao]]
+texto = "Insistir mais um ano"
+destino = "mais_um"
+
+[[escolha]]
+id = "ultima-danca"
+pergunta = "{nome}, {idade} anos, decide como será o fim."
+peso = 2
+condicao = { idade_min = 34, idade_max = 38, no_clube_inicial = false }
+[[escolha.opcao]]
+texto = "Se despedir no {destino}, onde tudo começou"
+destino = "casa"
+[[escolha.opcao]]
+texto = "Parar agora, no auge possível"
+destino = "aposentar"
+[[escolha.opcao]]
+texto = "Mais um ano no {clube}"
+destino = "mais_um"
+
+[[escolha]]
+id = "salario-atrasado"
+pergunta = "Com salários atrasados no {clube}, o {destino} oferece uma saída a {nome}."
+peso = 4
+condicao = { requer = ["crise-do-clube"], idade_max = 34 }
+[[escolha.opcao]]
+texto = "Sair para o {destino}"
+destino = "menor"
+[[escolha.opcao]]
+texto = "Ficar e ajudar o {clube}"
+destino = "ficar"
+
+[[escolha]]
+id = "rival-chama"
+pergunta = "O {destino} quer tirar {nome} do {clube}. A torcida não vai perdoar."
+peso = 2
+condicao = { idade_min = 21, idade_max = 31, nota_min = 62, forca_max = 79 }
+[[escolha.opcao]]
+texto = "Atravessar a rua e ir para o {destino}"
+destino = "maior"
+[[escolha.opcao]]
+texto = "Recusar: aqui é casa"
+destino = "ficar"

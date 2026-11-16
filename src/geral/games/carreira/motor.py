@@ -10,7 +10,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from geral.games.carreira.dados import Clube, Condicao, Dados, Decisao, Evento
+from geral.games.carreira import final
+from geral.games.carreira.dados import COM_CLUBE, Clube, Condicao, Dados, Decisao, Evento
 from geral.games.carreira.draft import JogadaInvalida, Roubo, montar, oferta
 from geral.games.carreira.regras import POSICOES, geral
 
@@ -66,7 +67,16 @@ class Escolha(BaseModel):
 
 class Final(BaseModel):
     nota: int  # 0-100
+    rotulo: str
+    descricao: str
     titulos: dict[str, int]
+    clubes: list[str]  # in the order he played for them
+    jogos: int
+    gols: int
+    selecao: int
+    copa: bool
+    parecido: str  # "your career recalls ___"
+    perguntas: list[str]  # ids of the questions asked
 
 
 class Carreira(BaseModel):
@@ -108,10 +118,13 @@ class _Contexto:
     posicao: str
     historico: set[str]
     no_clube_inicial: bool
+    pais: str = ""
     gols: int = 0
     jogos: int = 0
     titulo: bool = False
     selecao: bool = False
+    copa: bool = False
+    mundial: bool = False
 
     def casa(self, c: Condicao) -> bool:
         return (
@@ -122,11 +135,14 @@ class _Contexto:
             and (not c.fases or _fase(self.idade) in c.fases)
             and all(r in self.historico for r in c.requer)
             and not any(x in self.historico for x in c.exclui)
-            and self.gols >= c.gols_min
+            and c.gols_min <= self.gols <= c.gols_max
             and c.jogos_min <= self.jogos <= c.jogos_max
             and (c.titulo is None or c.titulo == self.titulo)
             and (c.no_clube_inicial is None or c.no_clube_inicial == self.no_clube_inicial)
             and (c.selecao is None or c.selecao == self.selecao)
+            and (c.copa is None or c.copa == self.copa)
+            and (c.mundial is None or c.mundial == self.mundial)
+            and (not c.paises or self.pais in c.paises)
         )
 
 
@@ -138,7 +154,7 @@ class _Simulacao:
     inicio: Clube
     temporadas: list[Temporada] = field(default_factory=list)
     historico: set[str] = field(default_factory=set)
-    perguntadas: set[str] = field(default_factory=set)
+    perguntadas: list[str] = field(default_factory=list)
     respondidas: int = 0
     emprestado_de: Clube | None = None
     aposentou: bool = False
@@ -198,6 +214,7 @@ class _Simulacao:
             idade=self.idade,
             nota=self.nota,
             forca=self.dados.ligas[self.clube.liga].forca,
+            pais=self.dados.ligas[self.clube.liga].pais,
             posicao=self.posicao,
             historico=self.historico,
             no_clube_inicial=self.clube.id == self.inicio.id,
@@ -243,7 +260,7 @@ class _Simulacao:
             chance = max(
                 0.01, min(0.55, (self.clube.prestigio - 55) / 90 + (self.nota - nivel) / 250)
             )
-            chance *= peso
+            chance *= peso * min(1.0, jogos / 15)  # a title needs the player on the pitch
             if self.rng.random() < chance:
                 titulos.append(liga.campeonato)
             if liga.copa and self.rng.random() < chance * 0.6:
@@ -261,10 +278,11 @@ class _Simulacao:
                 selecao = self.rng.randint(3, 10)
                 if self.ano % 4 == 2 and self.nota >= 82 and self.rng.random() < 0.7:
                     copa, selecao = True, selecao + self.rng.randint(2, 7)
-                    if self.rng.random() < 0.18:
+                    if self.rng.random() < 0.12:
                         titulos.append("Copa do Mundo")
         ctx = self._contexto()
         ctx.gols, ctx.jogos, ctx.titulo, ctx.selecao = gols, jogos, bool(titulos), selecao > 0
+        ctx.copa, ctx.mundial = copa, "Copa do Mundo" in titulos
         depois = self._sortear_eventos("depois", ctx)
         eventos = antes + depois
         for e in eventos:
@@ -318,10 +336,15 @@ class _Simulacao:
             "menor": lambda c: nota - 18 <= self._nivel(c) <= min(atual - 2, nota - 2),
             "emprestimo": lambda c: nota - 16 <= self._nivel(c) <= nota - 3,
             "lado": lambda c: abs(self._nivel(c) - atual) <= 6,
-            "arabia": lambda c: c.liga == "ara",
-            "exotico": lambda c: c.liga in EXOTICAS,
+            "arabia": lambda c: c.liga == "ara" and self._nivel(c) <= nota + 8,
+            "exotico": lambda c: c.liga in EXOTICAS and self._nivel(c) <= nota + 8,
         }
         cabem = sorted((c for c in clubes if filtros[tipo](c)), key=lambda c: c.id)
+        if tipo in ("menor", "lado", "emprestimo"):
+            pais = self.dados.ligas[self.clube.liga].pais
+            perto = [c for c in cabem if self.dados.ligas[c.liga].pais == pais]
+            if perto and self.rng.random() < 0.65:  # moves down or sideways mostly stay home
+                cabem = perto
         return self.rng.choice(cabem) if cabem else None
 
     def _mudar(self, clube: Clube | None, emprestimo: bool = False) -> None:
@@ -336,11 +359,11 @@ class _Simulacao:
             return
         diff = self.nota - self._nivel(self.clube)
         sorte = self.rng.random()
-        if self.idade >= 31 and sorte < 0.12 + saida / 2:
+        if self.idade >= 31 and sorte < 0.08 + saida / 2:
             self._mudar(self._destino(self.rng.choice(("exotico", "casa", "menor"))))
         elif diff >= 8 and sorte < 0.35 + saida:
             self._mudar(self._destino("maior"))
-        elif diff <= -10 and sorte < 0.5 + saida:
+        elif diff <= -10 and sorte < (0.85 if diff <= -18 else 0.5) + saida:
             self._mudar(self._destino("menor"))
         elif sorte < 0.08 + saida:
             self._mudar(self._destino("lado"))
@@ -352,6 +375,7 @@ class _Simulacao:
         ctx = self._contexto()
         ctx.gols, ctx.jogos = temporada.gols, temporada.jogos
         ctx.titulo, ctx.selecao = bool(temporada.titulos), temporada.selecao > 0
+        ctx.copa, ctx.mundial = temporada.copa, "Copa do Mundo" in temporada.titulos
         cabem = [
             d for d in self.dados.decisoes if d.id not in self.perguntadas and ctx.casa(d.condicao)
         ]
@@ -359,13 +383,11 @@ class _Simulacao:
             return None, False
         decisao = self.rng.choices(cabem, weights=[d.peso for d in cabem])[0]
         destinos = {
-            o.destino: self._destino(o.destino)
-            for o in decisao.opcoes
-            if o.destino in ("europa", "maior", "emprestimo", "arabia", "casa")
+            o.destino: self._destino(o.destino) for o in decisao.opcoes if o.destino in COM_CLUBE
         }
         if any(clube is None for clube in destinos.values()):
             return None, False
-        self.perguntadas.add(decisao.id)
+        self.perguntadas.append(decisao.id)
         if self.respondidas >= len(self.entrada.escolhas):
             return self._escolha(decisao, destinos), False
         resposta = self.entrada.escolhas[self.respondidas]
@@ -402,8 +424,17 @@ class _Simulacao:
         for t in self.temporadas:
             for nome in t.titulos:
                 titulos[nome] = titulos.get(nome, 0) + 1
-        pico = max(t.nota for t in self.temporadas)
-        caps = sum(t.selecao for t in self.temporadas)
-        nota = pico * 0.55 + min(30, 3 * sum(titulos.values())) + min(10, caps / 10)
-        nota += 8 * titulos.get("Copa do Mundo", 0)
-        return Final(nota=max(0, min(100, round(nota))), titulos=titulos)
+        rotulo, descricao = final.rotular(self.dados, self.temporadas)
+        return Final(
+            nota=final.nota(self.temporadas),
+            rotulo=rotulo,
+            descricao=descricao,
+            titulos=titulos,
+            clubes=list(dict.fromkeys(t.clube for t in self.temporadas)),
+            jogos=sum(t.jogos for t in self.temporadas),
+            gols=sum(t.gols for t in self.temporadas),
+            selecao=sum(t.selecao for t in self.temporadas),
+            copa=any(t.copa for t in self.temporadas),
+            parecido=final.parecido(self.dados, final.base_real(), self.temporadas, self.posicao),
+            perguntas=list(self.perguntadas),
+        )

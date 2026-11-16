@@ -1,0 +1,80 @@
+# Finais da Carreira: o primeiro rótulo (de cima para baixo) cuja condição casa vence.
+# Condições sobre a carreira inteira (temporadas profissionais, dos 17 anos):
+# pico_min/pico_max (maior nota), clubes_min/clubes_max, um_clube_min (temporadas no mesmo
+# clube), titulos_min, gols_min, selecao_min (jogos), copa (disputou), mundial (ganhou),
+# europa_min (temporadas em liga de força 80+), exotico_min (Arábia, Japão, EUA, Turquia,
+# México), paises_min, idade_fim_max. O último não tem condição: é o curinga.
+
+[[final]]
+rotulo = "Lenda"
+descricao = "Campeão do mundo e um dos maiores que o futebol já viu."
+condicao = { mundial = true, pico_min = 90 }
+
+[[final]]
+rotulo = "Campeão do mundo"
+descricao = "Seu nome está para sempre na lista dos campeões da Copa."
+condicao = { mundial = true }
+
+[[final]]
+rotulo = "Rei da Europa"
+descricao = "Brilhou anos a fio no topo do futebol europeu e encheu a estante."
+condicao = { europa_min = 7, titulos_min = 8 }
+
+[[final]]
+rotulo = "Craque da Seleção"
+descricao = "Dono da amarelinha por anos, mesmo sem a taça."
+condicao = { selecao_min = 50 }
+
+[[final]]
+rotulo = "Bandeira"
+descricao = "Uma camisa só, uma vida inteira. A torcida nunca vai esquecer."
+condicao = { um_clube_min = 11, clubes_max = 2 }
+
+[[final]]
+rotulo = "Artilheiro nato"
+descricao = "Fez gol de todo jeito, em todo lugar. As redes que o digam."
+condicao = { gols_min = 220 }
+
+[[final]]
+rotulo = "Colecionador de taças"
+descricao = "Onde ele chegava, a taça vinha junto."
+condicao = { titulos_min = 9 }
+
+[[final]]
+rotulo = "Ídolo da torcida"
+descricao = "Fez história num clube e virou nome de música na arquibancada."
+condicao = { um_clube_min = 9 }
+
+[[final]]
+rotulo = "Aventureiro"
+descricao = "Trocou a fama pela aventura: jogou onde quase ninguém vai."
+condicao = { exotico_min = 6 }
+
+[[final]]
+rotulo = "Cigano da bola"
+descricao = "Mala sempre pronta: vestiu camisas de norte a sul."
+condicao = { clubes_min = 8 }
+
+[[final]]
+rotulo = "Rodou o mundo"
+descricao = "Passaporte cheio de carimbos e um gol em cada língua."
+condicao = { paises_min = 4 }
+
+[[final]]
+rotulo = "Promessa que não vingou"
+descricao = "Prometia muito, entregou pouco. O futebol é assim."
+condicao = { pico_max = 52, idade_fim_max = 32 }
+
+[[final]]
+rotulo = "Operário da bola"
+descricao = "Sem holofote, mas com suor: viveu do futebol a vida inteira."
+condicao = { pico_max = 62 }
+
+[[final]]
+rotulo = "Bom de bola"
+descricao = "Craque de verdade, ainda que a sorte não tenha ajudado sempre."
+condicao = { pico_min = 74 }
+
+[[final]]
+rotulo = "Carreira honesta"
+descricao = "Teve seus dias de glória e sai de cabeça erguida."
