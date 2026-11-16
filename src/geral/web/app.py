@@ -12,6 +12,7 @@ import logging
 import os
 import random
 import re
+import secrets
 import unicodedata
 from collections import defaultdict, deque
 from collections.abc import Callable
@@ -35,6 +36,10 @@ from pydantic import AwareDatetime, BaseModel, Field, model_validator
 
 from geral.config import Settings, get_settings
 from geral.games import calendario, craque, onde_jogou, quem_e
+from geral.games.carreira import codigo as carreira_codigo
+from geral.games.carreira import dados as carreira_dados
+from geral.games.carreira import draft as carreira_draft
+from geral.games.carreira import motor as carreira_motor
 from geral.games.velha import base as velha_base
 from geral.games.velha import board as velha_tabuleiro
 from geral.games.velha import busca as velha_busca
@@ -184,6 +189,14 @@ class PlayerGuessesIn(BaseModel):
 class ClubGuessesIn(BaseModel):
     palpites: list[Annotated[str, Field(max_length=60)]] = Field(max_length=40)
     desistiu: bool = False
+
+
+class CarreiraIn(BaseModel):
+    semente_draft: str = Field(min_length=1, max_length=40)
+    semente: str | None = Field(default=None, min_length=1, max_length=40)  # drawn when absent
+    craque: carreira_motor.Craque
+    roubos: list[carreira_draft.Roubo] = Field(max_length=9)
+    escolhas: list[int] = Field(default=[], max_length=carreira_motor.MAX_ESCOLHAS + 2)
 
 
 class VelhaIn(BaseModel):
@@ -1198,6 +1211,43 @@ def create_app(
                 {"detail": f"cada chute precisa de {len(answer.answer)} letras"}, status_code=422
             )
         return craque.judge(answer, body.guesses)
+
+    def carreira_edicoes() -> list[str]:
+        return carreira_draft.edicoes(carreira_dados.carregar(), listed)
+
+    @app.post("/api/jogos/carreira/{edition}/oferta")
+    def carreira_oferta(edition: str):
+        if edition not in carreira_edicoes():
+            return JSONResponse({"detail": "edition not found"}, status_code=404)
+        semente = secrets.token_urlsafe(8)
+        lendas = carreira_draft.oferta(carreira_dados.carregar(), edition, semente)
+        return {
+            "semente_draft": semente,
+            "lendas": [{"nome": x.nome, "notas": x.notas} for x in lendas],
+        }
+
+    @app.post("/api/jogos/carreira/{edition}/simular")
+    def carreira_simular(edition: str, body: CarreiraIn):
+        if edition not in carreira_edicoes():
+            return JSONResponse({"detail": "edition not found"}, status_code=404)
+        dados = carreira_dados.carregar()
+        entrada = carreira_motor.Entrada(
+            **body.model_dump(exclude={"semente"}), semente=body.semente or secrets.token_urlsafe(8)
+        )
+        try:
+            carreira = carreira_motor.simular(dados, edition, entrada)
+        except carreira_draft.JogadaInvalida as erro:
+            return JSONResponse({"detail": str(erro)}, status_code=422)
+        codigo = None
+        if carreira.final:
+            resumo = carreira_codigo.resumir(entrada, carreira)
+            codigo = carreira_codigo.codificar(dados.versao, edition, entrada, resumo)
+        return {
+            "semente": entrada.semente,
+            "versao": dados.versao,
+            "carreira": carreira.model_dump(),
+            "codigo": codigo,
+        }
 
     @app.get("/jogos/onde-jogou", response_class=HTMLResponse)
     @app.get("/jogos/onde-jogou/{edition}", response_class=HTMLResponse)
