@@ -109,3 +109,25 @@ def test_link_sem_modo_abre_como_rapida() -> None:
     e = entrada("l1")
     sem_modo = type(e).model_validate(e.model_dump(exclude={"modo"}))
     assert sem_modo.modo == "rapida"
+
+
+def test_toda_rotina_e_alcancavel() -> None:
+    dados = carregar()
+    assert len(dados.rotinas) >= 30
+    vistos: set[tuple[str, str, bool]] = set()
+    for i in range(300):
+        final, passos = jogar(
+            completa(f"a{i}", posicao=regras.POSICOES[i % 5]),
+            lambda p, rng: rng.randrange(len(p.opcoes)),
+            f"a{i}",
+        )
+        dias = [p for _, p, _ in passos if p.tipo == "dia"]
+        respostas = [r for _, p, r in passos if p.tipo == "dia"]
+        pro = [t for t in final.temporadas if t.idade >= 17]
+        for pergunta, resposta, t in zip(dias, respostas, pro, strict=True):
+            vistos.add((pergunta.id, pergunta.opcoes[resposta], t.rotina.deu_certo))
+    for rotina in dados.rotinas:
+        for opcao in rotina.opcoes:
+            assert (rotina.id, opcao.texto, True) in vistos, (rotina.id, opcao.texto)
+            if 1 < opcao.chance < 100:
+                assert (rotina.id, opcao.texto, False) in vistos, (rotina.id, opcao.texto)
