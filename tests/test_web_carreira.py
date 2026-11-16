@@ -3,7 +3,6 @@ from webkit import make_client
 
 from geral.games.carreira import regras
 from geral.games.carreira.codigo import decodificar
-from geral.teams import load_teams
 
 API = "/api/jogos/carreira"
 CRAQUE = {"nome": "Zé", "camisa": 10, "posicao": "atacante", "pe": "direito", "clube": "bahia"}
@@ -54,26 +53,11 @@ def test_mesma_semente_mesma_carreira(game) -> None:
     assert game.post(f"{API}/geral/simular", json=pedido).json() == primeira
 
 
-def test_edicao_desconhecida_e_404(game) -> None:
-    assert game.post(f"{API}/xyz/oferta", json={}).status_code == 404
+@pytest.mark.parametrize("edicao", ["xyz", "vasco"])  # one edition only: geral
+def test_edicao_desconhecida_e_404(game, edicao) -> None:
+    assert game.post(f"{API}/{edicao}/oferta", json={}).status_code == 404
     pedido = _comeco(game) | {"escolhas": []}
-    assert game.post(f"{API}/xyz/simular", json=pedido).status_code == 404
-
-
-def test_edicao_de_time_comeca_na_base_dele(game) -> None:
-    pedido = _comeco(game, "vasco") | {"escolhas": []}
-
-    corpo = game.post(f"{API}/vasco/simular", json=pedido).json()
-
-    assert corpo["carreira"]["temporadas"][0]["clube"] == "Vasco"
-
-
-def test_hidden_team_has_no_career_edition(store, mailer, clock) -> None:
-    catalog = load_teams()
-    escondido = catalog["vasco"].model_copy(update={"listed": False})
-    game = make_client(store, mailer, clock, teams=catalog | {"vasco": escondido})
-
-    assert game.post(f"{API}/vasco/oferta", json={}).status_code == 404
+    assert game.post(f"{API}/{edicao}/simular", json=pedido).status_code == 404
 
 
 def test_roubo_invalido_escolha_fora_e_escolha_sobrando_sao_422(game) -> None:
@@ -108,15 +92,6 @@ def _codigo(game) -> tuple[str, dict]:
     return corpo["codigo"], corpo["carreira"]["final"]
 
 
-def test_pagina_da_carreira_por_edicao(game) -> None:
-    geral = game.get("/jogos/carreira")
-    vasco = game.get("/jogos/carreira/vasco")
-
-    assert geral.status_code == vasco.status_code == 200
-    assert '"bahia"' in geral.text and '"bahia"' not in vasco.text  # starting clubs: geral only
-    assert game.get("/jogos/carreira/xyz").status_code == 404
-
-
 def test_link_do_card_reabre_a_carreira(game) -> None:
     codigo, final = _codigo(game)
 
@@ -147,3 +122,38 @@ def test_carreira_aparece_em_jogos_sem_numero_do_dia(game) -> None:
 
     assert "Carreira" in page.text and "/jogos/carreira" in page.text
     assert "#None" not in page.text
+
+
+def test_pagina_unica_com_todos_os_clubes_brasileiros(game) -> None:
+    page = game.get("/jogos/carreira")
+
+    assert page.status_code == 200
+    assert '"bahia"' in page.text and '"abc"' in page.text and '"vasco"' in page.text
+
+
+@pytest.mark.parametrize("edicao", ["vasco", "abc", "xyz"])
+def test_edicao_de_time_redireciona_para_a_unica(game, edicao) -> None:
+    page = game.get(f"/jogos/carreira/{edicao}", follow_redirects=False)
+
+    assert page.status_code in (301, 308) and page.headers["location"] == "/jogos/carreira"
+
+
+def test_modo_completo_comeca_com_o_dia_a_dia(game) -> None:
+    pedido = _comeco(game) | {"semente": "fixa", "escolhas": [], "modo": "completa"}
+
+    corpo = game.post(f"{API}/geral/simular", json=pedido).json()
+
+    pendente = corpo["carreira"]["pendente"]
+    assert pendente["tipo"] == "dia" and pendente["info"]
+    assert decodificar_ok(game, pedido)
+
+
+def decodificar_ok(game, pedido) -> bool:
+    """A Completa career replays from its share code (the mode goes in the code)."""
+    escolhas: list[int] = []
+    while not (c := game.post(f"{API}/geral/simular", json=pedido | {"escolhas": escolhas}).json())[
+        "codigo"
+    ]:
+        escolhas.append(0)
+    aberto = decodificar(c["codigo"])
+    return aberto.entrada.modo == "completa" and len(c["codigo"]) < 2000

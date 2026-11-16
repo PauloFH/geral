@@ -198,6 +198,7 @@ class CarreiraIn(BaseModel):
     craque: carreira_motor.Craque
     roubos: list[carreira_draft.Roubo] = Field(max_length=9)
     escolhas: list[int] = Field(default=[], max_length=carreira_motor.MAX_RESPOSTAS)
+    modo: Literal["rapida", "completa"] = "rapida"
 
 
 class VelhaIn(BaseModel):
@@ -1222,7 +1223,7 @@ def create_app(
         return craque.judge(answer, body.guesses)
 
     def carreira_edicoes() -> list[str]:
-        return carreira_draft.edicoes(carreira_dados.carregar(), listed)
+        return ["geral"]  # one Carreira for everyone: the fan picks the starting club
 
     def carreira_pagina(request: Request, edition: str, **extra) -> HTMLResponse:
         dados = carreira_dados.carregar()
@@ -1238,7 +1239,7 @@ def create_app(
             ],
             "posicoes": list(carreira_regras.POSICOES),
             "pesos": carreira_regras.PESOS,
-            "clubes": clubes if edition == "geral" else [],
+            "clubes": clubes,
             "url": public_url,
         } | extra.pop("jogo", {})
         return page(
@@ -1254,16 +1255,13 @@ def create_app(
         )
 
     @app.get("/jogos/carreira", response_class=HTMLResponse)
-    @app.get("/jogos/carreira/{edition}", response_class=HTMLResponse)
-    def carreira_jogo(request: Request, edition: str = "geral"):
-        if edition not in carreira_edicoes():
-            return message(
-                request,
-                "Jogo não encontrado",
-                "Essa torcida ainda não tem a Carreira. Jogue a edição geral enquanto isso.",
-                status=404,
-            )
-        return carreira_pagina(request, edition)
+    def carreira_jogo(request: Request):
+        return carreira_pagina(request, "geral")
+
+    @app.get("/jogos/carreira/{edition}")
+    def carreira_por_time(edition: str):
+        """The team editions are gone: one Carreira, any club to start from."""
+        return RedirectResponse("/jogos/carreira", status_code=301)
 
     @app.get("/jogos/carreira/c/{codigo}", response_class=HTMLResponse)
     def carreira_compartilhada(request: Request, codigo: str):
