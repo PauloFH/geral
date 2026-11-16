@@ -7,7 +7,7 @@
     {% include "_game_tabs.html.j2" %}
     <h1>Jogo da velha</h1>
     {% if archive %}<p class="archive-note">Jogo de {{ day }} · não conta na sequência · <a href="{{ today_url }}">Jogar o de hoje →</a></p>{% endif %}
-    <p class="lead">Um tabuleiro por dia, o mesmo para todo mundo. Cada casa pede um jogador que se encaixe na linha e na coluna. São {{ max_guesses }} chutes para as 9 casas.</p>
+    <p class="lead">Um tabuleiro por dia, o mesmo para todo mundo. Cada casa pede um jogador que se encaixe na linha e na coluna. São {{ max_guesses }} chutes para as 9 casas. <a href="/jogos/velha/duelo">Duelo: jogue contra alguém →</a></p>
 
     <div class="velha-board" role="grid" aria-label="Tabuleiro #{{ number }}">
       <span class="plate velha-corner">#{{ number }}<b id="jv-left">{{ max_guesses }}</b>restam</span>
