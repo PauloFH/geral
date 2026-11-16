@@ -99,3 +99,51 @@ def test_nome_longo_e_422(game) -> None:
     pedido["craque"] = CRAQUE | {"nome": "x" * 25}
 
     assert game.post(f"{API}/geral/simular", json=pedido).status_code == 422
+
+
+def _codigo(game) -> tuple[str, dict]:
+    pedido = _comeco(game) | {"semente": "fixa", "escolhas": []}
+    while not (corpo := game.post(f"{API}/geral/simular", json=pedido).json())["codigo"]:
+        pedido["escolhas"].append(0)
+    return corpo["codigo"], corpo["carreira"]["final"]
+
+
+def test_pagina_da_carreira_por_edicao(game) -> None:
+    geral = game.get("/jogos/carreira")
+    vasco = game.get("/jogos/carreira/vasco")
+
+    assert geral.status_code == vasco.status_code == 200
+    assert '"bahia"' in geral.text and '"bahia"' not in vasco.text  # starting clubs: geral only
+    assert game.get("/jogos/carreira/xyz").status_code == 404
+
+
+def test_link_do_card_reabre_a_carreira(game) -> None:
+    codigo, final = _codigo(game)
+
+    page = game.get(f"/jogos/carreira/c/{codigo}")
+
+    assert page.status_code == 200
+    assert final["rotulo"] in page.text and "Zé" in page.text
+
+
+def test_link_de_versao_velha_mostra_o_resumo(game) -> None:
+    from geral.games.carreira.codigo import codificar
+
+    codigo, final = _codigo(game)
+    velho = decodificar(codigo)
+    codigo_velho = codificar("00000000", velho.edicao, velho.entrada, velho.resumo)
+
+    page = game.get(f"/jogos/carreira/c/{codigo_velho}")
+
+    assert page.status_code == 200 and final["rotulo"] in page.text and "Jogar a sua" in page.text
+
+
+def test_link_invalido_e_404(game) -> None:
+    assert game.get("/jogos/carreira/c/nao-e-um-codigo").status_code == 404
+
+
+def test_carreira_aparece_em_jogos_sem_numero_do_dia(game) -> None:
+    page = game.get("/jogos")
+
+    assert "Carreira" in page.text and "/jogos/carreira" in page.text
+    assert "#None" not in page.text

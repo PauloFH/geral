@@ -11,6 +11,16 @@ ATRIBUTOS = (
     "lideranca",
 )
 POSICOES = ("zagueiro", "lateral", "volante", "meia", "atacante")
+NOMES = {
+    "velocidade": "Velocidade",
+    "finalizacao": "Finalização",
+    "passe": "Passe",
+    "drible": "Drible",
+    "marcacao": "Marcação",
+    "fisico": "Físico",
+    "cabeceio": "Cabeceio",
+    "lideranca": "Liderança",
+}
 
 # Order of ATRIBUTOS; each row sums to 100 (read as percent).
 _TABELA = {

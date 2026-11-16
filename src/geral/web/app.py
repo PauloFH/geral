@@ -40,6 +40,7 @@ from geral.games.carreira import codigo as carreira_codigo
 from geral.games.carreira import dados as carreira_dados
 from geral.games.carreira import draft as carreira_draft
 from geral.games.carreira import motor as carreira_motor
+from geral.games.carreira import regras as carreira_regras
 from geral.games.velha import base as velha_base
 from geral.games.velha import board as velha_tabuleiro
 from geral.games.velha import busca as velha_busca
@@ -461,6 +462,14 @@ def create_app(
                 "chutes.",
                 "editions": who_editions(),
                 "number": who_number(),
+            },
+            {
+                "path": "carreira",
+                "name": "Carreira",
+                "desc": "Roube um atributo de cada lenda, monte seu craque e viva a carreira dele "
+                "até a aposentadoria. Jogue quantas vezes quiser.",
+                "editions": dict.fromkeys(carreira_edicoes(), True),
+                "number": None,  # free play: no game of the day
             },
             {
                 "path": "velha",
@@ -1214,6 +1223,82 @@ def create_app(
 
     def carreira_edicoes() -> list[str]:
         return carreira_draft.edicoes(carreira_dados.carregar(), listed)
+
+    def carreira_pagina(request: Request, edition: str, **extra) -> HTMLResponse:
+        dados = carreira_dados.carregar()
+        clubes = [
+            {"id": c.id, "nome": c.nome}
+            for c in sorted(dados.clubes.values(), key=lambda c: c.nome)
+            if dados.ligas[c.liga].pais == "Brasil"
+        ]
+        jogo = {
+            "edicao": edition,
+            "atributos": [
+                {"id": a, "nome": carreira_regras.NOMES[a]} for a in carreira_regras.ATRIBUTOS
+            ],
+            "posicoes": list(carreira_regras.POSICOES),
+            "pesos": carreira_regras.PESOS,
+            "clubes": clubes if edition == "geral" else [],
+            "url": public_url,
+        } | extra.pop("jogo", {})
+        return page(
+            request,
+            "carreira.html.j2",
+            edition=edition,
+            tabs=game_tabs("carreira", edition),
+            team=listed.get(edition),
+            club=club_palette(listed.get(edition)),
+            editions=[(slug, listed.get(slug)) for slug in carreira_edicoes()],
+            jogo=jogo,
+            **extra,
+        )
+
+    @app.get("/jogos/carreira", response_class=HTMLResponse)
+    @app.get("/jogos/carreira/{edition}", response_class=HTMLResponse)
+    def carreira_jogo(request: Request, edition: str = "geral"):
+        if edition not in carreira_edicoes():
+            return message(
+                request,
+                "Jogo não encontrado",
+                "Essa torcida ainda não tem a Carreira. Jogue a edição geral enquanto isso.",
+                status=404,
+            )
+        return carreira_pagina(request, edition)
+
+    @app.get("/jogos/carreira/c/{codigo}", response_class=HTMLResponse)
+    def carreira_compartilhada(request: Request, codigo: str):
+        try:
+            aberto = carreira_codigo.decodificar(codigo)
+        except carreira_codigo.CodigoInvalido:
+            aberto = None
+        if aberto is None or aberto.edicao not in carreira_edicoes():
+            return message(
+                request,
+                "Carreira não encontrada",
+                "Esse link de carreira não abre. Que tal montar o seu craque?",
+                status=404,
+                link_url="/jogos/carreira",
+                link_label="Jogar a Carreira",
+            )
+        dados = carreira_dados.carregar()
+        carreira = None
+        if aberto.versao == dados.versao:
+            try:
+                carreira = carreira_motor.simular(dados, aberto.edicao, aberto.entrada)
+            except carreira_draft.JogadaInvalida:
+                carreira = None
+        compartilhada = {
+            "codigo": codigo,
+            "craque": aberto.entrada.craque.model_dump(),
+            "resumo": aberto.resumo.model_dump(),
+            "carreira": carreira.model_dump() if carreira else None,
+        }
+        return carreira_pagina(
+            request,
+            aberto.edicao,
+            compartilhada=compartilhada,
+            jogo={"compartilhada": compartilhada},
+        )
 
     @app.post("/api/jogos/carreira/{edition}/oferta")
     def carreira_oferta(edition: str):

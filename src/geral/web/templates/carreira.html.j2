@@ -1,0 +1,102 @@
+{% extends "base.html.j2" %}
+{% set label = team.name if team else "Geral" %}
+{% block title %}Carreira · {{ label }} · Geral{% endblock %}
+{% block head %}<link rel="stylesheet" href="/static/geral/jogos.css?v={{ asset_version }}">{% endblock %}
+{% block content %}
+<section class="jogo wall">
+  <div class="wrap" id="cr" data-edition="{{ edition }}">
+    {% include "_game_tabs.html.j2" %}
+    <div class="game-title"><h1>Carreira</h1><button type="button" class="rules-open" aria-label="Como jogar">?</button></div>
+
+    <div class="stage">
+      <nav class="editions" aria-label="Edições">
+        {% for slug, t in editions %}
+        <a href="/jogos/carreira{% if slug != 'geral' %}/{{ slug }}{% endif %}"{% if slug == edition and not compartilhada %} aria-current="page"{% endif %}>{{ t.name if t else "Geral" }}</a>
+        {% endfor %}
+      </nav>
+
+      {% if compartilhada %}
+      {# A shared career: the card, and the whole career when the data still replays it. #}
+      {% set r = compartilhada.resumo %}
+      <div class="result cr-shared">
+        <span class="cr-kicker">A carreira de {{ r.nome }} · {{ r.posicao }}</span>
+        <h2>{{ r.rotulo }}</h2>
+        <span class="final">Nota {{ r.nota }} · 🏆 {{ r.titulos }}</span>
+        <p class="cr-clubs">{{ r.clubes | join(" → ") }}</p>
+        <div class="actions"><a class="btn" href="/jogos/carreira{% if edition != 'geral' %}/{{ edition }}{% endif %}">Jogar a sua</a></div>
+      </div>
+      {% endif %}
+
+      {# 1. The player. #}
+      <form class="board match cr-step" id="cr-craque"{% if compartilhada %} hidden{% endif %}>
+        <span class="lamp meta">Monte seu craque · {{ label }}</span>
+        <div class="cr-fields">
+          <label class="cr-field cr-name"><span>Nome</span><input id="cr-nome" name="nome" maxlength="24" required autocomplete="off" spellcheck="false" placeholder="Como a torcida vai chamar"></label>
+          <label class="cr-field cr-number"><span>Camisa</span><input id="cr-camisa" name="camisa" type="number" min="1" max="99" value="10" required inputmode="numeric"></label>
+        </div>
+        <fieldset class="cr-choice"><legend>Posição</legend>
+          {% for p in jogo.posicoes %}<button type="button" class="chip" data-posicao="{{ p }}" aria-pressed="{{ 'true' if p == 'atacante' else 'false' }}">{{ p }}</button>{% endfor %}
+        </fieldset>
+        <fieldset class="cr-choice"><legend>Pé bom</legend>
+          {% for p, nome in [("direito", "Direito"), ("esquerdo", "Esquerdo"), ("ambos", "Os dois")] %}<button type="button" class="chip" data-pe="{{ p }}" aria-pressed="{{ 'true' if p == 'direito' else 'false' }}">{{ nome }}</button>{% endfor %}
+        </fieldset>
+        {% if jogo.clubes %}
+        <label class="cr-field"><span>Começa na base do</span>
+          <select id="cr-clube" required>{% for c in jogo.clubes %}<option value="{{ c.id }}">{{ c.nome }}</option>{% endfor %}</select>
+        </label>
+        {% else %}
+        <p class="cr-start">Começa na base do <b>{{ label }}</b>.</p>
+        {% endif %}
+        <button class="btn cr-go" type="submit">Começar o draft</button>
+      </form>
+
+      {# 2. The draft: one attribute from each legend. #}
+      <div class="cr-step cr-draft" id="cr-draft" hidden>
+        <div class="board match cr-placar">
+          <div class="cr-placar-top"><span class="lamp meta" id="cr-quem"></span><span class="lamp cr-overall"><small>geral</small> <b id="cr-overall">–</b></span></div>
+          <ol class="cr-attrs" id="cr-attrs"></ol>
+        </div>
+        <div class="cr-legend" id="cr-legend">
+          <div class="cr-legend-top"><span class="cr-count" id="cr-count"></span><button class="btn secondary cr-reroll" type="button" id="cr-reroll">Sortear outra lenda</button></div>
+          <h2 id="cr-legend-name"></h2>
+          <p class="cr-hint">Roube um atributo:</p>
+          <div class="cr-steal" id="cr-steal"></div>
+        </div>
+      </div>
+
+      {# 3. The career, season by season. #}
+      <div class="cr-step" id="cr-carreira" hidden>
+        <div class="board match cr-seasons-board">
+          <span class="lamp meta" id="cr-header"></span>
+          <ol class="cr-seasons" id="cr-seasons" aria-live="polite"></ol>
+        </div>
+        <div class="cr-question" id="cr-question" hidden>
+          <p id="cr-question-text"></p>
+          <div class="cr-options" id="cr-options"></div>
+        </div>
+        <p class="how" id="cr-error" role="alert" hidden></p>
+        <div class="cr-controls"><button class="btn secondary cr-skip" type="button" id="cr-skip">Pular</button><button class="btn" type="button" id="cr-retry" hidden>Tentar de novo</button></div>
+      </div>
+    </div>
+
+    {# 4. The end: the card to share. #}
+    <div class="result cr-end" id="cr-end" hidden>
+      <span class="cr-kicker" id="cr-end-kicker"></span>
+      <h2 id="cr-end-label"></h2>
+      <p id="cr-end-desc"></p>
+      <img class="cr-card" id="cr-card" alt="O card da carreira">
+      <div class="actions">
+        <button class="btn" type="button" id="cr-share">Compartilhar</button>
+        <a class="btn secondary" id="cr-download" download="carreira.png">Baixar o card</a>
+        <button class="btn secondary" type="button" id="cr-again">Jogar de novo</button>
+        <span id="cr-copied" role="status"></span>
+      </div>
+    </div>
+
+    <script type="application/json" id="cr-data">{{ jogo | tojson }}</script>
+    <p class="credit">As notas das lendas são da redação da Geral: discorda? Responda qualquer newsletter.</p>
+    {% set rules_key = "carreira" %}{% set rules %}Dê nome, camisa, posição e pé ao seu craque.|No draft passam 8 lendas: de cada uma você rouba um atributo. Escolha bem, porque cada atributo só pode ser roubado uma vez. Uma lenda pode ser trocada por outra, uma vez só.|Depois é com ele: a carreira acontece temporada a temporada, dos 16 anos até a aposentadoria, e de vez em quando você decide o rumo.|No fim, um card com a nota, os títulos e o jogador real com quem sua carreira mais se parece. Jogue quantas vezes quiser.{% endset %}{% set rules = rules.split("|") %}{% include "_regras.html.j2" %}
+  </div>
+</section>
+<script src="/static/geral/carreira.js?v={{ asset_version }}" defer></script>
+{% endblock %}
