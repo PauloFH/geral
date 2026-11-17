@@ -184,6 +184,20 @@ class Dados:
             if clube.id in c.clubes
         ]
 
+    def tacas(self) -> dict[str, str]:
+        """Every trophy name -> its kind, for the trophy icons: liga, copa, continental, estadual,
+        nordeste, mundo."""
+        tipos: dict[str, str] = {}
+        for liga in self.ligas.values():
+            tipos.setdefault(liga.campeonato, "liga")
+            if liga.copa:
+                tipos.setdefault(liga.copa, "copa")
+            if liga.continental:
+                tipos.setdefault(liga.continental, "continental")
+        for estado in self.estados.values():
+            tipos[estado.campeonato] = "estadual"
+        return tipos | {"Copa do Nordeste": "nordeste", "Copa do Mundo": "mundo"}
+
     def classico(self, clube: Clube) -> tuple[str, Clube] | None:
         todos = self.classicos_de(clube)
         return todos[0] if todos else None

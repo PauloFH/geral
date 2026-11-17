@@ -187,6 +187,8 @@
     $("cr-now").replaceChildren();
     delete $("cr-now").dataset.temporada;
     $("cr-timeline").replaceChildren();
+    $("cr-shelf").replaceChildren();
+    $("cr-cabinet").hidden = true;
     rolar($("cr-carreira"), "start");
     simular();
   }
@@ -238,6 +240,33 @@
 
   const chip = (texto, cls = "cr-chip") => el("span", cls, texto);
 
+  // Our own trophy drawings, one shape per kind of competition (no photos: the real trophies'
+  // designs and pictures have owners). Static markup only: no data goes into it.
+  const BASE = '<rect x="15" y="34" width="10" height="5"/><rect x="10" y="39" width="20" height="6" rx="1"/>';
+  const DESENHOS = {
+    liga: '<path d="M7 5h26v9c0 9-6 15-13 15S7 23 7 14z"/><path d="M7 8H2v4c0 5 3 8 6 8M33 8h5v4c0 5-3 8-6 8" fill="none" stroke="currentColor" stroke-width="2.5"/><rect x="17" y="28" width="6" height="7"/>' + BASE,
+    copa: '<path d="M12 3h16v14c0 7-4 11-8 11s-8-4-8-11z"/><path d="M12 7H8v3c0 4 2 6 5 6M28 7h4v3c0 4-2 6-5 6" fill="none" stroke="currentColor" stroke-width="2.2"/><rect x="18" y="27" width="4" height="8"/>' + BASE,
+    continental: '<path d="M11 5h18v11c0 7-4 12-9 12s-9-5-9-12z"/><path d="M11 8C3 6 1 14 4 18s7 3 9 1M29 8c8-2 10 6 7 10s-7 3-9 1" fill="none" stroke="currentColor" stroke-width="2.8"/><rect x="17" y="27" width="6" height="8"/>' + BASE,
+    mundo: '<circle cx="20" cy="9" r="7"/><path d="M13 14c-1 7 2 12 7 14 5-2 8-7 7-14-2 3-5 4-7 4s-5-1-7-4z"/><rect x="17" y="27" width="6" height="8"/>' + BASE,
+    estadual: '<path d="M13 9h14v9c0 6-3 10-7 10s-7-4-7-10z"/><path d="M13 12H9v2c0 3 2 5 4 5M27 12h4v2c0 3-2 5-4 5" fill="none" stroke="currentColor" stroke-width="2"/><rect x="18" y="27" width="4" height="8"/>' + BASE,
+    nordeste: '<circle cx="20" cy="6" r="3.5"/><path d="M20 0v1.5M14 2l1.2 1.2M26 2l-1.2 1.2M12.5 6h1.5M26 6h1.5" stroke="currentColor" stroke-width="1.6"/><path d="M11 11h18v8c0 6-4 9-9 9s-9-3-9-9z"/><path d="M11 13H7v2c0 4 3 6 5 6M29 13h4v2c0 4-3 6-5 6" fill="none" stroke="currentColor" stroke-width="2.2"/><rect x="17" y="27" width="6" height="8"/>' + BASE,
+  };
+  const tipoDaTaca = (nome) => (jogo.tacas || {})[nome] || "copa";
+  function taca(nome) {
+    const tipo = tipoDaTaca(nome);
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", "0 0 40 46");
+    svg.setAttribute("aria-hidden", "true");
+    svg.setAttribute("class", `cr-taca ${tipo}`);
+    svg.innerHTML = DESENHOS[tipo] || DESENHOS.copa;
+    return svg;
+  }
+  function selo(nome, cls = "cr-trophy") {
+    const s = el("span", cls);
+    s.append(taca(nome), el("span", "", nome));
+    return s;
+  }
+
   function mostrarTemporada(t) {
     const atual = $("cr-now");
     const anterior = atual.dataset.temporada;
@@ -259,7 +288,7 @@
     atual.append(numeros);
     if (t.titulos.length) {
       const tacas = el("div", "cr-trophies");
-      t.titulos.forEach((nome) => tacas.append(chip(`🏆 ${nome}`, "cr-trophy")));
+      t.titulos.forEach((nome) => tacas.append(selo(nome)));
       atual.append(tacas);
     }
     atual.append(el("p", "cr-headline", t.manchete));
@@ -271,15 +300,46 @@
       atual.append(linha);
     }
     $("cr-bar-nota").textContent = `${t.idade} anos · ${t.clube} · nota ${t.nota}`;
+    const vistas = estado ? estado.temporadas.slice(0, estado.mostradas + 1) : [];
+    const ate = estado ? vistas : (jogo.compartilhada?.carreira?.temporadas || []);
+    $("cr-cabinet").hidden = salaDeTrofeus($("cr-shelf"), ate) === 0;
   }
+
+  const plural = (n, um, varios) => `${n} ${n === 1 ? um : varios}`;
 
   function linhaDoTempo(t) {
     const li = el("li", "cr-line");
-    li.append(el("span", "cr-line-age", t.idade), el("span", "cr-line-club", t.clube));
-    li.append(el("span", "cr-line-nums", t.idade === 16 ? "base" : `${t.jogos}j · ${t.gols}g`));
-    if (t.titulos.length) li.append(el("span", "cr-line-trophy", `🏆${t.titulos.length > 1 ? `×${t.titulos.length}` : ""}`));
+    li.append(el("span", "cr-line-age", t.idade));
+    const corpo = el("div", "cr-line-body");
+    const topo = el("div", "cr-line-top");
+    topo.append(el("span", "cr-line-club", t.clube));
+    const numeros = t.idade === 16 ? "categorias de base" : `${plural(t.jogos, "jogo", "jogos")} · ${plural(t.gols, "gol", "gols")}`;
+    topo.append(el("span", "cr-line-nums", numeros));
+    corpo.append(topo);
+    if (t.titulos.length) {
+      const tacas = el("div", "cr-line-trophies");
+      t.titulos.forEach((nome) => tacas.append(selo(nome, "cr-line-trophy")));
+      corpo.append(tacas);
+    }
+    li.append(corpo);
     li.title = t.manchete;
     return li;
+  }
+
+  // The trophy room: every title won so far, one shelf item per competition.
+  function salaDeTrofeus(lista, temporadas) {
+    const contagem = new Map();
+    temporadas.forEach((t) => t.titulos.forEach((n) => contagem.set(n, (contagem.get(n) || 0) + 1)));
+    lista.replaceChildren();
+    const ordem = ["mundo", "continental", "liga", "copa", "nordeste", "estadual"];
+    [...contagem.entries()]
+      .sort((a, b) => ordem.indexOf(tipoDaTaca(a[0])) - ordem.indexOf(tipoDaTaca(b[0])) || b[1] - a[1])
+      .forEach(([nome, vezes]) => {
+        const item = el("li", `cr-shelf-item ${tipoDaTaca(nome)}`);
+        item.append(taca(nome), el("b", "cr-shelf-n", `${vezes}×`), el("span", "cr-shelf-name", nome));
+        lista.append(item);
+      });
+    return contagem.size;
   }
 
   const TIPOS = { dia: "Dia a dia", mercado: "Mercado", decisao: "Decisão" };
@@ -324,6 +384,8 @@
     $("cr-end-kicker").textContent = `${craque.nome} · #${craque.camisa} · ${craque.posicao}`;
     $("cr-end-label").textContent = `${final.rotulo} · ${final.nota}`;
     $("cr-end-desc").textContent = `${final.descricao} Sua carreira lembra a de ${final.parecido}.`;
+    const todas = estado ? estado.temporadas : jogo.compartilhada.carreira.temporadas;
+    $("cr-end-cabinet").hidden = salaDeTrofeus($("cr-end-shelf"), todas) === 0;
     const stats = $("cr-end-stats");
     stats.replaceChildren();
     const linhas = [

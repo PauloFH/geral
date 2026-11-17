@@ -163,3 +163,18 @@ def test_oferta_de_quem_comeca_no_abc_traz_idolos_do_nordeste(game) -> None:
     corpo = game.post(f"{API}/geral/oferta", json={"clube": "abc"}).json()
 
     assert sum(x["regiao"] == "nordeste" for x in corpo["lendas"]) >= 2
+
+
+def test_pagina_sabe_o_tipo_de_cada_taca(game) -> None:
+    import json
+    import re
+
+    page = game.get("/jogos/carreira").text
+    jogo = json.loads(re.search(r'id="cr-data">(.*?)</script>', page, re.S).group(1))
+
+    assert jogo["tacas"]["Brasileirão"] == "liga"
+    assert jogo["tacas"]["Copa do Brasil"] == "copa"
+    assert jogo["tacas"]["Libertadores"] == "continental"
+    assert jogo["tacas"]["Campeonato Potiguar"] == "estadual"
+    assert jogo["tacas"]["Copa do Nordeste"] == "nordeste"
+    assert jogo["tacas"]["Copa do Mundo"] == "mundo"

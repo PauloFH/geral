@@ -1244,6 +1244,7 @@ def create_app(
             "posicoes": list(carreira_regras.POSICOES),
             "pesos": carreira_regras.PESOS,
             "clubes": clubes,
+            "tacas": dados.tacas(),
             "url": public_url,
         } | extra.pop("jogo", {})
         return page(
