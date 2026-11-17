@@ -45,6 +45,22 @@ Ordem de execução. Cada fatia vira um PR; a página da fatia fica em `docs/fea
 - [x] 4a: montar a edição geral (resultados, tabela e notícias da Série A à D pelo ge, textos do Gemini) e `geral edicao-geral` com prévia e envio para a lista fixa
 - [x] 4b: inscrição "Edição geral" no portal, edição guardada e envio toda segunda aos inscritos
 
+## Revisão das edições (`docs/features/revisao-das-edicoes.md`)
+- [x] Agenda montar/enviar, rascunho no portal e gatilho com etapa (#50, infra#29)
+- [x] Página `/revisao`, e-mail por rascunho, segurar/soltar e tirar tópicos (#51)
+- [ ] Editar o texto de um tópico na revisão (hoje só segurar ou tirar)
+- [ ] Prévia da revisão com o logo da marca e com a manchete já reescrita quando um tópico sai
+
+## Seções especiais: histórias e "Neste dia" (`docs/features/secoes-especiais.md`)
+- [x] Acervo: coleta na Wikipédia, escrita pelo Gemini só a partir do trecho, verificador e job noturno (#52)
+- [x] História e "Neste dia" nas edições, sorteadas, e tirar na revisão (#53)
+- [x] Quinta na entressafra e aniversários dos ídolos no "Neste dia" (#54)
+- [ ] Google News como fonte do acervo: matérias de memória ("relembre", "há X anos") e histórias de torcedor, com o texto completo extraído como nas notícias
+- [ ] RSSSF Brasil como fonte: conferir placar dos jogos históricos e achar jogos marcantes dos estaduais (as páginas dos estaduais ano a ano ainda não foram localizadas)
+- [ ] Histórias enviadas pela torcida (formulário + moderação)
+- [ ] Detectar a mesma fonte quando a seção da Wikipédia é renomeada (hoje vira chave nova)
+- [ ] Outros times com seções especiais (basta `specials` no catálogo, depois de checar o material na Wikipédia)
+
 ## Fatia 5 — Cartola simples (o bolão por torcida já vem na 2a)
 
 ## Fatia 6 — Joguinhos "7 a 0"
