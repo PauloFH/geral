@@ -1316,7 +1316,16 @@ def create_app(
         lendas = carreira_draft.oferta(carreira_dados.carregar(), edition, semente, body.clube)
         return {
             "semente_draft": semente,
-            "lendas": [{"nome": x.nome, "notas": x.notas, "regiao": x.regiao} for x in lendas],
+            "lendas": [
+                {
+                    "nome": x.nome,
+                    "notas": x.notas,
+                    "regiao": x.regiao,
+                    "tipo": x.tipo,
+                    "resumo": x.resumo,
+                }
+                for x in lendas
+            ],
         }
 
     @app.post("/api/jogos/carreira/{edition}/simular")

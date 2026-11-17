@@ -52,7 +52,7 @@
           <ol class="cr-attrs" id="cr-attrs"></ol>
         </div>
         <div class="cr-legend" id="cr-legend">
-          <div class="cr-legend-top"><span class="cr-count" id="cr-count"></span><button class="btn secondary cr-reroll" type="button" id="cr-reroll">Sortear outra lenda</button></div>
+          <div class="cr-legend-top"><span class="cr-count" id="cr-count"></span><button class="btn secondary cr-reroll" type="button" id="cr-reroll">Sortear outro (2)</button></div>
           <h2 id="cr-legend-name"></h2>
           <span class="cr-legend-tag" id="cr-legend-tag" hidden>Ídolo do Nordeste</span>
           <p class="cr-hint">Roube um atributo:</p>
@@ -108,7 +108,7 @@
 
     <script type="application/json" id="cr-data">{{ jogo | tojson }}</script>
     <p class="credit">As notas das lendas são da redação da Geral: discorda? Responda qualquer newsletter.</p>
-    {% set rules_key = "carreira" %}{% set rules %}Dê nome, camisa, posição e pé ao seu craque.|No draft passam 8 lendas: de cada uma você rouba um atributo. Escolha bem, porque cada atributo só pode ser roubado uma vez. Uma lenda pode ser trocada por outra, uma vez só.|Depois é com ele: a carreira acontece temporada a temporada, dos 16 anos até a aposentadoria, e de vez em quando você decide o rumo.|No fim, um card com a nota, os títulos e o jogador real com quem sua carreira mais se parece. Jogue quantas vezes quiser.{% endset %}{% set rules = rules.split("|") %}{% include "_regras.html.j2" %}
+    {% set rules_key = "carreira" %}{% set rules %}Dê nome, camisa, posição e pé ao seu craque.|No draft passam 8 nomes, entre lendas e jogadores de verdade: de cada um você rouba um atributo. Escolha bem, porque cada atributo só pode ser roubado uma vez. Você pode trocar o nome da vez duas vezes.|Depois é com ele: a carreira acontece temporada a temporada, dos 16 anos até a aposentadoria, e de vez em quando você decide o rumo.|No fim, um card com a nota, os títulos e o jogador real com quem sua carreira mais se parece. Jogue quantas vezes quiser.{% endset %}{% set rules = rules.split("|") %}{% include "_regras.html.j2" %}
   </div>
 </section>
 <script src="/static/geral/carreira.js?v={{ asset_version }}" defer></script>

@@ -21,6 +21,8 @@ class Lenda:
     edicoes: tuple[str, ...]
     notas: dict[str, int] = field(hash=False)
     regiao: str = ""  # "nordeste": comes more often to whoever starts there
+    tipo: str = "lenda"  # "lenda" (curated) or "jogador" (a real player of the base, by formula)
+    resumo: str = ""  # "Atacante · 1997–2018", for a player of the base
 
 
 @dataclass(frozen=True)
@@ -319,8 +321,13 @@ def _decisao(entry: dict) -> Decisao:
         raise ValueError(f"{onde}: {erro}") from None
 
 
+BASE = PASTA.parent / "velha" / "base.json"  # the draft's real players come from it
+
+
 def _versao(pasta: Path) -> str:
     digest = hashlib.sha256()
+    if BASE.exists():
+        digest.update(BASE.read_bytes())
     for path in sorted(pasta.glob("*.toml")):
         digest.update(path.name.encode() + b"\0" + path.read_bytes())
     return digest.hexdigest()[:8]

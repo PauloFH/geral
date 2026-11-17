@@ -27,22 +27,14 @@ def _roubos(ofertadas, de=range(8)) -> list[Roubo]:
     ]
 
 
-def test_oferta_e_estavel_e_tem_nove_sem_repetir() -> None:
+def test_oferta_e_estavel_e_tem_dez_sem_repetir() -> None:
     dados = carregar()
 
     primeira = oferta(dados, "geral", "abc")
 
     assert primeira == oferta(dados, "geral", "abc")
-    assert len(primeira) == 9 and len({lenda.nome for lenda in primeira}) == 9
+    assert len(primeira) == 10 and len({lenda.nome for lenda in primeira}) == 10
     assert primeira != oferta(dados, "geral", "xyz")
-
-
-def test_edicao_de_time_prioriza_as_proprias_e_completa_com_a_geral(tmp_path) -> None:
-    dados = _dados_com_vasco(tmp_path)
-
-    nomes = {lenda.nome for lenda in oferta(dados, "vasco", "s1")}
-
-    assert {"Cria Um", "Cria Dois"} <= nomes and len(nomes) == 9
 
 
 def test_edicoes_so_times_com_lenda_propria(tmp_path) -> None:

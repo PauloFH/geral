@@ -26,7 +26,7 @@ def _roubos(ofertadas, melhor: bool | None = None, posicao="atacante") -> list[R
 
 
 def entrada(semente="s1", escolhas=(), melhor=None, posicao="atacante", clube="bahia", dados=None):
-    ofertadas = oferta(dados or carregar(), "geral", DRAFT)
+    ofertadas = oferta(dados or carregar(), "geral", DRAFT, clube)
     return Entrada(
         semente_draft=DRAFT,
         semente=semente,

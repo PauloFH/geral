@@ -18,7 +18,7 @@ def _comeco(game, edicao="geral") -> dict:
     assert oferta.status_code == 200
     corpo = oferta.json()
     lendas = corpo["lendas"]
-    assert len(lendas) == 9 and all(set(x["notas"]) == set(regras.ATRIBUTOS) for x in lendas)
+    assert len(lendas) == 10 and all(set(x["notas"]) == set(regras.ATRIBUTOS) for x in lendas)
     roubos = [
         {"lenda": lenda["nome"], "atributo": a}
         for lenda, a in zip(lendas, regras.ATRIBUTOS, strict=False)

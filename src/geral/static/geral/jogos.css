@@ -451,3 +451,5 @@ select.chip { appearance: auto; }
 .cr-fabrica-extra { font: 600 13px/1.2 var(--body); color: var(--concrete-lt); }
 .cr-fabrica-row.meu { background: rgba(255, 194, 26, .12); outline: 2px solid var(--lamp); outline-offset: -2px; padding-inline: 8px; }
 .cr-fabrica-empty { color: var(--concrete-lt); padding: 8px 0; }
+.cr-legend-tag.lenda { background: var(--ink); color: var(--lamp); border-color: var(--ink); }
+.cr-legend-tag.jogador { background: #fff; text-transform: none; font: 700 14px/1.2 var(--body); }

@@ -26,8 +26,8 @@ def _ao_acaso(semente: str, posicao: str):
     """A career with the answers drawn from the seed, a draft drawn from it too."""
     dados = carregar()
     rng = random.Random(semente)
-    e = entrada(semente, posicao=posicao, melhor=rng.choice((True, False, None)))
-    e = e.model_copy(update={"craque": e.craque.model_copy(update={"clube": rng.choice(BR)})})
+    melhor = rng.choice((True, False, None))
+    e = entrada(semente, posicao=posicao, melhor=melhor, clube=rng.choice(BR))
     while (carreira := simular(dados, "geral", e)).final is None:
         resposta = rng.randrange(len(carreira.pendente.opcoes))
         e = e.model_copy(update={"escolhas": [*e.escolhas, resposta]})

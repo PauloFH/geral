@@ -27,8 +27,8 @@
   const novo = () => ({
     craque: null,
     oferta: null,
-    vagas: [0, 1, 2, 3, 4, 5, 6, 7], // the offer's legend shown at each of the 8 turns
-    trocou: false,
+    vagas: [0, 1, 2, 3, 4, 5, 6, 7], // the offer's name shown at each of the 8 turns
+    reservas: [8, 9], // two re-rolls: each swaps the current name for the next spare
     vez: 0,
     roubos: {}, // atributo -> {lenda, nota}
     semente: null,
@@ -119,10 +119,18 @@
     }
     if (estado.vez >= 8) return;
     const lenda = estado.oferta.lendas[estado.vagas[estado.vez]];
-    $("cr-count").textContent = `Lenda ${estado.vez + 1} de 8`;
+    $("cr-count").textContent = `Escolha ${estado.vez + 1} de 8`;
     $("cr-legend-name").textContent = lenda.nome;
-    $("cr-legend-tag").hidden = lenda.regiao !== "nordeste";
-    $("cr-reroll").hidden = estado.trocou;
+    const lendaDeVerdade = lenda.tipo !== "jogador";
+    const selo = $("cr-legend-tag");
+    selo.className = lendaDeVerdade ? "cr-legend-tag lenda" : "cr-legend-tag jogador";
+    selo.textContent = lendaDeVerdade
+      ? lenda.regiao === "nordeste" ? "Lenda · ídolo do Nordeste" : "Lenda"
+      : `${lenda.resumo}${lenda.regiao === "nordeste" ? " · jogou no Nordeste" : ""}`;
+    selo.hidden = false;
+    const sobram = estado.reservas.length;
+    $("cr-reroll").hidden = sobram === 0;
+    $("cr-reroll").textContent = `Sortear outro (${sobram})`;
     const botoes = $("cr-steal");
     botoes.replaceChildren();
     const fortes = destaques();
@@ -145,9 +153,8 @@
   }
 
   $("cr-reroll").addEventListener("click", () => {
-    if (estado.trocou) return;
-    estado.trocou = true;
-    estado.vagas[estado.vez] = 8; // the spare legend takes this turn
+    if (!estado.reservas.length) return;
+    estado.vagas[estado.vez] = estado.reservas.shift(); // a spare takes this turn
     desenharDraft();
   });
 
