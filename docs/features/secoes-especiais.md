@@ -1,7 +1,7 @@
 # Seções especiais: histórias e "Neste dia"
 
 - **Data:** 2026-11-16
-- **Status:** proposta
+- **Status:** entregue (#52, #53 e este)
 - **ADRs:** —
 
 ## Objetivo
@@ -76,9 +76,9 @@ revisão das edições (#50, #51) é a rede final. O dono não valida item a ite
 - [x] `test_verifier_rejects_a_year_not_in_the_source`, `test_verifier_accepts_names_and_dates_in_the_source`
 - [x] `test_job_tops_up_to_10_and_skips_used_sources`
 - [x] `test_draw_reserves_an_unused_story` (reserva na montagem)
-- [ ] `test_on_this_day_lists_births_and_story_dates_of_that_day`
-- [ ] `test_offseason_adds_a_thursday_news_edition`
-- [ ] `test_story_only_edition_is_sent`
+- [x] `test_on_this_day_includes_idol_birthdays`
+- [x] `test_specials_get_monday_and_thursday_in_the_offseason`
+- [x] `test_story_only_edition_is_not_empty`
 - [x] `test_section_caps_news_at_6_topics`
 - [x] `test_removed_story_is_discarded_and_not_sent`
 
