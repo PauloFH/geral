@@ -108,6 +108,7 @@ class Final(BaseModel):
     copa: bool
     parecido: str  # "your career recalls ___"
     perguntas: list[str]  # ids of the questions asked
+    vereditos: list[final.Veredito] = []  # what each club's fans say
 
 
 class Carreira(BaseModel):
@@ -701,6 +702,7 @@ class _Simulacao:
             copa=any(t.copa for t in self.temporadas),
             parecido=final.parecido(self.dados, final.base_real(), self.temporadas, self.posicao),
             perguntas=list(self.perguntadas),
+            vereditos=final.vereditos(self.dados, self.temporadas),
         )
 
 

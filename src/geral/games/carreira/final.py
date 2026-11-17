@@ -3,6 +3,8 @@
 from collections import Counter
 from functools import cache
 
+from pydantic import BaseModel
+
 from geral.games.carreira.dados import Dados
 from geral.games.velha.base import Base, load
 
@@ -106,3 +108,69 @@ def parecido(dados: Dados, base: Base, temporadas: list, posicao: str) -> str:
 
     candidatos = [p for p in base.players.values() if familia in p.posicoes]
     return min(candidatos, key=pontos).nome if candidatos else ""
+
+
+class Veredito(BaseModel):
+    """What one club's fans say at the end: one per club, in the order he played for them."""
+
+    clube: str
+    clube_id: str
+    temporadas: int
+    jogos: int
+    gols: int
+    titulos: int
+    veredito: str  # Traidor, Ídolo, Campeão, Passou em branco, Respeitado
+    frase: str
+
+
+FRASES = {
+    "Traidor": "Na torcida {do_clube}, esse nome não se fala.",
+    "Ídolo": "A torcida {do_clube} nunca vai esquecer.",
+    "Campeão": "Deu título {ao_clube} e tem lugar na história.",
+    "Passou em branco": "Na torcida {do_clube}, quase ninguém lembra.",
+    "Respeitado": "Saiu {do_clube} de cabeça erguida.",
+}
+
+
+def vereditos(dados: Dados, temporadas: list) -> list[Veredito]:
+    """Rules, the first that fits: left straight for the derby rival → Traidor; 5+ seasons with
+    2+ titles or 60+ goals, or 3+ titles → Ídolo; a title → Campeão; under 25 games → Passou em
+    branco; else Respeitado."""
+    from geral.games.carreira.motor import artigos  # the engine imports this module
+
+    traidos = {
+        a.clube_id
+        for a, b in zip(temporadas, temporadas[1:], strict=False)
+        if a.clube_id != b.clube_id
+        and any(r.id == b.clube_id for _, r in dados.classicos_de(dados.clubes[a.clube_id]))
+    }
+    ordem = list(dict.fromkeys(t.clube_id for t in temporadas))
+    saida = []
+    for clube_id in ordem:
+        dele = [t for t in temporadas if t.clube_id == clube_id]
+        anos, jogos = len(dele), sum(t.jogos for t in dele)
+        gols, titulos = sum(t.gols for t in dele), sum(len(t.titulos) for t in dele)
+        if clube_id in traidos:
+            veredito = "Traidor"
+        elif (anos >= 5 and (titulos >= 2 or gols >= 60)) or titulos >= 3:
+            veredito = "Ídolo"
+        elif titulos:
+            veredito = "Campeão"
+        elif jogos < 25:
+            veredito = "Passou em branco"
+        else:
+            veredito = "Respeitado"
+        clube = dados.clubes[clube_id]
+        saida.append(
+            Veredito(
+                clube=clube.nome,
+                clube_id=clube_id,
+                temporadas=anos,
+                jogos=jogos,
+                gols=gols,
+                titulos=titulos,
+                veredito=veredito,
+                frase=FRASES[veredito].format_map(artigos("clube", clube)),
+            )
+        )
+    return saida
