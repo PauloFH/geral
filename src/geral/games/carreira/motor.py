@@ -6,9 +6,9 @@ changes a season that came before it: the career grows in front of the fan, it n
 
 import random
 from dataclasses import dataclass, field
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StringConstraints
 
 from geral.games.carreira import final
 from geral.games.carreira.dados import (
@@ -45,7 +45,7 @@ ASSIST = {"atacante": 0.16, "meia": 0.26, "volante": 0.09, "lateral": 0.13, "zag
 
 
 class Craque(BaseModel):
-    nome: str = Field(min_length=1, max_length=24)
+    nome: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=24)]
     camisa: int = Field(ge=1, le=99)
     posicao: Literal[POSICOES]
     pe: Literal["direito", "esquerdo", "ambos"]

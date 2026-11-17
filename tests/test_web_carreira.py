@@ -191,7 +191,13 @@ def _ate_o_fim(game, semente="fixa", clube="bahia") -> dict:
 def test_resposta_final_traz_a_posicao_do_clube(game) -> None:
     corpo = _ate_o_fim(game)
 
-    assert corpo["placar"] == {"clube": "Bahia", "carreiras": 1, "posicao": 1}
+    assert corpo["placar"] == {
+        "clube": "Bahia",
+        "pelo": "pelo Bahia",
+        "carreiras": 1,
+        "posicao": 1,
+        "novo": True,
+    }
     assert corpo["carreira"]["final"]["vereditos"]
     linhas = game.get(f"{API}/placar").json()
     assert linhas[0]["nome"] == "Bahia" and linhas[0]["carreiras"] == 1
@@ -220,3 +226,68 @@ def test_limite_por_rede_nao_quebra_a_carreira(store, mailer, clock) -> None:
 
     assert contadas[1]["carreiras"] == 2 and contadas[2] is None  # the third still ends fine
     assert game.get(f"{API}/placar").json()[0]["carreiras"] == 2
+
+
+def _final_em(game, clube: str) -> tuple[dict, dict]:
+    """A finished career starting at `clube`: (the last request, its answer)."""
+    oferta = game.post(f"{API}/geral/oferta", json={"clube": clube}).json()
+    roubos = [
+        {"lenda": x["nome"], "atributo": a}
+        for x, a in zip(oferta["lendas"], regras.ATRIBUTOS, strict=False)
+    ]
+    pedido = {
+        "semente_draft": oferta["semente_draft"],
+        "semente": "fixa",
+        "craque": CRAQUE | {"clube": clube},
+        "roubos": roubos,
+        "escolhas": [],
+    }
+    while not (corpo := game.post(f"{API}/geral/simular", json=pedido).json())["codigo"]:
+        pedido["escolhas"].append(0)
+    return pedido, corpo
+
+
+def test_mais_um_craque_concorda_com_o_clube_e_repeticao_nao_conta_de_novo(game) -> None:
+    pedido, corpo = _final_em(game, "ponte-preta")
+
+    assert corpo["placar"]["pelo"] == "pela Ponte Preta" and corpo["placar"]["novo"] is True
+    de_novo = game.post(f"{API}/geral/simular", json=pedido).json()["placar"]
+    assert de_novo["novo"] is False and de_novo["carreiras"] == 1
+
+
+def test_link_forjado_de_carreira_inacabada_mostra_so_o_resumo(game) -> None:
+    import json
+    import re
+
+    from geral.games.carreira.codigo import codificar
+
+    _, corpo = _final_em(game, "bahia")
+    aberto = decodificar(corpo["codigo"])
+    inacabada = aberto.entrada.model_copy(update={"escolhas": [], "modo": "completa"})
+    codigo = codificar(aberto.versao, aberto.edicao, inacabada, aberto.resumo)
+
+    page = game.get(f"/jogos/carreira/c/{codigo}")
+
+    assert page.status_code == 200
+    dados = json.loads(re.search(r'id="cr-data">(.*?)</script>', page.text, re.S).group(1))
+    assert dados["compartilhada"]["carreira"] is None
+
+
+def test_placar_com_banco_fora_responde_503(game, monkeypatch) -> None:
+    import sqlite3
+
+    from geral.web.carreira_placar import PlacarStore
+
+    def quebra(self, limite):
+        raise sqlite3.OperationalError("database is locked")
+
+    monkeypatch.setattr(PlacarStore, "ranking", quebra)
+
+    assert game.get(f"{API}/placar").status_code == 503
+
+
+def test_nome_so_com_espacos_e_422(game) -> None:
+    pedido = _comeco(game) | {"escolhas": []}
+    pedido["craque"] = CRAQUE | {"nome": "   "}
+
+    assert game.post(f"{API}/geral/simular", json=pedido).status_code == 422

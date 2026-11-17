@@ -396,7 +396,8 @@
     $("cr-end-placar").hidden = !placar;
     if (placar) {
       const lugar = placar.posicao ? ` · ${placar.posicao}º na Fábrica de craques` : "";
-      $("cr-end-placar").textContent = `+1 craque formado pelo ${placar.clube}${lugar}`;
+      const conta = placar.novo ? "+1 craque formado" : "Já contou como craque formado";
+      $("cr-end-placar").textContent = `${conta} ${placar.pelo}${lugar}`;
     }
     carregarFabrica(craque.clube);
     const todas = estado ? estado.temporadas : jogo.compartilhada.carreira.temporadas;
@@ -454,10 +455,13 @@
     let linhas = [];
     try {
       const resposta = await fetch("/api/jogos/carreira/placar");
-      if (resposta.ok) linhas = await resposta.json();
+      if (!resposta.ok) throw new Error(String(resposta.status));
+      linhas = await resposta.json();
     } catch {
-      return; // the game goes on without the scoreboard
+      $("cr-fabrica").hidden = true; // the game goes on without the scoreboard
+      return;
     }
+    $("cr-fabrica").hidden = false;
     lista.replaceChildren();
     if (!linhas.length) {
       lista.append(el("li", "cr-fabrica-empty", "Ninguém terminou uma carreira ainda: seja o primeiro."));

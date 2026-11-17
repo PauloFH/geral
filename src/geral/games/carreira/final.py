@@ -142,6 +142,7 @@ def vereditos(dados: Dados, temporadas: list) -> list[Veredito]:
         a.clube_id
         for a, b in zip(temporadas, temporadas[1:], strict=False)
         if a.clube_id != b.clube_id
+        and not (b.chegada or "").startswith(("Emprestado", "Voltou do empréstimo"))  # loans
         and any(r.id == b.clube_id for _, r in dados.classicos_de(dados.clubes[a.clube_id]))
     }
     ordem = list(dict.fromkeys(t.clube_id for t in temporadas))

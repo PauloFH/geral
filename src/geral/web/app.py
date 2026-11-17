@@ -1397,6 +1397,8 @@ def create_app(
                 carreira = carreira_motor.simular(dados, aberto.edicao, aberto.entrada)
             except carreira_draft.JogadaInvalida:
                 carreira = None
+            if carreira and carreira.final is None:  # a forged code of an unfinished career
+                carreira = None
         compartilhada = {
             "codigo": codigo,
             "craque": aberto.entrada.craque.model_dump(),
@@ -1460,20 +1462,33 @@ def create_app(
         lets the scoreboard break the game."""
         clube = entrada.craque.clube or ""
         rede = network(request.client.host if request.client else "unknown")
-        if not placar_limiter.allow(rede, now()):
-            return None  # the career still ends; it just does not count
         try:
-            placar.registrar(codigo, clube, nota, now())
+            novo = not placar.contou(codigo)  # a repeat neither counts nor spends the limit
+            if novo and not placar_limiter.allow(rede, now()):
+                return None  # the career still ends; it just does not count
+            if novo:
+                placar.registrar(codigo, clube, nota, now())
             carreiras, posicao = placar.posicao(clube)
         except sqlite3.Error:
             logger.exception("carreira placar: could not count a career")
             return None
-        nome = dados.clubes[clube].nome if clube in dados.clubes else clube
-        return {"clube": nome, "carreiras": carreiras, "posicao": posicao}
+        do_clube = dados.clubes.get(clube)
+        return {
+            "clube": do_clube.nome if do_clube else clube,
+            "pelo": carreira_motor.artigos("c", do_clube)["pelo_c"] if do_clube else clube,
+            "carreiras": carreiras,
+            "posicao": posicao,
+            "novo": novo,
+        }
 
     @app.get("/api/jogos/carreira/placar")
     def carreira_placar():
         dados = carreira_dados.carregar()
+        try:
+            linhas = placar.ranking(20)
+        except sqlite3.Error:
+            logger.exception("carreira placar: could not read the ranking")
+            return JSONResponse({"detail": "placar indisponível"}, status_code=503)
         return [
             {
                 "clube": linha.clube,
@@ -1485,7 +1500,7 @@ def create_app(
                 "lendas": linha.lendas,
                 "posicao": linha.posicao,
             }
-            for linha in placar.ranking(20)
+            for linha in linhas
         ]
 
     @app.get("/jogos/onde-jogou", response_class=HTMLResponse)

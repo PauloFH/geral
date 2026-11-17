@@ -69,3 +69,14 @@ def test_placar_ordena_por_carreiras_com_media_e_lendas(tmp_path) -> None:
     ]
     assert placar.posicao("flamengo") == (2, 2)
     assert placar.posicao("abc") == (0, None)
+
+
+def test_emprestimo_para_o_rival_nao_e_traicao() -> None:
+    temporadas = (
+        _anos("abc", "ABC", 16, 20)
+        + [_temporada(20, "América-RN", "america-rn", chegada="Emprestado pelo ABC")]
+        + [_temporada(21, "ABC", "abc", chegada="Voltou do empréstimo ao América-RN")]
+        + _anos("abc", "ABC", 22, 26)
+    )
+
+    assert all(v.veredito != "Traidor" for v in vereditos(carregar(), temporadas))

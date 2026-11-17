@@ -44,6 +44,13 @@ class PlacarStore:
         with closing(sqlite3.connect(self.path)) as db, db:
             db.executescript(SCHEMA)
 
+    def contou(self, codigo: str) -> bool:
+        """This career was already counted (a retry, a reopened page)."""
+        chave = hashlib.sha256(codigo.encode()).hexdigest()
+        with closing(sqlite3.connect(self.path)) as db:
+            linha = db.execute("SELECT 1 FROM carreira_placar WHERE codigo_hash = ?", (chave,))
+            return linha.fetchone() is not None
+
     def registrar(self, codigo: str, clube: str, nota: int, agora: datetime) -> bool:
         """Count a finished career for its starting club; False when it was already counted."""
         chave = hashlib.sha256(codigo.encode()).hexdigest()
