@@ -303,3 +303,33 @@ def test_a_later_build_does_not_hide_a_send_that_did_not_go_out() -> None:
     ]
     slot, stage = due_stage(slots, at("18/10/2026", "13:40"))
     assert (slot.kind, stage) == ("post", "send")  # the backup retries the send first
+
+
+MON_THU = (0, 3)
+
+
+def test_specials_get_monday_and_thursday_in_the_offseason() -> None:
+    news = summary(plan([], NOW, LAST_SENT, weekdays=MON_THU))
+
+    assert news[:4] == [
+        ("news", "22/10 13:00"),
+        ("news", "26/10 13:00"),
+        ("news", "29/10 13:00"),
+        ("news", "02/11 13:00"),
+    ]
+
+
+def test_thursday_respects_the_72h_gap() -> None:
+    # a game on Sunday 18/10: post-game Monday 19/10 13:00; Thursday 22/10 13:00 is exactly 72 h
+    games = [fixture(at("18/10/2026", "16:00"))]
+
+    news = [d for k, d in summary(plan(games, NOW, LAST_SENT, weekdays=MON_THU)) if k == "news"]
+
+    assert news[:2] == ["22/10 13:00", "26/10 13:00"]
+    late = [fixture(at("20/10/2026", "20:00"))]  # post-game Wednesday 21/10: no Thursday 22/10
+    news = [d for k, d in summary(plan(late, NOW, LAST_SENT, weekdays=MON_THU)) if k == "news"]
+    assert "22/10 13:00" not in news and "26/10 13:00" in news
+
+
+def test_teams_without_specials_keep_mondays_only() -> None:
+    assert summary(plan([], NOW, LAST_SENT)) == summary(plan([], NOW, LAST_SENT, weekdays=(0,)))

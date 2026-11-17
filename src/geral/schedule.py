@@ -22,6 +22,7 @@ EARLY_KICKOFF = time(11, 0)  # before this, the pre-game goes out the night befo
 EARLY_BUILD = time(18, 0)
 NIGHT_BEFORE = time(20, 0)
 MIN_NEWS_GAP = timedelta(hours=72)
+SEND_SLACK = timedelta(hours=3)  # a send runs a little after its time (due's grace)
 NEWS_EVERY = timedelta(hours=84)
 HORIZON = timedelta(days=14)  # a match further than this does not shape the news yet
 WEEKLY_UNTIL = timedelta(days=28)
@@ -97,17 +98,20 @@ def _news_between(start: datetime, end: datetime) -> list[datetime]:
     return [_nearest_send_time(start + gap * i / (n + 1)) for i in range(1, n + 1)]
 
 
-def _mondays(start: datetime, until: datetime) -> list[datetime]:
-    first = start + MIN_NEWS_GAP
+def _weekly(start: datetime, until: datetime, weekdays: tuple[int, ...]) -> list[datetime]:
+    """SEND_TIME on each of `weekdays` (0 = Monday) from MIN_NEWS_GAP after `start` to `until`.
+
+    A real send goes out a few minutes after SEND_TIME: Monday 13:02 to Thursday 13:00 still
+    counts as the 72 h gap (SEND_SLACK).
+    """
+    first = start + MIN_NEWS_GAP - SEND_SLACK
     day = first.astimezone(TZ).date()
-    monday = _at(day + timedelta(days=-day.weekday() % 7), SEND_TIME)
-    if monday < first:
-        monday += timedelta(days=7)
-    days = []
-    while monday <= until:
-        days.append(monday)
-        monday += timedelta(days=7)
-    return days
+    found = []
+    while (moment := _at(day, SEND_TIME)) <= until:
+        if day.weekday() in weekdays and moment >= first:
+            found.append(moment)
+        day += timedelta(days=1)
+    return found
 
 
 _LABEL_PATTERN = re.compile(rf"(?:{'|'.join(LABELS.values())}) — \d{{2}}/\d{{2}}/\d{{4}}")
@@ -128,11 +132,13 @@ def plan(
     now: datetime,
     last_sent: datetime | None,
     sent_label: str | None = None,
+    weekdays: tuple[int, ...] = (0,),
 ) -> list[Slot]:
     """Every slot after the last real send, in order; `window_start` is the previous build.
 
     `sent_label` is the last edition's label: a reschedule that moves that slot later
-    does not make it due again.
+    does not make it due again. `weekdays`: the weekly news days when no match is near
+    (0 = Monday; teams with special sections also get Thursday).
     """
     anchor = last_sent or now - DEFAULT_WINDOW
     match_slots: list[tuple[Kind, datetime, Fixture]] = []
@@ -160,12 +166,12 @@ def plan(
             if send_at - previous <= HORIZON:
                 news = _news_between(previous, send_at)
             else:
-                news = _mondays(previous, min(send_at - MIN_NEWS_GAP, now + WEEKLY_UNTIL))
+                news = _weekly(previous, min(send_at - MIN_NEWS_GAP, now + WEEKLY_UNTIL), weekdays)
             timeline += [("news", day, None) for day in news]
         timeline.append((kind, send_at, match))
         previous = send_at
     # After the last known match: weekly news.
-    timeline += [("news", day, None) for day in _mondays(previous, now + WEEKLY_UNTIL)]
+    timeline += [("news", day, None) for day in _weekly(previous, now + WEEKLY_UNTIL, weekdays)]
 
     slots: list[Slot] = []
     # Each draft collects news up to its build: the next window starts there, not at the send.

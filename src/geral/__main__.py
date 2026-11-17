@@ -277,7 +277,7 @@ def _plan_for(
     sent_at, sent_label = (
         (latest.published_at, label_of(latest.subject)) if latest else (None, None)
     )
-    return plan(fixtures, now, sent_at, sent_label)
+    return plan(fixtures, now, sent_at, sent_label, weekdays=club.news_weekdays)
 
 
 def _due_slot(club: Team, settings, now: datetime, latest: LatestEdition | None) -> Slot | None:
@@ -369,7 +369,7 @@ def _resolve_stage(club: Team) -> tuple[Edition, Stage]:
     sent_at, sent_label = (
         (latest.published_at, label_of(latest.subject)) if latest else (None, None)
     )
-    due = due_stage(plan(fixtures, now, sent_at, sent_label), now)
+    due = due_stage(plan(fixtures, now, sent_at, sent_label, weekdays=club.news_weekdays), now)
     if due is None:
         typer.echo("Nenhuma edição agendada agora.")
         raise typer.Exit(code=0)
@@ -952,14 +952,20 @@ def _resolve(team: Team, edition: str, date: datetime | None) -> Edition:
         sent_at, sent_label = (
             (latest.published_at, label_of(latest.subject)) if latest else (None, None)
         )
-        slot = due_slot(plan(fixtures, now, sent_at, sent_label), now)
+        slot = due_slot(plan(fixtures, now, sent_at, sent_label, weekdays=team.news_weekdays), now)
         if slot is None:
             typer.echo("Nenhuma edição agendada agora.")
             raise typer.Exit(code=0)
         return _since_last_send(edition_from_slot(slot), latest)
     day = date.date() if date else now.date()
     last_sent = latest.published_at if latest else None
-    resolved = resolve_match_edition(edition, day, fixtures, last_sent)  # type: ignore[arg-type]
+    resolved = resolve_match_edition(
+        edition,  # type: ignore[arg-type]
+        day,
+        fixtures,
+        last_sent,
+        weekdays=team.news_weekdays,
+    )
     if resolved is None and edition == "news" and day == now.date():
         # An extra news edition, asked by hand: from the last send (or the default window) to
         # now. The planned editions go on; the next news one counts from this send.

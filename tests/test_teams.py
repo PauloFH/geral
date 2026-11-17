@@ -192,3 +192,8 @@ def test_specials_teams_have_a_wikipedia_article():
     assert {t.slug for t in specials} == {"abc", "nautico"}
     assert all(t.wikipedia and t.club_terms for t in specials)
     assert get_team("nautico").classics[0] == "Clássico dos Clássicos"
+
+
+def test_news_weekdays_follow_specials():
+    assert get_team("abc").news_weekdays == (0, 3)
+    assert get_team("vasco").news_weekdays == (0,)
