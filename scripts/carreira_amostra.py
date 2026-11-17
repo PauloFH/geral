@@ -14,15 +14,15 @@ from geral.games.carreira.draft import Roubo, oferta
 from geral.games.carreira.motor import Craque, Entrada, simular
 
 
-def carreira(dados, edicao: str, posicao: str | None, n: int) -> str:
+def carreira(dados, edicao: str, posicao: str | None, n: int, clube: str | None = None) -> str:
     rng = random.Random(f"amostra:{n}")
     posicao = posicao or rng.choice(regras.POSICOES)
-    lendas = oferta(dados, edicao, f"a{n}")[:8]
+    inicio = clube or rng.choice(
+        sorted(c.id for c in dados.clubes.values() if dados.ligas[c.liga].pais == "Brasil")
+    )
+    lendas = oferta(dados, edicao, f"a{n}", inicio)[:8]
     atributos = list(regras.ATRIBUTOS)
     rng.shuffle(atributos)
-    brasileiros = sorted(
-        c.id for c in dados.clubes.values() if dados.ligas[c.liga].pais == "Brasil"
-    )
     entrada = Entrada(
         semente_draft=f"a{n}",
         semente=f"s{n}",
@@ -31,7 +31,7 @@ def carreira(dados, edicao: str, posicao: str | None, n: int) -> str:
             camisa=rng.randint(2, 99),
             posicao=posicao,
             pe="direito",
-            clube=rng.choice(brasileiros) if edicao == "geral" else None,
+            clube=inicio,
         ),
         roubos=[Roubo(lenda=x.nome, atributo=a) for x, a in zip(lendas, atributos, strict=True)],
     )
@@ -56,10 +56,11 @@ def main() -> None:
     parser.add_argument("n", type=int)
     parser.add_argument("--edicao", default="geral")
     parser.add_argument("--posicao", choices=regras.POSICOES)
+    parser.add_argument("--clube")
     args = parser.parse_args()
     dados = carregar()
     for n in range(args.n):
-        print(carreira(dados, args.edicao, args.posicao, n), end="\n\n")
+        print(carreira(dados, args.edicao, args.posicao, n, args.clube), end="\n\n")
 
 
 if __name__ == "__main__":

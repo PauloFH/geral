@@ -121,3 +121,15 @@ def test_eventos_regionais_so_no_nordeste() -> None:
                 if aqui:
                     assert dados.regiao(dados.clubes[t.clube_id]) == "nordeste", (aqui, t.clube)
     assert vistos
+
+
+def test_quem_comeca_no_nordeste_vive_o_nordeste() -> None:
+    dados = carregar()
+    no_nordeste = [
+        sum(
+            t.idade >= 17 and dados.regiao(dados.clubes[t.clube_id]) == "nordeste"
+            for t in c.temporadas
+        )
+        for c in _carreiras("abc", 150, "v")
+    ]
+    assert sum(no_nordeste) / len(no_nordeste) >= 4  # seasons in the region, on average

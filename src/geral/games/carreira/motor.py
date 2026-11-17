@@ -30,6 +30,7 @@ MAX_ESCOLHAS = 4  # decision questions per career (both modes)
 MAX_RESPOSTAS = 60  # every answer of a Completa career: a day-to-day one per season, the market
 CHANCE_ESCOLHA = 0.4  # per season, when one fits
 COPA_DO_NORDESTE = "Copa do Nordeste"
+SALTO = 18  # the biggest jump in level of a move up
 EUROPA = 80  # league strength from which a league counts as the top of Europe
 EXOTICAS = ("ara", "jap", "eua", "tur", "mex")
 GOL = {"atacante": 0.5, "meia": 0.24, "volante": 0.07, "lateral": 0.06, "zagueiro": 0.05}
@@ -471,7 +472,8 @@ class _Simulacao:
             return self.inicio if self.clube.id != self.inicio.id else None
         filtros = {
             "europa": lambda c: forca[c.id] >= EUROPA and nota - 14 <= self._nivel(c) <= nota + 4,
-            "maior": lambda c: atual + 3 < self._nivel(c) <= nota + 4,
+            # a step up, not a leap: the ABC boy goes through Sport or Bahia before Europe
+            "maior": lambda c: atual + 3 < self._nivel(c) <= min(nota + 4, atual + SALTO),
             "menor": lambda c: nota - 18 <= self._nivel(c) <= min(atual - 2, nota - 2),
             "emprestimo": lambda c: nota - 16 <= self._nivel(c) <= nota - 3,
             "lado": lambda c: abs(self._nivel(c) - atual) <= 6,
@@ -481,11 +483,15 @@ class _Simulacao:
             ),
         }
         cabem = sorted((c for c in clubes if filtros[tipo](c)), key=lambda c: c.id)
-        if tipo in ("menor", "lado", "emprestimo"):
+        if tipo in ("menor", "lado", "emprestimo", "maior"):
             pais = self.dados.ligas[self.clube.liga].pais
             perto = [c for c in cabem if self.dados.ligas[c.liga].pais == pais]
-            if perto and self.rng.random() < 0.65:  # moves down or sideways mostly stay home
+            if perto and self.rng.random() < 0.65:  # most moves stay in the country
                 cabem = perto
+                regiao = self.dados.regiao(self.clube)
+                vizinhos = [c for c in cabem if regiao and self.dados.regiao(c) == regiao]
+                if vizinhos and self.rng.random() < 0.5:  # and in Brazil, half in the region
+                    cabem = vizinhos
         return self.rng.choice(cabem) if cabem else None
 
     def _mudar(
@@ -508,6 +514,8 @@ class _Simulacao:
             return None
         diff = self.nota - self._nivel(self.clube)
         sorte = self.rng.random()
+        if self.clube.id == self.inicio.id and self.idade <= 19:
+            sorte = 1 - (1 - sorte) * 0.4  # the boy rarely leaves the club that raised him
         destino = None
         if self.idade >= 31 and sorte < 0.08 + saida / 2:
             destino = self._destino(self.rng.choice(("exotico", "casa", "menor")))
