@@ -496,122 +496,153 @@
     rolar(form, "start");
   });
 
-  // The card, drawn like the old scoreboard: lamps on black, a paper plate for the label.
+  // The card is a Geral front page: masthead, the label as the main headline, the newsroom's
+  // note, the numbers and the trophy shelf in columns, the clubs as the path, the score boxed.
   async function desenharCard({ craque, final, titulos }) {
     const css = getComputedStyle(document.documentElement);
     const cor = (nome) => css.getPropertyValue(nome).trim();
-    const fonte = (nome) => css.getPropertyValue(nome).trim();
-    const display = fonte("--display");
-    const dots = fonte("--dots");
-    const body = fonte("--body");
+    const display = cor("--display");
+    const stencil = cor("--stencil");
+    const dots = cor("--dots");
+    const body = cor("--body");
     try {
       await Promise.all([
         document.fonts.load(`900 120px ${display}`),
+        document.fonts.load(`800 120px ${stencil}`),
         document.fonts.load(`900 60px ${dots}`),
         document.fonts.load(`600 30px ${body}`),
+        document.fonts.load(`italic 500 30px ${body}`),
       ]);
     } catch {
       /* fallback fonts are fine */
     }
     const W = 1080;
     const H = 1350;
+    const M = 70; // margin
     const canvas = el("canvas");
     canvas.width = W;
     canvas.height = H;
     const g = canvas.getContext("2d");
-    g.fillStyle = cor("--board");
-    g.fillRect(0, 0, W, H);
-    g.fillStyle = cor("--lamp-off");
-    for (let y = 8; y < H; y += 14) for (let x = 8; x < W; x += 14) g.fillRect(x, y, 4, 4);
-    g.strokeStyle = cor("--turf");
-    g.lineWidth = 36;
-    g.strokeRect(18, 18, W - 36, H - 36);
-
-    const lamp = cor("--lamp");
+    const ink = cor("--ink");
     const paper = cor("--paper");
-    const brilho = (fn) => {
-      g.save();
-      g.shadowColor = "rgba(255, 194, 26, .55)";
-      g.shadowBlur = 18;
-      fn();
-      g.restore();
+    const turf = cor("--turf");
+
+    // newsprint
+    g.fillStyle = paper;
+    g.fillRect(0, 0, W, H);
+    g.fillStyle = "rgba(20, 35, 26, .035)";
+    for (let y = 0; y < H; y += 6) g.fillRect(0, y, W, 2);
+    const regua = (y, grossa = 3) => {
+      g.fillStyle = ink;
+      g.fillRect(M, y, W - 2 * M, grossa);
     };
-    const caber = (texto, max, peso, familia, tamanho) => {
+    const caber = (texto, max, fonte, tamanho) => {
       let t = tamanho;
-      g.font = `${peso} ${t}px ${familia}`;
-      while (g.measureText(texto).width > max && t > 20) {
+      g.font = fonte(t);
+      while (g.measureText(texto).width > max && t > 24) {
         t -= 4;
-        g.font = `${peso} ${t}px ${familia}`;
+        g.font = fonte(t);
       }
       return t;
     };
-    const X = 84;
-    const LARG = W - 2 * X;
+    const quebrar = (texto, max, fonte, x, y, altura, linhasMax) => {
+      g.font = fonte;
+      const palavras = texto.split(" ");
+      let linha = "";
+      let n = 0;
+      for (const p of palavras) {
+        const teste = linha ? `${linha} ${p}` : p;
+        if (g.measureText(teste).width > max && linha) {
+          g.fillText(linha, x, y + n * altura);
+          n += 1;
+          linha = p;
+          if (n >= linhasMax) return n;
+        } else linha = teste;
+      }
+      if (linha) g.fillText(linha, x, y + n * altura);
+      return n + 1;
+    };
     g.textBaseline = "alphabetic";
 
-    g.fillStyle = lamp;
-    brilho(() => {
-      g.font = `900 34px ${dots}`;
-      g.fillText("GERAL · CARREIRA", X, 120);
-    });
-    const nome = craque.nome.toUpperCase();
-    caber(nome, LARG, 900, display, 150);
-    g.fillStyle = "#fff";
-    g.fillText(nome, X, 270);
-    g.fillStyle = paper;
-    g.font = `700 36px ${body}`;
-    g.fillText(`#${craque.camisa} · ${craque.posicao.toUpperCase()}`, X, 330);
+    // masthead
+    g.fillStyle = turf;
+    g.fillRect(0, 0, W, 22);
+    g.fillStyle = ink;
+    g.textAlign = "center";
+    g.font = `800 150px ${stencil}`;
+    g.fillText("GERAL", W / 2, 180);
+    regua(206, 6);
+    regua(216, 2);
+    g.font = `700 26px ${body}`;
+    const ultima = (estado ? estado.temporadas : jogo.compartilhada.carreira.temporadas).at(-1);
+    g.fillText(`EDIÇÃO ESPECIAL  ·  CARREIRA  ·  ${ultima ? ultima.ano : ""}`, W / 2, 256);
+    regua(274, 2);
+    g.textAlign = "left";
 
-    // the label on a paper plate
-    g.fillStyle = paper;
-    g.fillRect(X, 380, LARG, 190);
-    g.fillStyle = cor("--ink");
+    // kicker and main headline
+    g.fillStyle = "#B23A2A";
+    g.font = `800 34px ${display}`;
+    g.fillText(`${craque.nome.toUpperCase()} · #${craque.camisa} · ${craque.posicao.toUpperCase()}`, M, 336);
+    g.fillStyle = ink;
     const rotulo = final.rotulo.toUpperCase();
-    caber(rotulo, LARG - 60, 900, display, 120);
-    g.fillText(rotulo, X + 30, 515);
+    const tam = caber(rotulo, W - 2 * M, (t) => `900 ${t}px ${display}`, 170);
+    g.fillText(rotulo, M, 336 + tam * 0.95);
+    let y = 336 + tam * 0.95 + 58;
+    g.font = `italic 500 34px ${body}`;
+    y += (quebrar(final.descricao, W - 2 * M, `italic 500 34px ${body}`, M, y, 44, 2) - 1) * 44;
+    y += 36;
+    regua(y, 3);
 
-    g.fillStyle = lamp;
-    brilho(() => {
-      g.font = `900 46px ${dots}`;
-      g.fillText("NOTA", X, 680);
-      g.font = `900 ${final.nota >= 100 ? 120 : 170}px ${dots}`; // three digits fit beside the numbers
-      g.fillText(String(final.nota), X, 840);
-    });
-    g.fillStyle = paper;
-    g.font = `700 40px ${body}`;
-    const numeros = [`${titulos} títulos`, `${final.jogos} jogos`, `${final.gols} gols`];
-    if (final.selecao) numeros.push(`${final.selecao} pela Seleção`);
-    g.fillText(numeros.slice(0, 3).join(" · "), X + 330, 700);
-    if (numeros[3]) g.fillText(numeros[3], X + 330, 760);
-    const principais = Object.entries(final.titulos)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 2)
-      .map(([n, q]) => `${q}× ${n}`);
+    // the score, boxed like the old scoreboard
+    const colunaY = y + 34;
+    g.fillStyle = cor("--board");
+    g.fillRect(M, colunaY, 300, 300);
+    g.fillStyle = cor("--lamp");
+    g.font = `900 40px ${dots}`;
+    g.fillText("NOTA", M + 28, colunaY + 66);
+    g.font = `900 ${final.nota >= 100 ? 130 : 170}px ${dots}`;
+    g.fillText(String(final.nota), M + 22, colunaY + 250);
+
+    // the numbers and the shelf
+    const X2 = M + 340;
+    g.fillStyle = ink;
+    g.font = `800 30px ${display}`;
+    g.fillText("OS NÚMEROS", X2, colunaY + 26);
     g.font = `600 32px ${body}`;
-    principais.forEach((linha, i) => g.fillText(linha, X + 330, 820 + i * 44));
-
-    // the clubs, wrapped
-    g.font = `800 40px ${display}`;
-    const palavras = final.clubes.map((c) => c.toUpperCase());
-    let linha = "";
-    let y = 960;
-    for (let i = 0; i < palavras.length && y < 1150; i++) {
-      const pedaco = (linha ? `${linha} → ` : "") + palavras[i];
-      if (g.measureText(pedaco).width > LARG && linha) {
-        g.fillText(linha, X, y);
-        y += 52;
-        linha = palavras[i];
-      } else linha = pedaco;
+    const numeros = [`${titulos} títulos`, `${final.jogos} jogos · ${final.gols} gols`];
+    if (final.selecao) numeros.push(`${final.selecao} jogos pela Seleção`);
+    numeros.forEach((linha, i) => g.fillText(linha, X2, colunaY + 74 + i * 44));
+    const estante = Object.entries(final.titulos)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([n, q]) => `${q}× ${n}`);
+    if (estante.length) {
+      const yE = colunaY + 74 + numeros.length * 44 + 26;
+      g.font = `800 30px ${display}`;
+      g.fillText("A ESTANTE", X2, yE);
+      g.font = `600 28px ${body}`;
+      estante.forEach((linha, i) => {
+        caber(linha, W - M - X2, (t) => `600 ${t}px ${body}`, 28);
+        g.fillText(linha, X2, yE + 44 + i * 38);
+      });
     }
-    if (linha && y < 1150) g.fillText(linha, X, y);
 
-    g.fillStyle = lamp;
-    g.font = `600 34px ${body}`;
-    if (final.parecido) g.fillText(`Lembra: ${final.parecido}`, X, 1210);
-    g.fillStyle = paper;
-    g.font = `600 28px ${body}`;
+    // the path
+    y = colunaY + 340;
+    regua(y, 3);
+    g.font = `800 30px ${display}`;
+    g.fillText("O CAMINHO", M, y + 50);
+    quebrar(final.clubes.join(" → ").toUpperCase(), W - 2 * M, `800 38px ${display}`, M, y + 104, 48, 3);
+
+    // footer
+    regua(H - 150, 2);
+    g.font = `italic 500 30px ${body}`;
+    if (final.parecido) g.fillText(`Sua carreira lembra a de ${final.parecido}.`, M, H - 100);
+    g.font = `700 26px ${body}`;
     const site = (jogo.url || location.origin).replace(/^https?:\/\//, "");
-    g.fillText(`Monte o seu: ${site}/jogos/carreira`, X, 1270);
+    g.fillText(`Monte o seu craque: ${site}/jogos/carreira`, M, H - 56);
+    g.fillStyle = turf;
+    g.fillRect(0, H - 22, W, 22);
     return canvas;
   }
 
