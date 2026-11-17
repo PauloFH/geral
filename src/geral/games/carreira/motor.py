@@ -26,10 +26,17 @@ from geral.games.carreira.regras import NOMES, POSICOES, geral
 
 PRIMEIRO_ANO = 2027
 IDADE_INICIAL, IDADE_MAXIMA = 16, 42
+RISCO = 8  # taken off every risky day-to-day chance: daring has to cost something
 MAX_ESCOLHAS = 4  # decision questions per career (both modes)
 MAX_RESPOSTAS = 60  # every answer of a Completa career: a day-to-day one per season, the market
 CHANCE_ESCOLHA = 0.4  # per season, when one fits
 COPA_DO_NORDESTE = "Copa do Nordeste"
+REALIZACAO = 0.0  # points the ceiling sits from the draft's rating, on average
+REALIZACAO_DESVIO = 9.0  # how much careers differ in it: both busts and stars come from here
+FORMA = 4  # spread of a season's form (rating points, up or down)
+FORMA_RUIM = -7  # from here down the season is told as one to forget
+TEMPORADA_RUIM = "temporada-ruim"
+GIGANTE_CEDO = 14  # a club this far above a boy of 21 or less slows his growth
 SALTO = 18  # the biggest jump in level of a move up
 EUROPA = 80  # league strength from which a league counts as the top of Europe
 EXOTICAS = ("ara", "jap", "eua", "tur", "mex")
@@ -70,6 +77,7 @@ class Temporada(BaseModel):
     copa: bool  # played a World Cup
     manchete: str
     eventos: list[str]
+    forma: int = 0  # how the season went against his level, -10..10
     chegada: str | None = None  # "Chegou do Vasco": every change of club says so
     rotina: "ResultadoRotina | None" = None  # the day-to-day choice before this season
 
@@ -122,7 +130,7 @@ def chance_de(opcao: OpcaoRotina, notas: dict[str, int]) -> int:
     if opcao.chance >= 100:
         return 100
     bonus = (notas[opcao.bonus] - 70) // 2 if opcao.bonus else 0
-    return max(5, min(95, opcao.chance + bonus))
+    return max(5, min(95, opcao.chance + bonus - RISCO))
 
 
 def descrever(efeito: Efeito) -> str:
@@ -255,7 +263,10 @@ class _Simulacao:
         self.rng = random.Random(f"carreira:{self.entrada.semente}")
         self.posicao = self.entrada.craque.posicao
         base = geral(self.notas, self.posicao)
-        self.teto = max(35, min(99, base + round(self.rng.gauss(0, 9))))
+        # The draft is potential: how much of it comes true is drawn once per career.
+        realizacao = self.rng.gauss(REALIZACAO, REALIZACAO_DESVIO)  # rating points, ±
+        self.teto = max(35, min(99, round(base + realizacao)))
+        self.parte, self.forma, self.nivel_atual = 1.0, 0, 0.0
         self.nota = max(30, self.teto - 25)
         self.aposenta_aos = self.rng.randint(33, 38) + (2 if self.notas["fisico"] >= 85 else 0)
         self.idade, self.ano, self.clube = IDADE_INICIAL, PRIMEIRO_ANO, self.inicio
@@ -305,7 +316,12 @@ class _Simulacao:
 
     def _evoluir(self) -> None:
         if self.idade <= 26:
-            self.nota += min(max(0, self.teto - self.nota), self.rng.randint(2, 6))
+            # Growth needs games and form; a giant club too early holds the boy back.
+            fator = 0.4 + 0.8 * min(1.0, self.parte) + self.forma / 15
+            if self.idade <= 21 and self.nivel_atual - self.nota > GIGANTE_CEDO:
+                fator *= 0.5
+            ganho = round(self.rng.randint(2, 6) * max(0.0, fator))
+            self.nota += min(max(0, self.teto - self.nota), ganho)
         elif self.idade <= 30:
             self.nota += self.rng.choice((-1, 0, 0, 1))
         else:
@@ -358,6 +374,7 @@ class _Simulacao:
             e
             for e in self.dados.eventos
             if e.momento == momento
+            and e.peso > 0  # weight 0: only the engine picks it
             and not (e.unico and e.id in self.historico)
             and ctx.casa(e.condicao)
         ]
@@ -381,17 +398,20 @@ class _Simulacao:
         jogos = gols = assist = selecao = 0
         titulos: list[str] = []
         copa = False
+        forma = 0
         if self.idade > IDADE_INICIAL:
-            parte = max(0.03, min(1.0, 0.5 + (self.nota - nivel) / 25)) * efeito_jogos
+            forma = max(-10, min(10, round(self.rng.gauss(0, FORMA))))
+            em_campo = self.nota + forma  # the rating this season actually played at
+            parte = max(0.03, min(1.0, 0.5 + (em_campo - nivel) / 25)) * efeito_jogos
             jogos = round(self.rng.randint(36, 52) * parte)
-            forma = 0.7 + 0.6 * max(0.0, min(1.0, (self.nota - nivel + 20) / 40))
-            taxa_gol = GOL[self.posicao] * (self.notas["finalizacao"] / 75) ** 1.6 * forma
-            taxa_assist = ASSIST[self.posicao] * (self.notas["passe"] / 75) ** 1.4 * forma
+            ritmo = 0.7 + 0.6 * max(0.0, min(1.0, (em_campo - nivel + 20) / 40))
+            taxa_gol = GOL[self.posicao] * (self.notas["finalizacao"] / 75) ** 1.6 * ritmo
+            taxa_assist = ASSIST[self.posicao] * (self.notas["passe"] / 75) ** 1.4 * ritmo
             gols = sum(self.rng.random() < taxa_gol for _ in range(jogos))
             assist = sum(self.rng.random() < taxa_assist for _ in range(jogos))
             peso = 0.6 + 0.4 * min(1.0, parte * 1.5)
             chance = max(
-                0.01, min(0.55, (self.clube.prestigio - 55) / 90 + (self.nota - nivel) / 250)
+                0.01, min(0.55, (self.clube.prestigio - 55) / 90 + (em_campo - nivel) / 250)
             )
             chance *= peso * min(1.0, jogos / 15)  # a title needs the player on the pitch
             if self.rng.random() < chance:
@@ -418,10 +438,16 @@ class _Simulacao:
         ctx.gols, ctx.jogos, ctx.titulo, ctx.selecao = gols, jogos, bool(titulos), selecao > 0
         ctx.copa, ctx.mundial = copa, "Copa do Mundo" in titulos
         depois = self._sortear_eventos("depois", ctx)
+        ruim = next((e for e in self.dados.eventos if e.id == TEMPORADA_RUIM), None)
+        if forma <= FORMA_RUIM and ruim:  # a season to forget is told as one
+            depois = [ruim, *[e for e in depois if e is not ruim][:1]]
         eventos = antes + depois
+        if self.idade > IDADE_INICIAL:
+            self.parte, self.forma, self.nivel_atual = jogos / 44, forma, nivel
         for e in eventos:
             self.historico.add(e.id)
             self.nota = max(20, min(99, self.nota + e.efeito.nota))
+            self.teto = max(35, self.teto + e.efeito.teto)
             if e.efeito.titulo:
                 titulos.append(e.efeito.titulo)
         principal = (depois or antes)[0] if eventos else None
@@ -455,6 +481,7 @@ class _Simulacao:
             copa=copa,
             manchete=manchete,
             eventos=[e.id for e in eventos],
+            forma=forma,
             chegada=self.chegada,
             rotina=self.resultado,
         )

@@ -36,11 +36,11 @@ profissionais, 2–3 craques, uma lenda de vez em quando.
 
 ## Critérios de aceite (como testes)
 
-- [ ] `test_oferta_tem_tres_lendas_e_sete_jogadores_reais` (e 2 sorteios: 10 nomes, 8 distintos usados).
-- [ ] `test_nota_de_jogador_da_base_segue_fama_e_posicao` (determinística; atacante finaliza mais que marca).
-- [ ] `test_quem_comeca_no_nordeste_ve_jogadores_da_regiao`.
-- [ ] `test_draft_humano_tem_mediana_perto_de_70` (1.000 drafts sequenciais: p50 entre 66 e 74).
-- [ ] `test_distribuicao_equilibrada` (400 carreiras com draft humano: não decolou 18–32%,
+- [x] `test_oferta_tem_tres_lendas_e_sete_jogadores_reais` (e 2 sorteios: 10 nomes, 8 distintos usados).
+- [x] `test_nota_de_jogador_da_base_segue_fama_e_posicao` (determinística; atacante finaliza mais que marca).
+- [x] `test_quem_comeca_no_nordeste_ve_jogadores_da_regiao`.
+- [x] `test_draft_humano_tem_mediana_perto_de_70` (1.000 drafts sequenciais: p50 entre 66 e 74).
+- [x] `test_distribuicao_equilibrada` (400 carreiras com draft humano: não decolou 18–32%,
   craque 18–35%, lenda > 0 e ≤ 8%).
-- [ ] `test_temporada_ruim_tem_manchete_de_temporada_ruim`.
-- [ ] `test_lesao_grave_baixa_o_teto`.
+- [x] `test_temporada_ruim_tem_manchete_de_temporada_ruim`.
+- [x] `test_lesao_grave_baixa_o_teto`.

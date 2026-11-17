@@ -87,6 +87,7 @@ class Efeito:
     jogos: float = 1.0  # share of the season played ("antes" events only)
     selecao: bool = False  # called up this season
     titulo: str = ""  # a trophy this event gives
+    teto: int = 0  # added to the potential for good (a serious injury takes some away)
     atributos: dict[str, int] = field(default_factory=dict, hash=False)  # added to the ratings
 
 
