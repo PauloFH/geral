@@ -333,3 +333,19 @@ def test_thursday_respects_the_72h_gap() -> None:
 
 def test_teams_without_specials_keep_mondays_only() -> None:
     assert summary(plan([], NOW, LAST_SENT)) == summary(plan([], NOW, LAST_SENT, weekdays=(0,)))
+
+
+def test_other_teams_keep_the_strict_72h_gap() -> None:
+    # Friday's post-game went out at 13:04: Monday 19/10 13:00 is 71h56 later, so it is skipped,
+    # as it always was for a team without special sections.
+    sent = at("16/10/2026", "13:04")
+
+    news = [d for k, d in summary(plan([], at("17/10/2026"), sent)) if k == "news"]
+
+    assert news[0] == "26/10 13:00"
+
+
+def test_a_team_that_never_sent_gets_no_monday_news_in_the_afternoon() -> None:
+    slots = plan([], at("19/10/2026", "14:00"), None)
+
+    assert due(slots, at("19/10/2026", "14:00")) is None

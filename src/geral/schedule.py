@@ -101,10 +101,11 @@ def _news_between(start: datetime, end: datetime) -> list[datetime]:
 def _weekly(start: datetime, until: datetime, weekdays: tuple[int, ...]) -> list[datetime]:
     """SEND_TIME on each of `weekdays` (0 = Monday) from MIN_NEWS_GAP after `start` to `until`.
 
-    A real send goes out a few minutes after SEND_TIME: Monday 13:02 to Thursday 13:00 still
-    counts as the 72 h gap (SEND_SLACK).
+    With Thursday in `weekdays` (special sections), a real send goes out a few minutes after
+    SEND_TIME: Monday 13:02 to Thursday 13:00 still counts as the 72 h gap (SEND_SLACK). Other
+    teams keep the strict gap, as before.
     """
-    first = start + MIN_NEWS_GAP - SEND_SLACK
+    first = start + MIN_NEWS_GAP - (SEND_SLACK if weekdays != (0,) else timedelta(0))
     day = first.astimezone(TZ).date()
     found = []
     while (moment := _at(day, SEND_TIME)) <= until:

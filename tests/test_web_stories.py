@@ -177,3 +177,20 @@ def test_on_this_day_includes_idol_birthdays(client) -> None:
     assert facts(client, "2026-03-05") == [
         {"date": "1941-03-06", "title": "Bita", "summary": "nascia Bita."}
     ]
+
+
+def test_birthdays_are_replaced_on_each_update(client) -> None:
+    client.put(
+        "/api/teams/nautico/birthdays",
+        json=[{"name": "Velho", "birth_date": "1941-03-06", "source_url": "u"}],
+        headers=AUTH,
+    )
+    client.put(
+        "/api/teams/nautico/birthdays",
+        json=[{"name": "Bita", "birth_date": "1941-03-06", "source_url": "u"}],
+        headers=AUTH,
+    )
+    bad = [{"name": "", "birth_date": "1941-03-06", "source_url": "u"}]
+
+    assert [f["title"] for f in facts(client, "2026-03-06")] == ["Bita"]
+    assert client.put("/api/teams/nautico/birthdays", json=bad, headers=AUTH).status_code == 422

@@ -572,16 +572,13 @@ class SubscriberStore:
         self._run("UPDATE stories SET discarded = 1 WHERE id = ?", story_id)
 
     def save_birthdays(self, team: str, birthdays: list[dict]) -> None:
-        for b in birthdays:
-            self._run(
-                "INSERT INTO idol_birthdays (team, name, birth_date, source_url)"
-                " VALUES (?, ?, ?, ?)"
-                " ON CONFLICT (team, name) DO UPDATE SET birth_date = excluded.birth_date,"
-                " source_url = excluded.source_url",
-                team,
-                b["name"],
-                b["birth_date"],
-                b["source_url"],
+        """The team's idols' birth dates, replacing the previous list (one transaction)."""
+        with closing(self._connect()) as db, db:
+            db.execute("DELETE FROM idol_birthdays WHERE team = ?", (team,))
+            db.executemany(
+                "INSERT OR REPLACE INTO idol_birthdays (team, name, birth_date, source_url)"
+                " VALUES (?, ?, ?, ?)",
+                [(team, b["name"], b["birth_date"], b["source_url"]) for b in birthdays],
             )
 
     def on_this_day(self, team: str, day: date, days: int = 3) -> list[dict]:

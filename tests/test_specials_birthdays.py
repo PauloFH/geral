@@ -47,3 +47,25 @@ def test_birthday_needs_day_precision(monkeypatch) -> None:
     assert result == [
         {"name": "Bita", "birth_date": "1941-03-06", "source_url": "https://w/Bita (futebolista)"}
     ]
+
+
+@respx.mock
+def test_a_bad_wikidata_answer_gives_no_birthdays(monkeypatch) -> None:
+    monkeypatch.setattr(mediawiki.time, "sleep", lambda s: None)
+    respx.get(mediawiki.WIKIDATA).mock(return_value=httpx.Response(200, json={"error": "x"}))
+
+    with httpx.Client() as client:
+        assert birthdays(client, [idol("Bita", "Q1")]) == []
+
+
+@respx.mock
+def test_a_redirected_item_is_skipped(monkeypatch) -> None:
+    monkeypatch.setattr(mediawiki.time, "sleep", lambda s: None)
+    respx.get(mediawiki.WIKIDATA).mock(
+        return_value=httpx.Response(
+            200, json={"entities": {"Q99": born("+1941-03-06T00:00:00Z", 11)}}
+        )
+    )
+
+    with httpx.Client() as client:
+        assert birthdays(client, [idol("Bita", "Q1")]) == []

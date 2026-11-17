@@ -157,9 +157,9 @@ class StoryIn(BaseModel):
 
 
 class BirthdayIn(BaseModel):
-    name: str
+    name: str = Field(min_length=1, max_length=200)
     birth_date: date
-    source_url: str
+    source_url: str = Field(min_length=1, max_length=500)
 
 
 class DrawIn(BaseModel):
