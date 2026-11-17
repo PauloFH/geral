@@ -192,6 +192,10 @@ class ClubGuessesIn(BaseModel):
     desistiu: bool = False
 
 
+class CarreiraOfertaIn(BaseModel):
+    clube: str | None = Field(default=None, max_length=40)  # the start: brings regional idols
+
+
 class CarreiraIn(BaseModel):
     semente_draft: str = Field(min_length=1, max_length=40)
     semente: str | None = Field(default=None, min_length=1, max_length=40)  # drawn when absent
@@ -1299,14 +1303,14 @@ def create_app(
         )
 
     @app.post("/api/jogos/carreira/{edition}/oferta")
-    def carreira_oferta(edition: str):
+    def carreira_oferta(edition: str, body: CarreiraOfertaIn):
         if edition not in carreira_edicoes():
             return JSONResponse({"detail": "edition not found"}, status_code=404)
         semente = secrets.token_urlsafe(8)
-        lendas = carreira_draft.oferta(carreira_dados.carregar(), edition, semente)
+        lendas = carreira_draft.oferta(carreira_dados.carregar(), edition, semente, body.clube)
         return {
             "semente_draft": semente,
-            "lendas": [{"nome": x.nome, "notas": x.notas} for x in lendas],
+            "lendas": [{"nome": x.nome, "notas": x.notas, "regiao": x.regiao} for x in lendas],
         }
 
     @app.post("/api/jogos/carreira/{edition}/simular")

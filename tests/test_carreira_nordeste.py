@@ -92,3 +92,16 @@ def test_classico_aparece_com_nome_na_manchete() -> None:
 
     assert any("Clássico-Rei" in m for m in manchetes)
     assert not any("{" in m for m in manchetes)
+
+
+def test_draft_de_quem_comeca_no_nordeste_tem_dois_idolos_da_regiao() -> None:
+    from geral.games.carreira.draft import oferta
+
+    dados = carregar()
+    assert len([x for x in dados.lendas if x.regiao == "nordeste"]) >= 15
+    for i in range(200):
+        nordeste = oferta(dados, "geral", f"s{i}", "abc")
+        assert len({x.nome for x in nordeste}) == 9
+        assert sum(x.regiao == "nordeste" for x in nordeste) >= 2
+    sem_clube = [oferta(dados, "geral", f"s{i}") for i in range(50)]
+    assert sem_clube == [oferta(dados, "geral", f"s{i}", "flamengo") for i in range(50)]

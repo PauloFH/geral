@@ -14,7 +14,7 @@ def game(store, mailer, clock):
 
 
 def _comeco(game, edicao="geral") -> dict:
-    oferta = game.post(f"{API}/{edicao}/oferta", json={})
+    oferta = game.post(f"{API}/{edicao}/oferta", json={"clube": CRAQUE["clube"]})
     assert oferta.status_code == 200
     corpo = oferta.json()
     lendas = corpo["lendas"]
@@ -157,3 +157,9 @@ def decodificar_ok(game, pedido) -> bool:
         escolhas.append(0)
     aberto = decodificar(c["codigo"])
     return aberto.entrada.modo == "completa" and len(c["codigo"]) < 2000
+
+
+def test_oferta_de_quem_comeca_no_abc_traz_idolos_do_nordeste(game) -> None:
+    corpo = game.post(f"{API}/geral/oferta", json={"clube": "abc"}).json()
+
+    assert sum(x["regiao"] == "nordeste" for x in corpo["lendas"]) >= 2

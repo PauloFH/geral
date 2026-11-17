@@ -306,7 +306,7 @@ efeito = { nota = 2, saida = 0.3 }
 id = "seca-de-gols"
 peso = 1.5
 unico = false
-condicao = { gols_max = 2, jogos_min = 15, posicoes = ["atacante"] }
+condicao = { gols_max = 4, jogos_min = 12, posicoes = ["atacante"] }
 manchetes = ["{nome} passa a temporada quase sem marcar e é cobrado", "Seca de gols: torcida {do_clube} perde a paciência com {nome}"]
 efeito = { saida = 0.3 }
 

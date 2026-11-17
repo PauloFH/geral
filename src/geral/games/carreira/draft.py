@@ -28,8 +28,33 @@ def edicoes(dados: Dados, times: Iterable[str]) -> list[str]:
     return ["geral", *(t for t in times if t != "geral" and t in proprias)]
 
 
-def oferta(dados: Dados, edicao: str, semente_draft: str) -> list[Lenda]:
-    """The edition's own legends first, completed with 'geral' ones; same seed, same offer."""
+MIN_REGIONAIS = 2  # legends of the region of the starting club, when it has any
+
+
+def oferta(dados: Dados, edicao: str, semente_draft: str, clube: str | None = None) -> list[Lenda]:
+    """The draft's nine legends; same seed, same offer. Starting in a Northeast club brings at
+    least two idols of the region (the others keep their places)."""
+    escolhidas = _oferta(dados, edicao, semente_draft)
+    inicio = dados.clubes.get(clube or "")
+    regiao = dados.regiao(inicio) if inicio else None
+    if regiao != "nordeste":
+        return escolhidas
+    rng = random.Random(f"draft-regiao:{semente_draft}")
+    faltam = MIN_REGIONAIS - sum(x.regiao == regiao for x in escolhidas)
+    fora = sorted(
+        (x for x in dados.lendas if x.regiao == regiao and x not in escolhidas),
+        key=lambda x: x.nome,
+    )
+    trocaveis = [i for i, x in enumerate(escolhidas) if x.regiao != regiao]
+    faltam = min(faltam, len(fora), len(trocaveis))  # a world with few regional idols
+    for i, lenda in zip(
+        rng.sample(trocaveis, max(0, faltam)), rng.sample(fora, max(0, faltam)), strict=True
+    ):
+        escolhidas[i] = lenda
+    return escolhidas
+
+
+def _oferta(dados: Dados, edicao: str, semente_draft: str) -> list[Lenda]:
     rng = random.Random(f"draft:{edicao}:{semente_draft}")
     proprias = sorted(
         (lenda for lenda in dados.lendas if edicao in lenda.edicoes), key=lambda x: x.nome

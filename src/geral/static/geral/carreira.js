@@ -72,7 +72,7 @@
     const go = form.querySelector(".cr-go");
     go.disabled = true;
     try {
-      estado.oferta = await post(`${API}/oferta`, {});
+      estado.oferta = await post(`${API}/oferta`, { clube: estado.craque.clube });
       show("cr-draft");
       desenharDraft();
       rolar($("cr-draft"), "start");
@@ -121,6 +121,7 @@
     const lenda = estado.oferta.lendas[estado.vagas[estado.vez]];
     $("cr-count").textContent = `Lenda ${estado.vez + 1} de 8`;
     $("cr-legend-name").textContent = lenda.nome;
+    $("cr-legend-tag").hidden = lenda.regiao !== "nordeste";
     $("cr-reroll").hidden = estado.trocou;
     const botoes = $("cr-steal");
     botoes.replaceChildren();

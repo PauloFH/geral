@@ -311,6 +311,7 @@ select.chip { appearance: auto; }
 .cr-reroll { font-size: 16px; padding: 8px 12px; min-height: 40px; }
 .cr-legend h2 { font-size: clamp(34px, 6vw, 56px); margin: 0; line-height: 1; }
 .cr-hint { margin: 0; font-weight: 600; }
+.cr-legend-tag { align-self: flex-start; background: var(--ticket); border: 2px solid var(--ink); padding: 5px 9px; font: 800 14px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; }
 .cr-steal { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
 .cr-stat { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 12px; min-height: 56px; border: 3px solid var(--ink); background: #fff; color: var(--ink); cursor: pointer; }
 .cr-stat-name { font: 800 18px/1 var(--display); text-transform: uppercase; text-align: left; }

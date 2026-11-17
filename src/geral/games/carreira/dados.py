@@ -20,6 +20,7 @@ class Lenda:
     wikidata: str
     edicoes: tuple[str, ...]
     notas: dict[str, int] = field(hash=False)
+    regiao: str = ""  # "nordeste": comes more often to whoever starts there
 
 
 @dataclass(frozen=True)
@@ -202,7 +203,8 @@ def _lenda(entry: dict) -> Lenda:
         raise ValueError(f"lendas.toml: {nome!r} needs every attribute rated 1-99: {notas}")
     if not entry.get("edicoes") or not entry.get("wikidata"):
         raise ValueError(f"lendas.toml: {nome!r} needs wikidata and edicoes")
-    return Lenda(nome, entry["wikidata"], tuple(entry["edicoes"]), dict(notas))
+    regiao = entry.get("regiao", "")
+    return Lenda(nome, entry["wikidata"], tuple(entry["edicoes"]), dict(notas), regiao)
 
 
 def _estados_e_classicos(

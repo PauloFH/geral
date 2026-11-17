@@ -164,7 +164,8 @@ def clube_inicial(dados: Dados, edicao: str, escolhido: str | None) -> Clube:
 
 
 def simular(dados: Dados, edicao: str, entrada: Entrada) -> Carreira:
-    notas = montar(oferta(dados, edicao, entrada.semente_draft), entrada.roubos)
+    ofertadas = oferta(dados, edicao, entrada.semente_draft, entrada.craque.clube)
+    notas = montar(ofertadas, entrada.roubos)
     inicio = clube_inicial(dados, edicao, entrada.craque.clube)
     return _Simulacao(dados, entrada, notas, inicio).rodar()
 
