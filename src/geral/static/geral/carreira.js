@@ -556,6 +556,20 @@
       }
       return t;
     };
+    const linhasDe = (texto, max, fonte) => {
+      g.font = fonte;
+      const linhas = [];
+      let linha = "";
+      for (const p of texto.split(" ")) {
+        const teste = linha ? `${linha} ${p}` : p;
+        if (g.measureText(teste).width > max && linha) {
+          linhas.push(linha);
+          linha = p;
+        } else linha = teste;
+      }
+      if (linha) linhas.push(linha);
+      return linhas;
+    };
     const quebrar = (texto, max, fonte, x, y, altura, linhasMax) => {
       g.font = fonte;
       const palavras = texto.split(" ");
@@ -623,6 +637,7 @@
     const numeros = [`${titulos} títulos`, `${final.jogos} jogos · ${final.gols} gols`];
     if (final.selecao) numeros.push(`${final.selecao} jogos pela Seleção`);
     numeros.forEach((linha, i) => g.fillText(linha, X2, colunaY + 74 + i * 44));
+    let fimDaColuna = colunaY + 74 + (numeros.length - 1) * 44;
     const estante = Object.entries(final.titulos)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 3)
@@ -636,14 +651,30 @@
         caber(linha, W - M - X2, (t) => `600 ${t}px ${body}`, 28);
         g.fillText(linha, X2, yE + 44 + i * 38);
       });
+      fimDaColuna = yE + 44 + (estante.length - 1) * 38;
     }
 
-    // the path
-    y = colunaY + 340;
+    // the path: below the score box and below the longest column (numbers and shelf can grow)
+    y = Math.max(colunaY + 340, fimDaColuna + 40);
     regua(y, 3);
     g.font = `800 30px ${display}`;
     g.fillText("O CAMINHO", M, y + 50);
-    quebrar(final.clubes.join(" → ").toUpperCase(), W - 2 * M, `800 38px ${display}`, M, y + 104, 48, 3);
+    // The path fits the room left above the footer: a smaller font, then "…" at the end.
+    const caminho = final.clubes.join(" → ").toUpperCase();
+    const topo = y + 104;
+    const espaco = H - 175 - topo;
+    for (const tamanho of [38, 32, 27]) {
+      const altura = Math.round(tamanho * 1.25);
+      const cabem = Math.max(1, Math.floor(espaco / altura) + 1);
+      const linhas = linhasDe(caminho, W - 2 * M, `800 ${tamanho}px ${display}`);
+      if (linhas.length <= cabem || tamanho === 27) {
+        const mostradas = linhas.slice(0, cabem);
+        if (linhas.length > cabem) mostradas[cabem - 1] += " …";
+        g.font = `800 ${tamanho}px ${display}`;
+        mostradas.forEach((linha, i) => g.fillText(linha, M, topo + i * altura));
+        break;
+      }
+    }
 
     // footer
     regua(H - 150, 2);
