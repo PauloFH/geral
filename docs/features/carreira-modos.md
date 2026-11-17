@@ -1,7 +1,7 @@
 # Carreira: modos Rápida e Completa, dia a dia e tela nova
 
 - **Data:** 2026-11-16
-- **Status:** proposta
+- **Status:** aprovada
 - **ADRs:** —
 - **Depois de:** `carreira.md` (motor e primeira tela). Projeto 1 de 5: base → Nordeste →
   veredito das torcidas → capa da Geral → desafio com o mesmo sorteio.
@@ -48,13 +48,13 @@ torcedor). Tela nova, menos placar e mais jornal esportivo.
 
 ## Critérios de aceite (como testes)
 
-- [ ] `test_completa_pergunta_o_dia_a_dia_toda_temporada` (17+ anos, até a aposentadoria).
-- [ ] `test_completa_nao_troca_de_clube_sem_aceite` (só volta de empréstimo e dispensa, com manchete).
-- [ ] `test_chance_do_dia_a_dia_bate_com_o_sorteio` (2.000 rolagens: frequência ±4 p.p. da chance mostrada).
-- [ ] `test_efeito_de_atributo_muda_a_nota_da_temporada_seguinte`.
-- [ ] `test_rapida_mostra_de_onde_veio_quem_chegou` (`chegou_de` em toda troca).
-- [ ] `test_prefixo_estavel_nos_dois_modos` e `test_toda_rotina_e_alcancavel`.
-- [ ] `test_edicao_de_time_redireciona_para_a_unica`.
+- [x] `test_completa_pergunta_o_dia_a_dia_toda_temporada` (17+ anos, até a aposentadoria).
+- [x] `test_completa_nao_troca_de_clube_sem_aceite` (só volta de empréstimo e dispensa, com manchete).
+- [x] `test_chance_do_dia_a_dia_bate_com_o_sorteio` (2.000 rolagens: frequência ±4 p.p. da chance mostrada).
+- [x] `test_efeito_de_atributo_muda_a_nota_da_temporada_seguinte`.
+- [x] `test_rapida_mostra_de_onde_veio_quem_chegou` (`chegou_de` em toda troca).
+- [x] `test_prefixo_estavel_nos_dois_modos` e `test_toda_rotina_e_alcancavel`.
+- [x] `test_edicao_de_time_redireciona_para_a_unica`.
 
 ## Verificação ponta a ponta
 

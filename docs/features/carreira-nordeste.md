@@ -1,7 +1,7 @@
 # Carreira: o Nordeste em detalhe
 
 - **Data:** 2026-11-16
-- **Status:** proposta
+- **Status:** aprovada
 - **ADRs:** —
 - **Projeto 2 de 5** (base → **Nordeste** → veredito das torcidas → capa da Geral → desafio).
 
@@ -48,13 +48,13 @@ começa no ABC vive uma carreira diferente de quem começa no Flamengo.
 
 ## Critérios de aceite (como testes)
 
-- [ ] `test_todo_clube_brasileiro_tem_estado_e_estadual`.
-- [ ] `test_estadual_favorece_o_grande_do_estado` (1.000 temporadas: ABC ganha o Potiguar mais
+- [x] `test_todo_clube_brasileiro_tem_estado_e_estadual`.
+- [x] `test_estadual_favorece_o_grande_do_estado` (1.000 temporadas: ABC ganha o Potiguar mais
   que o Santa Cruz ganha o Pernambucano contra o Sport, proporcional ao prestígio).
-- [ ] `test_copa_do_nordeste_so_para_nordestinos`.
-- [ ] `test_classico_aparece_com_nome_na_manchete` (carreira no ABC: "Clássico-Rei" aparece).
-- [ ] `test_draft_de_quem_comeca_no_nordeste_tem_dois_idolos_da_regiao`.
-- [ ] `test_eventos_regionais_so_no_nordeste` e o teste de alcance cobre os novos.
+- [x] `test_copa_do_nordeste_so_para_nordestinos`.
+- [x] `test_classico_aparece_com_nome_na_manchete` (carreira no ABC: "Clássico-Rei" aparece).
+- [x] `test_draft_de_quem_comeca_no_nordeste_tem_dois_idolos_da_regiao`.
+- [x] `test_eventos_regionais_so_no_nordeste` e o teste de alcance cobre os novos.
 
 ## Verificação ponta a ponta
 
