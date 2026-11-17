@@ -15,6 +15,10 @@ revisão das edições (#50, #51) é a rede final. O dono não valida item a ite
 
 ## Fora de escopo
 
+- **Ainda não feito (no `docs/TASKS.md`):** Google News (matérias de memória e de torcedor) e RSSSF
+  (placares) como fontes. Os PRs #52 a #54 usam só a Wikipédia pt e o Wikidata; as menções a essas
+  duas fontes em "Como funciona" descrevem o desenho, não o que está no ar.
+
 - Histórias enviadas pela torcida (formulário + moderação): ideia boa, mas é outra feature.
 - Outros times: a configuração é por time no catálogo, mas o lançamento é só ABC e Náutico.
 - Hemeroteca da BN e Internet Archive (OCR ruim, quase sem jornal): ficam como fonte futura.
