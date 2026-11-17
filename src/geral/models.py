@@ -184,6 +184,19 @@ class BolaoSummary(BaseModel):
     cold_foot: str | None = None
 
 
+class Story(BaseModel):
+    """A story of the club from the collection (special sections), told from one source."""
+
+    id: int
+    kind: Literal["jogo", "idolo", "clube"]
+    title: str
+    body: str
+    summary: str
+    fact_date: str = ""
+    source_title: str
+    source_url: str
+
+
 class Newsletter(BaseModel):
     """Full newsletter content ready for rendering and dispatch."""
 
@@ -207,3 +220,5 @@ class Newsletter(BaseModel):
     broadcast: str = ""  # pre-game: where to watch
     bolao_open: bool = False  # pre-game: the page takes bets on this match
     bolao: BolaoSummary | None = None  # post-game: the bolão result
+    story: Story | None = None  # special section: a story of the club
+    on_this_day: list[str] = Field(default_factory=list)  # special section: "Neste dia"

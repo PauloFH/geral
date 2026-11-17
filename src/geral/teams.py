@@ -61,6 +61,18 @@ class Team(BaseModel):
     # Goal scorers from the CBF site (national competitions only): the team's `clube_id` there
     # and ge table name -> championship path, e.g. "campeonato-brasileiro/serie-c".
     cbf_id: int | None = Field(default=None, gt=0)
+    # Special sections (stories, "Neste dia") from its pt Wikipedia article, the classics' pages
+    # and idols whose article says "ídolo" near one of `club_terms`.
+    specials: bool = False
+    wikipedia: str | None = None
+    classics: tuple[str, ...] = ()
+    club_terms: tuple[str, ...] = ()
+
+    @property
+    def news_weekdays(self) -> tuple[int, ...]:
+        """Weekly news days with no match near: Monday, and Thursday for the special sections."""
+        return (0, 3) if self.specials else (0,)
+
     cbf_tables: dict[str, str] = Field(default_factory=dict)
 
     @field_validator("accent", "dark")

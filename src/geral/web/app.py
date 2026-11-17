@@ -153,6 +153,29 @@ class DraftIn(BaseModel):
     send_at: AwareDatetime
 
 
+class StoryIn(BaseModel):
+    kind: Literal["jogo", "idolo", "clube"]
+    title: str
+    body: str
+    summary: str
+    fact_date: str = Field(default="", pattern=r"^(\d{4}(-\d{2}-\d{2})?)?$")
+    source_key: str
+    source_url: str
+    source_title: str
+    rejected_reason: str | None = None  # refused by the verifier: kept so the source is skipped
+
+
+class BirthdayIn(BaseModel):
+    name: str = Field(min_length=1, max_length=200)
+    birth_date: date
+    source_url: str = Field(min_length=1, max_length=500)
+
+
+class DrawIn(BaseModel):
+    label: str  # the edition the story goes in (a rebuild gets the same story)
+    reserve: bool = True  # False for a preview: the stock is left as it is
+
+
 class BolaoMatchIn(BaseModel):
     opponent: str
     home: bool  # our team plays at home
@@ -915,6 +938,60 @@ def create_app(
             return JSONResponse({"detail": "no draft"}, status_code=404)
         return Response(status_code=204)
 
+    # --- stories for the special sections (written by the nightly job) -----------------------
+
+    @app.post("/api/teams/{team}/stories", status_code=204)
+    def add_story(request: Request, team: str, story: StoryIn):
+        if not authorized(request):
+            return unauthorized()
+        if team not in catalog:
+            return unknown_team()
+        if not store.add_story(team, story.model_dump(), now()):
+            return JSONResponse({"detail": "this source was already used"}, status_code=409)
+        return Response(status_code=204)
+
+    @app.get("/api/teams/{team}/stories/count")
+    def count_stories(request: Request, team: str):
+        if not authorized(request):
+            return unauthorized()
+        if team not in catalog:
+            return unknown_team()
+        return {"unused": store.unused_stories(team)}
+
+    @app.post("/api/teams/{team}/stories/draw")
+    def draw_story(request: Request, team: str, body: DrawIn):
+        if not authorized(request):
+            return unauthorized()
+        if team not in catalog:
+            return unknown_team()
+        story = store.draw_story(team, body.label, reserve=body.reserve)
+        return story if story else Response(status_code=204)
+
+    @app.get("/api/teams/{team}/stories/on-this-day")
+    def stories_on_this_day(request: Request, team: str, day: date):
+        if not authorized(request):
+            return unauthorized()
+        if team not in catalog:
+            return unknown_team()
+        return store.on_this_day(team, day)
+
+    @app.put("/api/teams/{team}/birthdays", status_code=204)
+    def save_birthdays(request: Request, team: str, birthdays: list[BirthdayIn]):
+        if not authorized(request):
+            return unauthorized()
+        if team not in catalog:
+            return unknown_team()
+        store.save_birthdays(team, [b.model_dump(mode="json") for b in birthdays])
+        return Response(status_code=204)
+
+    @app.get("/api/teams/{team}/stories/sources")
+    def story_sources(request: Request, team: str):
+        if not authorized(request):
+            return unauthorized()
+        if team not in catalog:
+            return unknown_team()
+        return store.story_sources(team)
+
     # --- review: the owner holds an edition or drops topics before it goes out ----------------
 
     def review_owner(token: str) -> bool:
@@ -960,6 +1037,8 @@ def create_app(
                         {"title": topic.title, "removed": i in d.removed_topics}
                         for i, topic in enumerate(newsletter.topics)
                     ],
+                    "story": newsletter.story.title if newsletter.story else None,
+                    "on_this_day": newsletter.on_this_day,
                 }
             )
         return private(page(request, "revisao.html.j2", drafts=drafts, token=t, timezone=BRASILIA))
@@ -1022,6 +1101,29 @@ def create_app(
             return None
 
         return review_action(request, draft_id, t, change)
+
+    def section_action(request: Request, draft_id: int, t: str, section: str):
+        def change(draft):
+            newsletter = Newsletter.model_validate_json(draft.newsletter_json)
+            if section == "historia":
+                if newsletter.story is None:
+                    return not_found(request)
+                store.discard_story(newsletter.story.id)  # never drawn again
+                newsletter = newsletter.model_copy(update={"story": None})
+            else:
+                newsletter = newsletter.model_copy(update={"on_this_day": []})
+            store.set_draft_newsletter(draft.id, newsletter.model_dump_json())
+            return None
+
+        return review_action(request, draft_id, t, change)
+
+    @app.post("/revisao/{draft_id}/historia/tirar")
+    def review_remove_story(request: Request, draft_id: int, t: Annotated[str, Form()] = ""):
+        return section_action(request, draft_id, t, "historia")
+
+    @app.post("/revisao/{draft_id}/neste-dia/tirar")
+    def review_remove_on_this_day(request: Request, draft_id: int, t: Annotated[str, Form()] = ""):
+        return section_action(request, draft_id, t, "neste-dia")
 
     @app.post("/revisao/{draft_id}/topicos/{n}/tirar")
     def review_remove(request: Request, draft_id: int, n: int, t: Annotated[str, Form()] = ""):

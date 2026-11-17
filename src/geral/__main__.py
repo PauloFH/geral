@@ -277,7 +277,7 @@ def _plan_for(
     sent_at, sent_label = (
         (latest.published_at, label_of(latest.subject)) if latest else (None, None)
     )
-    return plan(fixtures, now, sent_at, sent_label)
+    return plan(fixtures, now, sent_at, sent_label, weekdays=club.news_weekdays)
 
 
 def _due_slot(club: Team, settings, now: datetime, latest: LatestEdition | None) -> Slot | None:
@@ -369,7 +369,7 @@ def _resolve_stage(club: Team) -> tuple[Edition, Stage]:
     sent_at, sent_label = (
         (latest.published_at, label_of(latest.subject)) if latest else (None, None)
     )
-    due = due_stage(plan(fixtures, now, sent_at, sent_label), now)
+    due = due_stage(plan(fixtures, now, sent_at, sent_label, weekdays=club.news_weekdays), now)
     if due is None:
         typer.echo("Nenhuma edição agendada agora.")
         raise typer.Exit(code=0)
@@ -785,6 +785,44 @@ def _publish_report(report: RunReport) -> None:
             summary.write(markdown)
 
 
+@app.command()
+def acervo(
+    team: Annotated[str | None, typer.Option("--team", help="One team (slug)")] = None,
+    all_teams: Annotated[
+        bool, typer.Option("--all", help="Every team with special sections")
+    ] = False,
+) -> None:
+    """Top up the stories collection of the special sections (the nightly job; respects
+    DRY_RUN: then it writes nothing on the page and prints the stories it would keep)."""
+    from geral.games import mediawiki
+    from geral.specials import job
+
+    _setup_logging()
+    if (team is None) == (not all_teams):
+        typer.echo("Use --team <slug> ou --all.", err=True)
+        raise typer.Exit(code=2)
+    clubs = [_team(team)] if team else [t for t in load_teams().values() if t.specials]
+    settings = get_settings()
+    try:
+        llm = pipeline.get_llm_client(settings)
+    except LLMError as e:
+        typer.echo(f"Gemini indisponível: {e}")
+        raise typer.Exit(code=1) from e
+    with httpx.Client(headers=mediawiki.HEADERS, timeout=30) as wiki:
+        for club in clubs:
+            report = job.top_up(club, settings, llm, wiki, _now().date())
+            line = (
+                report.skipped_reason or f"{report.accepted} aceitas, {report.rejected} recusadas"
+            )
+            typer.echo(f"{club.slug}: {line}")
+            for problem in report.problems:
+                typer.echo(f"  problema: {problem}")
+            if settings.DRY_RUN:
+                for story in report.stories:
+                    typer.echo(f"\n  [{story.kind}] {story.title} ({story.fact_date or 's/ data'})")
+                    typer.echo(f"  {story.body}\n  Fonte: {story.source_title}")
+
+
 @app.command("edicao-geral")
 def edicao_geral(
     date: DateOption = None,
@@ -914,14 +952,20 @@ def _resolve(team: Team, edition: str, date: datetime | None) -> Edition:
         sent_at, sent_label = (
             (latest.published_at, label_of(latest.subject)) if latest else (None, None)
         )
-        slot = due_slot(plan(fixtures, now, sent_at, sent_label), now)
+        slot = due_slot(plan(fixtures, now, sent_at, sent_label, weekdays=team.news_weekdays), now)
         if slot is None:
             typer.echo("Nenhuma edição agendada agora.")
             raise typer.Exit(code=0)
         return _since_last_send(edition_from_slot(slot), latest)
     day = date.date() if date else now.date()
     last_sent = latest.published_at if latest else None
-    resolved = resolve_match_edition(edition, day, fixtures, last_sent)  # type: ignore[arg-type]
+    resolved = resolve_match_edition(
+        edition,  # type: ignore[arg-type]
+        day,
+        fixtures,
+        last_sent,
+        weekdays=team.news_weekdays,
+    )
     if resolved is None and edition == "news" and day == now.date():
         # An extra news edition, asked by hand: from the last send (or the default window) to
         # now. The planned editions go on; the next news one counts from this send.

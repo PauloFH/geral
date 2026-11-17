@@ -23,6 +23,8 @@ from geral.processing.dedupe import dedupe, is_relevant
 from geral.processing.extract import DomainRateLimiter, extract_articles
 from geral.report import RunReport
 from geral.send.recipients import mailto_unsubscribe
+from geral.specials.sections import Sections
+from geral.specials.sections import from_page as sections_from_page
 from geral.stats.combined import stats_client_for
 from geral.summarizer.client import LLMClient, LLMError, get_llm_client
 from geral.summarizer.pipeline import (
@@ -151,6 +153,7 @@ def build_newsletter(
     report: RunReport | None = None,
     published_topics: list[str] | None = None,
     match_collect: Callable[[Edition, NextMatch, Team], list[Article]] | None = None,
+    specials: Callable[..., Sections] | None = None,
 ) -> Newsletter:
     """Collect news and stats for the edition and summarize them into a Newsletter.
 
@@ -184,6 +187,13 @@ def build_newsletter(
         else None
     )
 
+    if specials is None and team.specials and settings.SUBSCRIBERS_API_TOKEN:
+        specials = sections_from_page(settings)
+    picked = specials(edition, team) if specials else Sections()
+    max_topics = PRE_GAME_TOPICS if pre_game else MAX_TOPICS
+    if picked.max_topics:
+        max_topics = min(max_topics, picked.max_topics)
+
     try:
         llm = llm or get_llm_client(settings)
         summary = summarize_edition(
@@ -194,7 +204,7 @@ def build_newsletter(
             learn_more=learn_more,
             brazil=brazil,
             extract=extract or _extract_picks,
-            max_topics=PRE_GAME_TOPICS if pre_game else MAX_TOPICS,
+            max_topics=max_topics,
             next_match=next_match if pre_game else None,
             published=published_topics,
             team=team,
@@ -218,7 +228,16 @@ def build_newsletter(
         except LLMError as e:
             logger.error("Line-ups and tips failed, sending the preview without them: %s", e)
 
+    if specials and picked.story is None and edition.kind == "news":
+        if not summary.topics and last_match is None:
+            # Nothing else to tell: the story carries the edition.
+            picked = picked.model_copy(
+                update={"story": specials(edition, team, second_chance=True).story}
+            )
+
     return Newsletter(
+        story=picked.story,
+        on_this_day=picked.on_this_day,
         team=team,
         edition=edition,
         headline=summary.headline,
@@ -273,7 +292,12 @@ def drop_topics(newsletter: Newsletter, removed: list[int], llm: LLMClient | Non
 
 def is_empty(newsletter: Newsletter) -> bool:
     """True when there is neither news nor a match: such an edition is not sent."""
-    return not newsletter.topics and newsletter.last_match is None and newsletter.preview is None
+    return (
+        not newsletter.topics
+        and newsletter.last_match is None
+        and newsletter.preview is None
+        and newsletter.story is None  # a story alone carries a news edition
+    )
 
 
 def unsubscribe_url(settings: Settings) -> str:

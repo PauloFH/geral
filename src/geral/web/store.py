@@ -5,10 +5,11 @@ until a confirmation link is clicked. Leaving the last team unsubscribes the e-m
 """
 
 import json
+import random
 import sqlite3
 from contextlib import closing
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from enum import Enum
 from pathlib import Path
 
@@ -63,6 +64,33 @@ CREATE TABLE IF NOT EXISTS drafts (
     sent_at TEXT,
     released_at TEXT,
     UNIQUE (team, kind, day)
+);
+-- Stories for the special sections, written each night from the sources; refused ones are kept
+-- (with the reason) so their source is not tried again.
+CREATE TABLE IF NOT EXISTS stories (
+    id INTEGER PRIMARY KEY,
+    team TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    title TEXT NOT NULL,
+    body TEXT NOT NULL,
+    summary TEXT NOT NULL,
+    fact_date TEXT NOT NULL DEFAULT '',
+    source_url TEXT NOT NULL,
+    source_title TEXT NOT NULL,
+    source_key TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    rejected_reason TEXT,
+    used_label TEXT,
+    discarded INTEGER NOT NULL DEFAULT 0,
+    UNIQUE (team, source_key)
+);
+-- Birth dates of the idols found by the stories job ("Neste dia").
+CREATE TABLE IF NOT EXISTS idol_birthdays (
+    team TEXT NOT NULL,
+    name TEXT NOT NULL,
+    birth_date TEXT NOT NULL,
+    source_url TEXT NOT NULL,
+    UNIQUE (team, name)
 );
 CREATE TABLE IF NOT EXISTS editions (
     team TEXT PRIMARY KEY,
@@ -433,6 +461,10 @@ class SubscriberStore:
         )
         return self.draft_by_id(draft_id)
 
+    def set_draft_newsletter(self, draft_id: int, newsletter_json: str) -> None:
+        """The draft's edition after the owner took a special section out of it."""
+        self._run("UPDATE drafts SET newsletter_json = ? WHERE id = ?", newsletter_json, draft_id)
+
     def released_due(self, now: datetime) -> list[Draft]:
         """Drafts let go after their send time and not sent yet: they go out at the next tick."""
         return [
@@ -454,6 +486,136 @@ class SubscriberStore:
             day,
         )
         return bool(rows)
+
+    def add_story(self, team: str, story: dict, now: datetime) -> bool:
+        """Keep a story (or a refusal); False when its source was already seen for the team."""
+        fields = (
+            "kind",
+            "title",
+            "body",
+            "summary",
+            "fact_date",
+            "source_url",
+            "source_title",
+            "source_key",
+            "rejected_reason",
+        )
+        rows = self._run(
+            f"INSERT INTO stories (team, {', '.join(fields)}, created_at)"
+            f" VALUES (?, {', '.join('?' for _ in fields)}, ?)"
+            " ON CONFLICT (team, source_key) DO NOTHING RETURNING id",
+            team,
+            *(story[f] for f in fields),
+            now.isoformat(),
+        )
+        return bool(rows)
+
+    def unused_stories(self, team: str) -> int:
+        rows = self._run(
+            "SELECT COUNT(*) FROM stories WHERE team = ? AND rejected_reason IS NULL"
+            " AND used_label IS NULL AND discarded = 0",
+            team,
+        )
+        return rows[0][0]
+
+    _STORY_COLUMNS = (
+        "id",
+        "kind",
+        "title",
+        "body",
+        "summary",
+        "fact_date",
+        "source_title",
+        "source_url",
+    )
+
+    def _stories(self, where: str, *params: object) -> list[dict]:
+        rows = self._run(
+            f"SELECT {', '.join(self._STORY_COLUMNS)} FROM stories WHERE {where} ORDER BY id",
+            *params,
+        )
+        return [dict(zip(self._STORY_COLUMNS, row, strict=True)) for row in rows]
+
+    def draw_story(self, team: str, label: str, reserve: bool = True) -> dict | None:
+        """A ready story for the edition `label`, reserved for it; the same one on a rebuild.
+
+        The pick is seeded by the label (a rebuild without reserving picks the same story).
+        """
+        mine = self._run(
+            "SELECT id, discarded FROM stories WHERE team = ? AND used_label = ?", team, label
+        )
+        if mine:
+            story_id, discarded = mine[0]
+            return None if discarded else self._stories("id = ?", story_id)[0]
+        ready = self._stories(
+            "team = ? AND rejected_reason IS NULL AND used_label IS NULL AND discarded = 0", team
+        )
+        if not ready:
+            return None
+        rng = random.Random(f"{team}|{label}")
+        rng.shuffle(ready)
+        if not reserve:
+            return ready[0]
+        for story in ready:
+            # Only if still free: two builds at once must not get the same story.
+            if self._run(
+                "UPDATE stories SET used_label = ? WHERE id = ? AND used_label IS NULL"
+                " RETURNING id",
+                label,
+                story["id"],
+            ):
+                return story
+        return None
+
+    def discard_story(self, story_id: int) -> None:
+        """Removed by the owner in the review: never drawn again."""
+        self._run("UPDATE stories SET discarded = 1 WHERE id = ?", story_id)
+
+    def save_birthdays(self, team: str, birthdays: list[dict]) -> None:
+        """The team's idols' birth dates, replacing the previous list (one transaction)."""
+        with closing(self._connect()) as db, db:
+            db.execute("DELETE FROM idol_birthdays WHERE team = ?", (team,))
+            db.executemany(
+                "INSERT OR REPLACE INTO idol_birthdays (team, name, birth_date, source_url)"
+                " VALUES (?, ?, ?, ?)",
+                [(team, b["name"], b["birth_date"], b["source_url"]) for b in birthdays],
+            )
+
+    def on_this_day(self, team: str, day: date, days: int = 3) -> list[dict]:
+        """Dated facts (stories, idols' births) whose day and month fall within `days` of `day`."""
+        found = []
+        births = [
+            {"fact_date": when, "title": name, "summary": f"nascia {name}."}
+            for name, when in self._run(
+                "SELECT name, birth_date FROM idol_birthdays WHERE team = ?", team
+            )
+        ]
+        for story in births + self._stories(
+            "team = ? AND rejected_reason IS NULL AND discarded = 0 AND length(fact_date) = 10",
+            team,
+        ):
+            try:
+                fact = date.fromisoformat(story["fact_date"])
+            except ValueError:
+                continue  # a date the calendar does not have
+            near = []
+            for year in (day.year - 1, day.year, day.year + 1):
+                try:
+                    near.append(abs((fact.replace(year=year) - day).days))
+                except ValueError:  # 29/02 outside a leap year
+                    continue
+            if near and min(near) <= days:
+                found.append(
+                    {
+                        "date": story["fact_date"],
+                        "title": story["title"],
+                        "summary": story["summary"],
+                    }
+                )
+        return found
+
+    def story_sources(self, team: str) -> list[str]:
+        return [key for (key,) in self._run("SELECT source_key FROM stories WHERE team = ?", team)]
 
     def confirmations_sent_since(self, since: datetime) -> int:
         rows = self._run(

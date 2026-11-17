@@ -49,6 +49,11 @@ accent = "#141414"
 leagues = ["bra.copa_do_nordeste", "bra.copa_do_brazil"]
 ge_id = 350
 cbf_id = 20042
+# Seções especiais (histórias e "Neste dia"), a partir da Wikipédia pt.
+specials = true
+wikipedia = "ABC Futebol Clube"
+classics = ["Clássico-Rei"]
+club_terms = ["ABC"]  # "alvinegro" is also Botafogo, Santos…
 [abc.ge_tables]
 "Série C" = "https://ge.globo.com/futebol/brasileirao-serie-c/"
 # Série D 2026: the last matches (form, last game) until the 2027 season; drop it then.
@@ -72,6 +77,10 @@ leagues = ["bra.2", "bra.copa_do_nordeste", "bra.copa_do_brazil"]
 league = "bra.2"
 # ESPN has no Pernambucano; the Náutico joins it in the second stage (Frevo).
 ge_id = 343
+specials = true
+wikipedia = "Clube Náutico Capibaribe"
+classics = ["Clássico dos Clássicos", "Clássico das Emoções (Pernambuco)"]
+club_terms = ["Náutico", "Timbu"]  # "alvirrubro" is also the América-RN…
 [nautico.ge_tables]
 "Pernambucano" = "https://ge.globo.com/pe/futebol/campeonato-pernambucano/"
 
