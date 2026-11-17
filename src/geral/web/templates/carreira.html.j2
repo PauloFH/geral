@@ -87,7 +87,9 @@
         <span class="cr-kicker" id="cr-end-kicker"></span>
         <h2 id="cr-end-label"></h2>
         <p class="cr-end-desc" id="cr-end-desc"></p>
+        <p class="cr-end-placar" id="cr-end-placar" hidden></p>
         <dl class="cr-end-stats" id="cr-end-stats"></dl>
+        <section class="cr-verdicts" id="cr-end-vereditos" hidden><h3>O que dizem as torcidas</h3><ul id="cr-verdict-list"></ul></section>
         <section class="cr-cabinet" id="cr-end-cabinet" hidden><h3>Sala de troféus</h3><ul class="cr-shelf" id="cr-end-shelf"></ul></section>
         <div class="cr-end-actions">
           <button class="btn" type="button" id="cr-share">Compartilhar</button>
@@ -97,6 +99,12 @@
         </div>
       </div>
     </div>
+
+    <section class="cr-fabrica" id="cr-fabrica">
+      <h2>Fábrica de craques</h2>
+      <p class="cr-fabrica-lead">Toda carreira terminada conta para o clube onde o craque começou. Jogue pelo seu e ajude a subir.</p>
+      <ol class="cr-fabrica-list" id="cr-fabrica-list"></ol>
+    </section>
 
     <script type="application/json" id="cr-data">{{ jogo | tojson }}</script>
     <p class="credit">As notas das lendas são da redação da Geral: discorda? Responda qualquer newsletter.</p>

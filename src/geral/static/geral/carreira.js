@@ -384,6 +384,14 @@
     $("cr-end-kicker").textContent = `${craque.nome} · #${craque.camisa} · ${craque.posicao}`;
     $("cr-end-label").textContent = `${final.rotulo} · ${final.nota}`;
     $("cr-end-desc").textContent = `${final.descricao} Sua carreira lembra a de ${final.parecido}.`;
+    mostrarVereditos(final.vereditos || []);
+    const placar = estado && estado.corpo ? estado.corpo.placar : null;
+    $("cr-end-placar").hidden = !placar;
+    if (placar) {
+      const lugar = placar.posicao ? ` · ${placar.posicao}º na Fábrica de craques` : "";
+      $("cr-end-placar").textContent = `+1 craque formado pelo ${placar.clube}${lugar}`;
+    }
+    carregarFabrica(craque.clube);
     const todas = estado ? estado.temporadas : jogo.compartilhada.carreira.temporadas;
     $("cr-end-cabinet").hidden = salaDeTrofeus($("cr-end-shelf"), todas) === 0;
     const stats = $("cr-end-stats");
@@ -414,6 +422,49 @@
     $("cr-end").hidden = false;
     rolar($("cr-end"), "start");
   }
+
+  const CLASSE = { Traidor: "traidor", "Ídolo": "idolo", "Campeão": "campeao", "Passou em branco": "branco", Respeitado: "respeitado" };
+
+  function mostrarVereditos(lista) {
+    const ul = $("cr-verdict-list");
+    ul.replaceChildren();
+    for (const v of lista) {
+      const li = el("li", `cr-verdict ${CLASSE[v.veredito] || ""}`);
+      const topo = el("div", "cr-verdict-top");
+      topo.append(el("span", "cr-verdict-club", v.clube), el("span", "cr-verdict-tag", v.veredito));
+      const anos = plural(v.temporadas, "temporada", "temporadas");
+      const partes = [anos, plural(v.jogos, "jogo", "jogos"), plural(v.gols, "gol", "gols")];
+      if (v.titulos) partes.push(plural(v.titulos, "título", "títulos"));
+      li.append(topo, el("span", "cr-verdict-nums", partes.join(" · ")), el("p", "cr-verdict-quote", v.frase));
+      ul.append(li);
+    }
+    $("cr-end-vereditos").hidden = lista.length === 0;
+  }
+
+  // The Fábrica de craques: careers by starting club; the fan's club stands out.
+  async function carregarFabrica(destaque) {
+    const lista = $("cr-fabrica-list");
+    let linhas = [];
+    try {
+      const resposta = await fetch("/api/jogos/carreira/placar");
+      if (resposta.ok) linhas = await resposta.json();
+    } catch {
+      return; // the game goes on without the scoreboard
+    }
+    lista.replaceChildren();
+    if (!linhas.length) {
+      lista.append(el("li", "cr-fabrica-empty", "Ninguém terminou uma carreira ainda: seja o primeiro."));
+      return;
+    }
+    for (const l of linhas.slice(0, 10)) {
+      const li = el("li", l.clube === destaque ? "cr-fabrica-row meu" : "cr-fabrica-row");
+      li.append(el("span", "cr-fabrica-pos", `${l.posicao}º`), el("span", "cr-fabrica-club", l.nome));
+      li.append(el("span", "cr-fabrica-n", plural(l.carreiras, "carreira", "carreiras")));
+      li.append(el("span", "cr-fabrica-extra", `média ${l.media} · ${plural(l.lendas, "lenda", "lendas")}`));
+      lista.append(li);
+    }
+  }
+  carregarFabrica(null);
 
   $("cr-share").addEventListener("click", async () => {
     if (!compartilhar) return;
