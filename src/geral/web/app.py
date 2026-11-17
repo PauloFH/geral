@@ -12,6 +12,8 @@ import logging
 import os
 import random
 import re
+import secrets
+import sqlite3
 import unicodedata
 from collections import defaultdict, deque
 from collections.abc import Callable
@@ -35,6 +37,11 @@ from pydantic import AwareDatetime, BaseModel, Field, model_validator
 
 from geral.config import Settings, get_settings
 from geral.games import calendario, craque, onde_jogou, quem_e
+from geral.games.carreira import codigo as carreira_codigo
+from geral.games.carreira import dados as carreira_dados
+from geral.games.carreira import draft as carreira_draft
+from geral.games.carreira import motor as carreira_motor
+from geral.games.carreira import regras as carreira_regras
 from geral.games.velha import base as velha_base
 from geral.games.velha import board as velha_tabuleiro
 from geral.games.velha import busca as velha_busca
@@ -47,6 +54,7 @@ from geral.render.renderer import render
 from geral.send.resend_sender import UNSUBSCRIBE_PLACEHOLDER, personalize
 from geral.teams import Team, load_teams
 from geral.web.bolao import TZ, BolaoStore
+from geral.web.carreira_placar import PlacarStore
 from geral.web.mailer import Mailer, MailError, mailer_from_settings
 from geral.web.palette import club_palette
 from geral.web.scoreboard import animation_svg
@@ -92,6 +100,7 @@ NICKNAME_RE = re.compile(r"^[\w' -]+$")
 STATIC = Path(__file__).resolve().parents[1] / "static"
 # The scoreboard clock: Brasília time, no daylight saving since 2019 (no tzdata in the image).
 DUELS_PER_NETWORK = 20  # jogo da velha duels created per network per hour
+CARREIRAS_POR_REDE = 60  # Carreira careers counted in the Fábrica de craques per network per hour
 PAST_LISTED = 30  # past puzzles linked on a game page; older ones stay playable by address
 BRASILIA = timezone(timedelta(hours=-3))
 
@@ -209,6 +218,19 @@ class ClubGuessesIn(BaseModel):
     desistiu: bool = False
 
 
+class CarreiraOfertaIn(BaseModel):
+    clube: str | None = Field(default=None, max_length=40)  # the start: brings regional idols
+
+
+class CarreiraIn(BaseModel):
+    semente_draft: str = Field(min_length=1, max_length=40)
+    semente: str | None = Field(default=None, min_length=1, max_length=40)  # drawn when absent
+    craque: carreira_motor.Craque
+    roubos: list[carreira_draft.Roubo] = Field(max_length=9)
+    escolhas: list[int] = Field(default=[], max_length=carreira_motor.MAX_RESPOSTAS)
+    modo: Literal["rapida", "completa"] = "rapida"
+
+
 class VelhaIn(BaseModel):
     chutes: list[velha_judge.Guess] = Field(max_length=velha_judge.MAX_GUESSES + 1)
 
@@ -266,6 +288,8 @@ def create_app(
     team_requests = team_requests or TeamRequestStore(store.path)
     duels = DuelStore(store.path)  # jogo da velha by link: its own table in the same SQLite
     duel_limiter = RateLimiter(DUELS_PER_NETWORK, timedelta(hours=1))
+    placar = PlacarStore(store.path)  # Carreira's Fábrica de craques: its own table, same SQLite
+    placar_limiter = RateLimiter(CARREIRAS_POR_REDE, timedelta(hours=1))
     catalog = teams if teams is not None else load_teams()
     # Teams people can see and join; unlisted ones (moving in) still work for links and the API.
     listed = {slug: team for slug, team in catalog.items() if team.listed}
@@ -471,6 +495,14 @@ def create_app(
                 "chutes.",
                 "editions": who_editions(),
                 "number": who_number(),
+            },
+            {
+                "path": "carreira",
+                "name": "Carreira",
+                "desc": "Roube um atributo de cada lenda, monte seu craque e viva a carreira dele "
+                "até a aposentadoria. Jogue quantas vezes quiser.",
+                "editions": dict.fromkeys(carreira_edicoes(), True),
+                "number": None,  # free play: no game of the day
             },
             {
                 "path": "velha",
@@ -1300,6 +1332,176 @@ def create_app(
                 {"detail": f"cada chute precisa de {len(answer.answer)} letras"}, status_code=422
             )
         return craque.judge(answer, body.guesses)
+
+    def carreira_edicoes() -> list[str]:
+        return ["geral"]  # one Carreira for everyone: the fan picks the starting club
+
+    def carreira_pagina(request: Request, edition: str, **extra) -> HTMLResponse:
+        dados = carreira_dados.carregar()
+        clubes = [
+            {"id": c.id, "nome": c.nome}
+            for c in sorted(dados.clubes.values(), key=lambda c: c.nome)
+            if dados.ligas[c.liga].pais == "Brasil"
+        ]
+        jogo = {
+            "edicao": edition,
+            "atributos": [
+                {"id": a, "nome": carreira_regras.NOMES[a]} for a in carreira_regras.ATRIBUTOS
+            ],
+            "posicoes": list(carreira_regras.POSICOES),
+            "pesos": carreira_regras.PESOS,
+            "clubes": clubes,
+            "tacas": dados.tacas(),
+            "url": public_url,
+        } | extra.pop("jogo", {})
+        return page(
+            request,
+            "carreira.html.j2",
+            edition=edition,
+            tabs=game_tabs("carreira", edition),
+            team=listed.get(edition),
+            club=club_palette(listed.get(edition)),
+            editions=[(slug, listed.get(slug)) for slug in carreira_edicoes()],
+            jogo=jogo,
+            **extra,
+        )
+
+    @app.get("/jogos/carreira", response_class=HTMLResponse)
+    def carreira_jogo(request: Request):
+        return carreira_pagina(request, "geral")
+
+    @app.get("/jogos/carreira/{edition}")
+    def carreira_por_time(edition: str):
+        """The team editions are gone: one Carreira, any club to start from."""
+        return RedirectResponse("/jogos/carreira", status_code=301)
+
+    @app.get("/jogos/carreira/c/{codigo}", response_class=HTMLResponse)
+    def carreira_compartilhada(request: Request, codigo: str):
+        try:
+            aberto = carreira_codigo.decodificar(codigo)
+        except carreira_codigo.CodigoInvalido:
+            aberto = None
+        if aberto is None or aberto.edicao not in carreira_edicoes():
+            return message(
+                request,
+                "Carreira não encontrada",
+                "Esse link de carreira não abre. Que tal montar o seu craque?",
+                status=404,
+                link_url="/jogos/carreira",
+                link_label="Jogar a Carreira",
+            )
+        dados = carreira_dados.carregar()
+        carreira = None
+        if aberto.versao == dados.versao:
+            try:
+                carreira = carreira_motor.simular(dados, aberto.edicao, aberto.entrada)
+            except carreira_draft.JogadaInvalida:
+                carreira = None
+            if carreira and carreira.final is None:  # a forged code of an unfinished career
+                carreira = None
+        compartilhada = {
+            "codigo": codigo,
+            "craque": aberto.entrada.craque.model_dump(),
+            "resumo": aberto.resumo.model_dump(),
+            "carreira": carreira.model_dump() if carreira else None,
+        }
+        return carreira_pagina(
+            request,
+            aberto.edicao,
+            compartilhada=compartilhada,
+            jogo={"compartilhada": compartilhada},
+        )
+
+    @app.post("/api/jogos/carreira/{edition}/oferta")
+    def carreira_oferta(edition: str, body: CarreiraOfertaIn):
+        if edition not in carreira_edicoes():
+            return JSONResponse({"detail": "edition not found"}, status_code=404)
+        semente = secrets.token_urlsafe(8)
+        lendas = carreira_draft.oferta(carreira_dados.carregar(), edition, semente, body.clube)
+        return {
+            "semente_draft": semente,
+            "lendas": [
+                {
+                    "nome": x.nome,
+                    "notas": x.notas,
+                    "regiao": x.regiao,
+                    "tipo": x.tipo,
+                    "resumo": x.resumo,
+                }
+                for x in lendas
+            ],
+        }
+
+    @app.post("/api/jogos/carreira/{edition}/simular")
+    def carreira_simular(request: Request, edition: str, body: CarreiraIn):
+        if edition not in carreira_edicoes():
+            return JSONResponse({"detail": "edition not found"}, status_code=404)
+        dados = carreira_dados.carregar()
+        entrada = carreira_motor.Entrada(
+            **body.model_dump(exclude={"semente"}), semente=body.semente or secrets.token_urlsafe(8)
+        )
+        try:
+            carreira = carreira_motor.simular(dados, edition, entrada)
+        except carreira_draft.JogadaInvalida as erro:
+            return JSONResponse({"detail": str(erro)}, status_code=422)
+        codigo = contou = None
+        if carreira.final:
+            resumo = carreira_codigo.resumir(entrada, carreira)
+            codigo = carreira_codigo.codificar(dados.versao, edition, entrada, resumo)
+            contou = contar_carreira(request, dados, entrada, codigo, carreira.final.nota)
+        return {
+            "semente": entrada.semente,
+            "versao": dados.versao,
+            "carreira": carreira.model_dump(),
+            "codigo": codigo,
+            "placar": contou,
+        }
+
+    def contar_carreira(request: Request, dados, entrada, codigo: str, nota: int) -> dict | None:
+        """Count the career for its starting club (once per career, a cap per network); never
+        lets the scoreboard break the game."""
+        clube = entrada.craque.clube or ""
+        rede = network(request.client.host if request.client else "unknown")
+        try:
+            novo = not placar.contou(codigo)  # a repeat neither counts nor spends the limit
+            if novo and not placar_limiter.allow(rede, now()):
+                return None  # the career still ends; it just does not count
+            if novo:
+                placar.registrar(codigo, clube, nota, now())
+            carreiras, posicao = placar.posicao(clube)
+        except sqlite3.Error:
+            logger.exception("carreira placar: could not count a career")
+            return None
+        do_clube = dados.clubes.get(clube)
+        return {
+            "clube": do_clube.nome if do_clube else clube,
+            "pelo": carreira_motor.artigos("c", do_clube)["pelo_c"] if do_clube else clube,
+            "carreiras": carreiras,
+            "posicao": posicao,
+            "novo": novo,
+        }
+
+    @app.get("/api/jogos/carreira/placar")
+    def carreira_placar():
+        dados = carreira_dados.carregar()
+        try:
+            linhas = placar.ranking(20)
+        except sqlite3.Error:
+            logger.exception("carreira placar: could not read the ranking")
+            return JSONResponse({"detail": "placar indisponível"}, status_code=503)
+        return [
+            {
+                "clube": linha.clube,
+                "nome": dados.clubes[linha.clube].nome
+                if linha.clube in dados.clubes
+                else linha.clube,
+                "carreiras": linha.carreiras,
+                "media": linha.media,
+                "lendas": linha.lendas,
+                "posicao": linha.posicao,
+            }
+            for linha in linhas
+        ]
 
     @app.get("/jogos/onde-jogou", response_class=HTMLResponse)
     @app.get("/jogos/onde-jogou/{edition}", response_class=HTMLResponse)

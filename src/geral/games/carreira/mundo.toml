@@ -1,0 +1,1468 @@
+# Mundo da Carreira: ligas (força 1-100) e clubes (prestígio 1-100), curados à mão.
+# id de clube é estável: carreiras compartilhadas guardam o id. Nunca reuse um id para outro clube.
+# time = slug da edição que começa na base dele; wikidata = mesmo id da base do jogo da velha.
+
+[[liga]]
+id = "bra-a"
+pais = "Brasil"
+divisao = 1
+forca = 72
+campeonato = "Brasileirão"
+copa = "Copa do Brasil"
+continental = "Libertadores"
+
+[[liga]]
+id = "bra-b"
+pais = "Brasil"
+divisao = 2
+forca = 55
+campeonato = "Campeonato da Série B"
+copa = "Copa do Brasil"
+
+[[liga]]
+id = "bra-c"
+pais = "Brasil"
+divisao = 3
+forca = 42
+campeonato = "Campeonato da Série C"
+copa = "Copa do Brasil"
+
+[[liga]]
+id = "bra-d"
+pais = "Brasil"
+divisao = 4
+forca = 32
+campeonato = "Campeonato da Série D"
+copa = "Copa do Brasil"
+
+[[liga]]
+id = "arg"
+pais = "Argentina"
+divisao = 1
+forca = 68
+campeonato = "Campeonato Argentino"
+copa = "Copa Argentina"
+continental = "Libertadores"
+
+[[liga]]
+id = "por"
+pais = "Portugal"
+divisao = 1
+forca = 72
+campeonato = "Campeonato Português"
+copa = "Taça de Portugal"
+continental = "Champions League"
+
+[[liga]]
+id = "esp"
+pais = "Espanha"
+divisao = 1
+forca = 90
+campeonato = "Campeonato Espanhol"
+copa = "Copa do Rei"
+continental = "Champions League"
+
+[[liga]]
+id = "ing"
+pais = "Inglaterra"
+divisao = 1
+forca = 95
+campeonato = "Campeonato Inglês"
+copa = "Copa da Inglaterra"
+continental = "Champions League"
+
+[[liga]]
+id = "ita"
+pais = "Itália"
+divisao = 1
+forca = 86
+campeonato = "Campeonato Italiano"
+copa = "Copa da Itália"
+continental = "Champions League"
+
+[[liga]]
+id = "ale"
+pais = "Alemanha"
+divisao = 1
+forca = 85
+campeonato = "Campeonato Alemão"
+copa = "Copa da Alemanha"
+continental = "Champions League"
+
+[[liga]]
+id = "fra"
+pais = "França"
+divisao = 1
+forca = 80
+campeonato = "Campeonato Francês"
+copa = "Copa da França"
+continental = "Champions League"
+
+[[liga]]
+id = "hol"
+pais = "Holanda"
+divisao = 1
+forca = 72
+campeonato = "Campeonato Holandês"
+copa = "Copa da Holanda"
+continental = "Champions League"
+
+[[liga]]
+id = "tur"
+pais = "Turquia"
+divisao = 1
+forca = 64
+campeonato = "Campeonato Turco"
+copa = "Copa da Turquia"
+
+[[liga]]
+id = "ara"
+pais = "Arábia Saudita"
+divisao = 1
+forca = 62
+campeonato = "Campeonato Saudita"
+copa = "Copa do Rei Saudita"
+continental = "Champions da Ásia"
+
+[[liga]]
+id = "jap"
+pais = "Japão"
+divisao = 1
+forca = 56
+campeonato = "Campeonato Japonês"
+copa = "Copa do Imperador"
+continental = "Champions da Ásia"
+
+[[liga]]
+id = "eua"
+pais = "Estados Unidos"
+divisao = 1
+forca = 60
+campeonato = "Campeonato Americano"
+copa = "US Open Cup"
+
+[[liga]]
+id = "mex"
+pais = "México"
+divisao = 1
+forca = 62
+campeonato = "Campeonato Mexicano"
+copa = "Copa MX"
+continental = "Champions da Concacaf"
+
+[[clube]]
+id = "flamengo"
+nome = "Flamengo"
+liga = "bra-a"
+estado = "RJ"
+prestigio = 84
+time = "flamengo"
+wikidata = "Q17479"
+
+[[clube]]
+id = "palmeiras"
+nome = "Palmeiras"
+liga = "bra-a"
+estado = "SP"
+prestigio = 84
+time = "palmeiras"
+wikidata = "Q80964"
+
+[[clube]]
+id = "corinthians"
+nome = "Corinthians"
+liga = "bra-a"
+estado = "SP"
+prestigio = 76
+wikidata = "Q35933"
+
+[[clube]]
+id = "sao-paulo"
+nome = "São Paulo"
+liga = "bra-a"
+estado = "SP"
+prestigio = 76
+wikidata = "Q38568"
+
+[[clube]]
+id = "atletico-mg"
+nome = "Atlético-MG"
+liga = "bra-a"
+estado = "MG"
+prestigio = 74
+wikidata = "Q270995"
+
+[[clube]]
+id = "botafogo"
+nome = "Botafogo"
+liga = "bra-a"
+estado = "RJ"
+prestigio = 74
+wikidata = "Q80958"
+
+[[clube]]
+id = "fluminense"
+nome = "Fluminense"
+liga = "bra-a"
+estado = "RJ"
+prestigio = 72
+wikidata = "Q80987"
+
+[[clube]]
+id = "gremio"
+nome = "Grêmio"
+liga = "bra-a"
+estado = "RS"
+prestigio = 72
+wikidata = "Q221695"
+
+[[clube]]
+id = "internacional"
+nome = "Internacional"
+liga = "bra-a"
+estado = "RS"
+prestigio = 72
+wikidata = "Q80845"
+
+[[clube]]
+id = "cruzeiro"
+nome = "Cruzeiro"
+liga = "bra-a"
+estado = "MG"
+prestigio = 72
+wikidata = "Q188277"
+
+[[clube]]
+id = "vasco"
+nome = "Vasco"
+liga = "bra-a"
+estado = "RJ"
+prestigio = 70
+time = "vasco"
+wikidata = "Q5014111"
+
+[[clube]]
+id = "santos"
+nome = "Santos"
+liga = "bra-a"
+estado = "SP"
+prestigio = 70
+wikidata = "Q80955"
+
+[[clube]]
+id = "bahia"
+nome = "Bahia"
+liga = "bra-a"
+estado = "BA"
+prestigio = 64
+wikidata = "Q198032"
+
+[[clube]]
+id = "athletico-pr"
+nome = "Athletico-PR"
+liga = "bra-a"
+estado = "PR"
+prestigio = 62
+wikidata = "Q506832"
+
+[[clube]]
+id = "bragantino"
+nome = "Bragantino"
+liga = "bra-a"
+estado = "SP"
+prestigio = 60
+wikidata = "Q541744"
+
+[[clube]]
+id = "vitoria"
+nome = "Vitória"
+liga = "bra-a"
+estado = "BA"
+prestigio = 54
+wikidata = "Q274465"
+
+[[clube]]
+id = "coritiba"
+nome = "Coritiba"
+liga = "bra-a"
+estado = "PR"
+prestigio = 52
+wikidata = "Q478317"
+
+[[clube]]
+id = "chapecoense"
+nome = "Chapecoense"
+genero = "f"
+liga = "bra-a"
+estado = "SC"
+prestigio = 48
+wikidata = "Q2536715"
+
+[[clube]]
+id = "mirassol"
+nome = "Mirassol"
+liga = "bra-a"
+estado = "SP"
+prestigio = 46
+wikidata = "Q2622870"
+
+[[clube]]
+id = "remo"
+nome = "Remo"
+liga = "bra-a"
+estado = "PA"
+prestigio = 46
+wikidata = "Q2552872"
+
+[[clube]]
+id = "sport"
+nome = "Sport"
+liga = "bra-b"
+estado = "PE"
+prestigio = 50
+wikidata = "Q219098"
+
+[[clube]]
+id = "fortaleza"
+nome = "Fortaleza"
+liga = "bra-b"
+estado = "CE"
+prestigio = 54
+wikidata = "Q188841"
+
+[[clube]]
+id = "ceara"
+nome = "Ceará"
+liga = "bra-b"
+estado = "CE"
+prestigio = 50
+wikidata = "Q1052219"
+
+[[clube]]
+id = "goias"
+nome = "Goiás"
+liga = "bra-b"
+estado = "GO"
+prestigio = 46
+wikidata = "Q816779"
+
+[[clube]]
+id = "america-mg"
+nome = "América-MG"
+liga = "bra-b"
+estado = "MG"
+prestigio = 48
+wikidata = "Q338285"
+
+[[clube]]
+id = "juventude"
+nome = "Juventude"
+liga = "bra-b"
+estado = "RS"
+prestigio = 44
+wikidata = "Q910453"
+
+[[clube]]
+id = "nautico"
+nome = "Náutico"
+liga = "bra-b"
+estado = "PE"
+prestigio = 42
+time = "nautico"
+wikidata = "Q73971"
+
+[[clube]]
+id = "cuiaba"
+nome = "Cuiabá"
+liga = "bra-b"
+estado = "MT"
+prestigio = 42
+
+[[clube]]
+id = "atletico-go"
+nome = "Atlético-GO"
+liga = "bra-b"
+estado = "GO"
+prestigio = 44
+
+[[clube]]
+id = "crb"
+nome = "CRB"
+liga = "bra-b"
+estado = "AL"
+prestigio = 38
+
+[[clube]]
+id = "criciuma"
+nome = "Criciúma"
+liga = "bra-b"
+estado = "SC"
+prestigio = 40
+
+[[clube]]
+id = "avai"
+nome = "Avaí"
+liga = "bra-b"
+estado = "SC"
+prestigio = 40
+
+[[clube]]
+id = "vila-nova"
+nome = "Vila Nova"
+liga = "bra-b"
+estado = "GO"
+prestigio = 36
+
+[[clube]]
+id = "novorizontino"
+nome = "Novorizontino"
+liga = "bra-b"
+estado = "SP"
+prestigio = 34
+
+[[clube]]
+id = "operario-pr"
+nome = "Operário-PR"
+liga = "bra-b"
+estado = "PR"
+prestigio = 32
+
+[[clube]]
+id = "ponte-preta"
+nome = "Ponte Preta"
+genero = "f"
+liga = "bra-b"
+estado = "SP"
+prestigio = 40
+
+[[clube]]
+id = "paysandu"
+nome = "Paysandu"
+liga = "bra-b"
+estado = "PA"
+prestigio = 40
+
+[[clube]]
+id = "botafogo-sp"
+nome = "Botafogo-SP"
+liga = "bra-b"
+estado = "SP"
+prestigio = 32
+
+[[clube]]
+id = "londrina"
+nome = "Londrina"
+liga = "bra-b"
+estado = "PR"
+prestigio = 32
+
+[[clube]]
+id = "amazonas"
+nome = "Amazonas"
+liga = "bra-b"
+estado = "AM"
+prestigio = 28
+
+[[clube]]
+id = "abc"
+nome = "ABC"
+liga = "bra-c"
+estado = "RN"
+prestigio = 34
+time = "abc"
+
+[[clube]]
+id = "guarani"
+nome = "Guarani"
+liga = "bra-c"
+estado = "SP"
+prestigio = 34
+wikidata = "Q1133475"
+
+[[clube]]
+id = "santa-cruz"
+nome = "Santa Cruz"
+liga = "bra-c"
+estado = "PE"
+prestigio = 34
+wikidata = "Q508440"
+
+[[clube]]
+id = "portuguesa"
+nome = "Portuguesa"
+genero = "f"
+liga = "bra-c"
+estado = "SP"
+prestigio = 30
+wikidata = "Q204675"
+
+[[clube]]
+id = "figueirense"
+nome = "Figueirense"
+liga = "bra-c"
+estado = "SC"
+prestigio = 32
+
+[[clube]]
+id = "ypiranga-rs"
+nome = "Ypiranga-RS"
+liga = "bra-c"
+estado = "RS"
+prestigio = 24
+
+[[clube]]
+id = "brusque"
+nome = "Brusque"
+liga = "bra-c"
+estado = "SC"
+prestigio = 24
+
+[[clube]]
+id = "confianca"
+nome = "Confiança"
+liga = "bra-c"
+estado = "SE"
+prestigio = 22
+
+[[clube]]
+id = "ferroviaria"
+nome = "Ferroviária"
+genero = "f"
+liga = "bra-c"
+estado = "SP"
+prestigio = 24
+
+[[clube]]
+id = "botafogo-pb"
+nome = "Botafogo-PB"
+liga = "bra-c"
+estado = "PB"
+prestigio = 24
+
+[[clube]]
+id = "csa"
+nome = "CSA"
+liga = "bra-c"
+estado = "AL"
+prestigio = 28
+
+[[clube]]
+id = "volta-redonda"
+nome = "Volta Redonda"
+liga = "bra-c"
+estado = "RJ"
+prestigio = 22
+
+[[clube]]
+id = "caxias"
+nome = "Caxias"
+liga = "bra-c"
+estado = "RS"
+prestigio = 24
+
+[[clube]]
+id = "floresta"
+nome = "Floresta"
+liga = "bra-c"
+estado = "CE"
+prestigio = 18
+
+[[clube]]
+id = "boca-juniors"
+nome = "Boca Juniors"
+liga = "arg"
+prestigio = 82
+
+[[clube]]
+id = "river-plate"
+nome = "River Plate"
+liga = "arg"
+prestigio = 82
+
+[[clube]]
+id = "racing"
+nome = "Racing"
+liga = "arg"
+prestigio = 72
+
+[[clube]]
+id = "independiente"
+nome = "Independiente"
+liga = "arg"
+prestigio = 70
+
+[[clube]]
+id = "san-lorenzo"
+nome = "San Lorenzo"
+liga = "arg"
+prestigio = 68
+
+[[clube]]
+id = "estudiantes"
+nome = "Estudiantes"
+liga = "arg"
+prestigio = 66
+
+[[clube]]
+id = "velez-sarsfield"
+nome = "Vélez Sarsfield"
+liga = "arg"
+prestigio = 64
+
+[[clube]]
+id = "rosario-central"
+nome = "Rosario Central"
+liga = "arg"
+prestigio = 60
+
+[[clube]]
+id = "benfica"
+nome = "Benfica"
+liga = "por"
+prestigio = 82
+
+[[clube]]
+id = "porto"
+nome = "Porto"
+liga = "por"
+prestigio = 82
+
+[[clube]]
+id = "sporting"
+nome = "Sporting"
+liga = "por"
+prestigio = 80
+
+[[clube]]
+id = "braga"
+nome = "Braga"
+liga = "por"
+prestigio = 66
+
+[[clube]]
+id = "vitoria-de-guimaraes"
+nome = "Vitória de Guimarães"
+liga = "por"
+prestigio = 56
+
+[[clube]]
+id = "boavista"
+nome = "Boavista"
+liga = "por"
+prestigio = 50
+
+[[clube]]
+id = "rio-ave"
+nome = "Rio Ave"
+liga = "por"
+prestigio = 44
+
+[[clube]]
+id = "famalicao"
+nome = "Famalicão"
+liga = "por"
+prestigio = 42
+
+[[clube]]
+id = "real-madrid"
+nome = "Real Madrid"
+liga = "esp"
+prestigio = 99
+
+[[clube]]
+id = "barcelona"
+nome = "Barcelona"
+liga = "esp"
+prestigio = 97
+
+[[clube]]
+id = "atletico-de-madrid"
+nome = "Atlético de Madrid"
+liga = "esp"
+prestigio = 88
+
+[[clube]]
+id = "sevilla"
+nome = "Sevilla"
+liga = "esp"
+prestigio = 76
+
+[[clube]]
+id = "valencia"
+nome = "Valencia"
+liga = "esp"
+prestigio = 72
+
+[[clube]]
+id = "villarreal"
+nome = "Villarreal"
+liga = "esp"
+prestigio = 72
+
+[[clube]]
+id = "real-betis"
+nome = "Real Betis"
+liga = "esp"
+prestigio = 68
+
+[[clube]]
+id = "getafe"
+nome = "Getafe"
+liga = "esp"
+prestigio = 52
+
+[[clube]]
+id = "manchester-city"
+nome = "Manchester City"
+liga = "ing"
+prestigio = 97
+
+[[clube]]
+id = "liverpool"
+nome = "Liverpool"
+liga = "ing"
+prestigio = 95
+
+[[clube]]
+id = "arsenal"
+nome = "Arsenal"
+liga = "ing"
+prestigio = 92
+
+[[clube]]
+id = "manchester-united"
+nome = "Manchester United"
+liga = "ing"
+prestigio = 90
+
+[[clube]]
+id = "chelsea"
+nome = "Chelsea"
+liga = "ing"
+prestigio = 90
+
+[[clube]]
+id = "tottenham"
+nome = "Tottenham"
+liga = "ing"
+prestigio = 82
+
+[[clube]]
+id = "newcastle"
+nome = "Newcastle"
+liga = "ing"
+prestigio = 78
+
+[[clube]]
+id = "west-ham"
+nome = "West Ham"
+liga = "ing"
+prestigio = 66
+
+[[clube]]
+id = "juventus"
+nome = "Juventus"
+genero = "f"
+liga = "ita"
+prestigio = 92
+
+[[clube]]
+id = "inter-de-milao"
+nome = "Inter de Milão"
+genero = "f"
+liga = "ita"
+prestigio = 92
+
+[[clube]]
+id = "milan"
+nome = "Milan"
+liga = "ita"
+prestigio = 90
+
+[[clube]]
+id = "napoli"
+nome = "Napoli"
+liga = "ita"
+prestigio = 84
+
+[[clube]]
+id = "roma"
+nome = "Roma"
+genero = "f"
+liga = "ita"
+prestigio = 80
+
+[[clube]]
+id = "lazio"
+nome = "Lazio"
+genero = "f"
+liga = "ita"
+prestigio = 74
+
+[[clube]]
+id = "atalanta"
+nome = "Atalanta"
+genero = "f"
+liga = "ita"
+prestigio = 74
+
+[[clube]]
+id = "fiorentina"
+nome = "Fiorentina"
+genero = "f"
+liga = "ita"
+prestigio = 68
+
+[[clube]]
+id = "bayern-de-munique"
+nome = "Bayern de Munique"
+liga = "ale"
+prestigio = 97
+
+[[clube]]
+id = "borussia-dortmund"
+nome = "Borussia Dortmund"
+liga = "ale"
+prestigio = 86
+
+[[clube]]
+id = "bayer-leverkusen"
+nome = "Bayer Leverkusen"
+liga = "ale"
+prestigio = 82
+
+[[clube]]
+id = "rb-leipzig"
+nome = "RB Leipzig"
+liga = "ale"
+prestigio = 78
+
+[[clube]]
+id = "schalke-04"
+nome = "Schalke 04"
+liga = "ale"
+prestigio = 64
+
+[[clube]]
+id = "stuttgart"
+nome = "Stuttgart"
+liga = "ale"
+prestigio = 66
+
+[[clube]]
+id = "wolfsburg"
+nome = "Wolfsburg"
+liga = "ale"
+prestigio = 62
+
+[[clube]]
+id = "hertha-berlim"
+nome = "Hertha Berlim"
+liga = "ale"
+prestigio = 56
+
+[[clube]]
+id = "paris-saint-germain"
+nome = "Paris Saint-Germain"
+liga = "fra"
+prestigio = 94
+
+[[clube]]
+id = "olympique-de-marseille"
+nome = "Olympique de Marseille"
+liga = "fra"
+prestigio = 76
+
+[[clube]]
+id = "lyon"
+nome = "Lyon"
+liga = "fra"
+prestigio = 74
+
+[[clube]]
+id = "monaco"
+nome = "Monaco"
+liga = "fra"
+prestigio = 74
+
+[[clube]]
+id = "lille"
+nome = "Lille"
+liga = "fra"
+prestigio = 68
+
+[[clube]]
+id = "nice"
+nome = "Nice"
+liga = "fra"
+prestigio = 60
+
+[[clube]]
+id = "bordeaux"
+nome = "Bordeaux"
+liga = "fra"
+prestigio = 54
+
+[[clube]]
+id = "saint-etienne"
+nome = "Saint-Étienne"
+liga = "fra"
+prestigio = 52
+
+[[clube]]
+id = "ajax"
+nome = "Ajax"
+liga = "hol"
+prestigio = 80
+
+[[clube]]
+id = "psv"
+nome = "PSV"
+liga = "hol"
+prestigio = 78
+
+[[clube]]
+id = "feyenoord"
+nome = "Feyenoord"
+liga = "hol"
+prestigio = 76
+
+[[clube]]
+id = "az-alkmaar"
+nome = "AZ Alkmaar"
+liga = "hol"
+prestigio = 62
+
+[[clube]]
+id = "twente"
+nome = "Twente"
+liga = "hol"
+prestigio = 56
+
+[[clube]]
+id = "utrecht"
+nome = "Utrecht"
+liga = "hol"
+prestigio = 50
+
+[[clube]]
+id = "galatasaray"
+nome = "Galatasaray"
+liga = "tur"
+prestigio = 72
+
+[[clube]]
+id = "fenerbahce"
+nome = "Fenerbahçe"
+liga = "tur"
+prestigio = 72
+
+[[clube]]
+id = "besiktas"
+nome = "Beşiktaş"
+liga = "tur"
+prestigio = 68
+
+[[clube]]
+id = "trabzonspor"
+nome = "Trabzonspor"
+liga = "tur"
+prestigio = 58
+
+[[clube]]
+id = "basaksehir"
+nome = "Başakşehir"
+liga = "tur"
+prestigio = 50
+
+[[clube]]
+id = "antalyaspor"
+nome = "Antalyaspor"
+liga = "tur"
+prestigio = 40
+
+[[clube]]
+id = "al-hilal"
+nome = "Al-Hilal"
+liga = "ara"
+prestigio = 76
+
+[[clube]]
+id = "al-nassr"
+nome = "Al-Nassr"
+liga = "ara"
+prestigio = 74
+
+[[clube]]
+id = "al-ittihad"
+nome = "Al-Ittihad"
+liga = "ara"
+prestigio = 72
+
+[[clube]]
+id = "al-ahli"
+nome = "Al-Ahli"
+liga = "ara"
+prestigio = 68
+
+[[clube]]
+id = "al-shabab"
+nome = "Al-Shabab"
+liga = "ara"
+prestigio = 52
+
+[[clube]]
+id = "al-ettifaq"
+nome = "Al-Ettifaq"
+liga = "ara"
+prestigio = 48
+
+[[clube]]
+id = "kashima-antlers"
+nome = "Kashima Antlers"
+liga = "jap"
+prestigio = 58
+
+[[clube]]
+id = "urawa-reds"
+nome = "Urawa Reds"
+liga = "jap"
+prestigio = 56
+
+[[clube]]
+id = "kawasaki-frontale"
+nome = "Kawasaki Frontale"
+liga = "jap"
+prestigio = 56
+
+[[clube]]
+id = "yokohama-f-marinos"
+nome = "Yokohama F. Marinos"
+liga = "jap"
+prestigio = 54
+
+[[clube]]
+id = "vissel-kobe"
+nome = "Vissel Kobe"
+liga = "jap"
+prestigio = 54
+
+[[clube]]
+id = "gamba-osaka"
+nome = "Gamba Osaka"
+liga = "jap"
+prestigio = 50
+
+[[clube]]
+id = "inter-miami"
+nome = "Inter Miami"
+liga = "eua"
+prestigio = 68
+
+[[clube]]
+id = "la-galaxy"
+nome = "LA Galaxy"
+liga = "eua"
+prestigio = 62
+
+[[clube]]
+id = "los-angeles-fc"
+nome = "Los Angeles FC"
+liga = "eua"
+prestigio = 62
+
+[[clube]]
+id = "new-york-city"
+nome = "New York City"
+liga = "eua"
+prestigio = 56
+
+[[clube]]
+id = "seattle-sounders"
+nome = "Seattle Sounders"
+liga = "eua"
+prestigio = 54
+
+[[clube]]
+id = "orlando-city"
+nome = "Orlando City"
+liga = "eua"
+prestigio = 50
+
+[[clube]]
+id = "america"
+nome = "América"
+liga = "mex"
+prestigio = 72
+
+[[clube]]
+id = "chivas"
+nome = "Chivas"
+liga = "mex"
+prestigio = 68
+
+[[clube]]
+id = "tigres"
+nome = "Tigres"
+liga = "mex"
+prestigio = 68
+
+[[clube]]
+id = "monterrey"
+nome = "Monterrey"
+liga = "mex"
+prestigio = 68
+
+[[clube]]
+id = "cruz-azul"
+nome = "Cruz Azul"
+liga = "mex"
+prestigio = 64
+
+[[clube]]
+id = "pumas"
+nome = "Pumas"
+liga = "mex"
+prestigio = 58
+[[clube]]
+id = "vitesse"
+nome = "Vitesse"
+liga = "hol"
+prestigio = 48
+
+[[clube]]
+id = "heerenveen"
+nome = "Heerenveen"
+liga = "hol"
+prestigio = 46
+
+[[clube]]
+id = "sivasspor"
+nome = "Sivasspor"
+liga = "tur"
+prestigio = 40
+
+[[clube]]
+id = "konyaspor"
+nome = "Konyaspor"
+liga = "tur"
+prestigio = 40
+
+[[clube]]
+id = "al-qadsiah"
+nome = "Al-Qadsiah"
+liga = "ara"
+prestigio = 50
+
+[[clube]]
+id = "al-fateh"
+nome = "Al-Fateh"
+liga = "ara"
+prestigio = 42
+
+[[clube]]
+id = "nagoya-grampus"
+nome = "Nagoya Grampus"
+liga = "jap"
+prestigio = 50
+
+[[clube]]
+id = "cerezo-osaka"
+nome = "Cerezo Osaka"
+liga = "jap"
+prestigio = 48
+
+[[clube]]
+id = "atlanta-united"
+nome = "Atlanta United"
+liga = "eua"
+prestigio = 54
+
+[[clube]]
+id = "toronto-fc"
+nome = "Toronto FC"
+liga = "eua"
+prestigio = 50
+
+[[clube]]
+id = "toluca"
+nome = "Toluca"
+liga = "mex"
+prestigio = 62
+
+[[clube]]
+id = "pachuca"
+nome = "Pachuca"
+liga = "mex"
+prestigio = 60
+
+[[clube]]
+id = "america-rn"
+nome = "América-RN"
+liga = "bra-d"
+estado = "RN"
+prestigio = 30
+
+[[clube]]
+id = "treze"
+nome = "Treze"
+liga = "bra-d"
+estado = "PB"
+prestigio = 22
+
+[[clube]]
+id = "campinense"
+nome = "Campinense"
+liga = "bra-d"
+estado = "PB"
+prestigio = 22
+
+[[clube]]
+id = "sampaio-correa"
+nome = "Sampaio Corrêa"
+liga = "bra-d"
+estado = "MA"
+prestigio = 26
+
+[[clube]]
+id = "moto-club"
+nome = "Moto Club"
+liga = "bra-d"
+estado = "MA"
+prestigio = 16
+
+[[clube]]
+id = "ferroviario"
+nome = "Ferroviário"
+liga = "bra-d"
+estado = "CE"
+prestigio = 24
+
+[[clube]]
+id = "river-pi"
+nome = "River"
+liga = "bra-d"
+estado = "PI"
+prestigio = 18
+
+[[clube]]
+id = "altos"
+nome = "Altos"
+liga = "bra-d"
+estado = "PI"
+prestigio = 16
+
+[[clube]]
+id = "sergipe"
+nome = "Sergipe"
+liga = "bra-d"
+estado = "SE"
+prestigio = 18
+
+[[clube]]
+id = "juazeirense"
+nome = "Juazeirense"
+liga = "bra-d"
+estado = "BA"
+prestigio = 16
+genero = "f"
+
+[[clube]]
+id = "atletico-ba"
+nome = "Atlético de Alagoinhas"
+liga = "bra-d"
+estado = "BA"
+prestigio = 16
+
+[[clube]]
+id = "asa"
+nome = "ASA"
+liga = "bra-d"
+estado = "AL"
+prestigio = 18
+genero = "f"
+
+[[clube]]
+id = "globo"
+nome = "Globo"
+liga = "bra-d"
+estado = "RN"
+prestigio = 14
+
+[[clube]]
+id = "retro"
+nome = "Retrô"
+liga = "bra-d"
+estado = "PE"
+prestigio = 16
+
+# Estaduais: todo clube brasileiro tem estado (UF) e disputa o campeonato dele.
+
+[[estado]]
+uf = "SP"
+campeonato = "Paulistão"
+regiao = "sudeste"
+
+[[estado]]
+uf = "RJ"
+campeonato = "Campeonato Carioca"
+regiao = "sudeste"
+
+[[estado]]
+uf = "MG"
+campeonato = "Campeonato Mineiro"
+regiao = "sudeste"
+
+[[estado]]
+uf = "RS"
+campeonato = "Gauchão"
+regiao = "sul"
+
+[[estado]]
+uf = "PR"
+campeonato = "Campeonato Paranaense"
+regiao = "sul"
+
+[[estado]]
+uf = "SC"
+campeonato = "Campeonato Catarinense"
+regiao = "sul"
+
+[[estado]]
+uf = "GO"
+campeonato = "Campeonato Goiano"
+regiao = "centro-oeste"
+
+[[estado]]
+uf = "MT"
+campeonato = "Campeonato Mato-Grossense"
+regiao = "centro-oeste"
+
+[[estado]]
+uf = "PA"
+campeonato = "Campeonato Paraense"
+regiao = "norte"
+
+[[estado]]
+uf = "AM"
+campeonato = "Campeonato Amazonense"
+regiao = "norte"
+
+[[estado]]
+uf = "BA"
+campeonato = "Campeonato Baiano"
+regiao = "nordeste"
+
+[[estado]]
+uf = "PE"
+campeonato = "Campeonato Pernambucano"
+regiao = "nordeste"
+
+[[estado]]
+uf = "CE"
+campeonato = "Campeonato Cearense"
+regiao = "nordeste"
+
+[[estado]]
+uf = "RN"
+campeonato = "Campeonato Potiguar"
+regiao = "nordeste"
+
+[[estado]]
+uf = "PB"
+campeonato = "Campeonato Paraibano"
+regiao = "nordeste"
+
+[[estado]]
+uf = "AL"
+campeonato = "Campeonato Alagoano"
+regiao = "nordeste"
+
+[[estado]]
+uf = "SE"
+campeonato = "Campeonato Sergipano"
+regiao = "nordeste"
+
+[[estado]]
+uf = "MA"
+campeonato = "Campeonato Maranhense"
+regiao = "nordeste"
+
+[[estado]]
+uf = "PI"
+campeonato = "Campeonato Piauiense"
+regiao = "nordeste"
+
+# Clássicos: a manchete ganha o nome ({classico}) e o rival ({rival}).
+
+[[classico]]
+nome = "Clássico-Rei"
+clubes = ["abc", "america-rn"]
+
+[[classico]]
+nome = "Clássico dos Clássicos"
+clubes = ["nautico", "sport"]
+
+[[classico]]
+nome = "Clássico das Multidões"
+clubes = ["sport", "santa-cruz"]
+
+[[classico]]
+nome = "Clássico das Emoções"
+clubes = ["nautico", "santa-cruz"]
+
+[[classico]]
+nome = "Clássico-Rei"
+clubes = ["ceara", "fortaleza"]
+
+[[classico]]
+nome = "Clássico das Multidões"
+clubes = ["csa", "crb"]
+
+[[classico]]
+nome = "Ba-Vi"
+clubes = ["bahia", "vitoria"]
+
+[[classico]]
+nome = "Clássico dos Maiorais"
+clubes = ["treze", "campinense"]
+
+[[classico]]
+nome = "Re-Pa"
+clubes = ["remo", "paysandu"]
+
+[[classico]]
+nome = "Fla-Flu"
+clubes = ["flamengo", "fluminense"]
+
+[[classico]]
+nome = "Clássico dos Milhões"
+clubes = ["flamengo", "vasco"]
+
+[[classico]]
+nome = "Derby"
+clubes = ["corinthians", "palmeiras"]
+
+[[classico]]
+nome = "Majestoso"
+clubes = ["sao-paulo", "corinthians"]
+
+[[classico]]
+nome = "Choque-Rei"
+clubes = ["palmeiras", "sao-paulo"]
+
+[[classico]]
+nome = "Gre-Nal"
+clubes = ["gremio", "internacional"]
+
+[[classico]]
+nome = "Clássico Mineiro"
+clubes = ["atletico-mg", "cruzeiro"]
+
+[[classico]]
+nome = "Atletiba"
+clubes = ["athletico-pr", "coritiba"]
+
+[[classico]]
+nome = "Clássico Vovô"
+clubes = ["botafogo", "fluminense"]

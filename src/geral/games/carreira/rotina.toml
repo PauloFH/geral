@@ -1,0 +1,541 @@
+# Dia a dia da Carreira (modo Completa): uma situação por temporada, dos 17 anos em diante.
+# Cada opção tem chance (%) de dar certo; bonus = atributo que soma (nota - 70) / 2 à chance.
+# sucesso / fracasso = efeito na temporada que vem: atributos = { passe = 2 }, nota (forma),
+# jogos (parte da temporada, 0.6 = perde 40%), saida (clima para sair), selecao (convocação).
+# Texto: {nome}, {clube}, {idade}, com artigo: {o_clube}, {do_clube}, {no_clube}… Nunca reuse um id.
+
+[[rotina]]
+id = "treino-finalizacao"
+texto = "O técnico chama {nome} para treino extra de finalização depois do coletivo."
+[[rotina.opcao]]
+texto = "Topar e ficar até escurecer"
+chance = 70
+bonus = "fisico"
+sucesso = { atributos = { finalizacao = 3 } }
+fracasso = { jogos = 0.8, nota = -1 }
+[[rotina.opcao]]
+texto = "Agradecer e ir descansar"
+sucesso = {}
+
+[[rotina]]
+id = "folga-ou-academia"
+texto = "Dia de folga {no_clube}. Os companheiros chamam para um churrasco."
+[[rotina.opcao]]
+texto = "Ir ao churrasco e fortalecer o grupo"
+chance = 80
+sucesso = { atributos = { lideranca = 2 } }
+fracasso = { nota = -2 }
+[[rotina.opcao]]
+texto = "Passar o dia na academia"
+chance = 85
+bonus = "fisico"
+sucesso = { atributos = { fisico = 2 } }
+fracasso = { jogos = 0.85 }
+
+[[rotina]]
+id = "entrevista-polemica"
+texto = "Um repórter pergunta a {nome} sobre a briga entre a diretoria e o técnico."
+condicao = { idade_min = 18 }
+[[rotina.opcao]]
+texto = "Falar o que pensa"
+chance = 45
+bonus = "lideranca"
+sucesso = { atributos = { lideranca = 3 }, nota = 1 }
+fracasso = { saida = 0.4, nota = -2 }
+[[rotina.opcao]]
+texto = "Responder com o clichê de sempre"
+sucesso = {}
+
+[[rotina]]
+id = "video-do-adversario"
+texto = "O analista de desempenho oferece horas de vídeo dos próximos adversários."
+[[rotina.opcao]]
+texto = "Estudar tudo, jogada por jogada"
+chance = 75
+sucesso = { atributos = { passe = 2, marcacao = 1 } }
+fracasso = { nota = -1 }
+[[rotina.opcao]]
+texto = "Confiar no instinto"
+chance = 50
+bonus = "drible"
+sucesso = { atributos = { drible = 2 } }
+fracasso = {}
+
+[[rotina]]
+id = "jogar-no-sacrificio"
+texto = "{nome} sente uma dor na coxa na véspera de uma final."
+condicao = { idade_min = 18 }
+[[rotina.opcao]]
+texto = "Jogar no sacrifício"
+chance = 50
+bonus = "fisico"
+sucesso = { nota = 3, atributos = { lideranca = 2 } }
+fracasso = { jogos = 0.5, nota = -3 }
+[[rotina.opcao]]
+texto = "Poupar e tratar"
+chance = 90
+sucesso = {}
+fracasso = { nota = -1 }
+
+[[rotina]]
+id = "dieta-nova"
+texto = "O nutricionista {do_clube} propõe uma dieta rígida, sem açúcar e sem fritura."
+[[rotina.opcao]]
+texto = "Seguir à risca"
+chance = 60
+sucesso = { atributos = { velocidade = 2, fisico = 1 } }
+fracasso = { nota = -1 }
+[[rotina.opcao]]
+texto = "Seguir só durante a semana"
+chance = 85
+sucesso = { atributos = { fisico = 1 } }
+fracasso = {}
+
+[[rotina]]
+id = "cobrador-de-falta"
+texto = "O batedor de faltas {do_clube} se machucou. Alguém precisa assumir."
+[[rotina.opcao]]
+texto = "Pegar a bola e assumir"
+chance = 55
+bonus = "finalizacao"
+sucesso = { atributos = { finalizacao = 2 }, nota = 1 }
+fracasso = { nota = -2 }
+[[rotina.opcao]]
+texto = "Deixar para o mais experiente"
+sucesso = {}
+
+[[rotina]]
+id = "conversa-com-tecnico"
+texto = "{nome} anda pouco aproveitado e pensa em pedir uma conversa com o técnico."
+condicao = { idade_min = 18 }
+[[rotina.opcao]]
+texto = "Bater na porta e pedir mais minutos"
+chance = 55
+bonus = "lideranca"
+sucesso = { nota = 2 }
+fracasso = { saida = 0.5, nota = -1 }
+[[rotina.opcao]]
+texto = "Mostrar no treino, calado"
+chance = 65
+bonus = "fisico"
+sucesso = { nota = 1 }
+fracasso = {}
+
+[[rotina]]
+id = "cabeceio-com-o-zagueiro"
+texto = "Um zagueiro veterano {do_clube} se oferece para ensinar o tempo de bola no jogo aéreo."
+[[rotina.opcao]]
+texto = "Aceitar as aulas"
+chance = 75
+sucesso = { atributos = { cabeceio = 3 } }
+fracasso = { jogos = 0.9 }
+[[rotina.opcao]]
+texto = "Dispensar: cabeça é para pensar"
+sucesso = {}
+
+[[rotina]]
+id = "festa-de-aniversario"
+texto = "É aniversário de {nome}, e a festa promete varar a madrugada antes do treino."
+condicao = { idade_min = 18 }
+[[rotina.opcao]]
+texto = "Fazer a festa mesmo assim"
+chance = 40
+sucesso = { atributos = { lideranca = 1 } }
+fracasso = { nota = -3, saida = 0.3 }
+[[rotina.opcao]]
+texto = "Comemorar com um jantar em família"
+chance = 95
+sucesso = { nota = 1 }
+fracasso = {}
+
+[[rotina]]
+id = "mudar-de-posicao"
+texto = "Faltou gente no treino e o técnico testa {nome} em outra função."
+[[rotina.opcao]]
+texto = "Topar e aprender a marcar"
+chance = 60
+bonus = "marcacao"
+sucesso = { atributos = { marcacao = 3 } }
+fracasso = { nota = -1 }
+[[rotina.opcao]]
+texto = "Pedir para jogar na sua"
+sucesso = {}
+
+[[rotina]]
+id = "ajudar-a-base"
+texto = "A base {do_clube} pede um jogador experiente para conversar com os garotos."
+condicao = { idade_min = 24 }
+[[rotina.opcao]]
+texto = "Passar a tarde com a garotada"
+chance = 90
+sucesso = { atributos = { lideranca = 3 } }
+fracasso = {}
+[[rotina.opcao]]
+texto = "Agradecer e mandar um vídeo"
+sucesso = {}
+
+[[rotina]]
+id = "personal-nas-ferias"
+texto = "Nas férias, {nome} pode contratar um preparador físico particular."
+[[rotina.opcao]]
+texto = "Treinar pesado nas férias"
+chance = 70
+bonus = "fisico"
+sucesso = { atributos = { velocidade = 2, fisico = 2 } }
+fracasso = { jogos = 0.8 }
+[[rotina.opcao]]
+texto = "Descansar de verdade"
+chance = 80
+sucesso = { nota = 1 }
+fracasso = { nota = -1 }
+
+[[rotina]]
+id = "rede-social"
+texto = "Uma marca oferece um contrato para {nome} postar todo dia nas redes."
+condicao = { idade_min = 18 }
+[[rotina.opcao]]
+texto = "Assinar e virar influencer"
+chance = 50
+sucesso = { nota = 1 }
+fracasso = { nota = -3, saida = 0.2 }
+[[rotina.opcao]]
+texto = "Recusar e manter o foco"
+sucesso = { nota = 1 }
+
+[[rotina]]
+id = "treino-de-drible"
+texto = "Um ex-ponta lendário da cidade oferece aulas de drible no campinho do bairro."
+[[rotina.opcao]]
+texto = "Ir todas as tardes"
+chance = 65
+bonus = "drible"
+sucesso = { atributos = { drible = 3 } }
+fracasso = { jogos = 0.85 }
+[[rotina.opcao]]
+texto = "Ir só uma vez, por curiosidade"
+chance = 90
+sucesso = { atributos = { drible = 1 } }
+fracasso = {}
+
+[[rotina]]
+id = "psicologo"
+texto = "Depois de uma derrota dura, o clube oferece acompanhamento com a psicóloga."
+[[rotina.opcao]]
+texto = "Aceitar as sessões"
+chance = 85
+sucesso = { nota = 2, atributos = { lideranca = 1 } }
+fracasso = {}
+[[rotina.opcao]]
+texto = "Resolver sozinho"
+chance = 50
+sucesso = { nota = 1 }
+fracasso = { nota = -2 }
+
+[[rotina]]
+id = "torcida-cobra"
+texto = "Torcedores esperam o elenco no aeroporto depois de uma eliminação."
+condicao = { idade_min = 19 }
+[[rotina.opcao]]
+texto = "Parar e conversar com a torcida"
+chance = 60
+bonus = "lideranca"
+sucesso = { atributos = { lideranca = 2 }, nota = 1 }
+fracasso = { nota = -2, saida = 0.3 }
+[[rotina.opcao]]
+texto = "Sair pelos fundos"
+chance = 70
+sucesso = {}
+fracasso = { saida = 0.3 }
+
+[[rotina]]
+id = "pre-temporada-no-calor"
+texto = "Pré-temporada em dois turnos, sol de meio-dia. O preparador quer saber quem aguenta."
+[[rotina.opcao]]
+texto = "Dar a vida em todos os treinos"
+chance = 60
+bonus = "fisico"
+sucesso = { atributos = { fisico = 3 } }
+fracasso = { jogos = 0.7 }
+[[rotina.opcao]]
+texto = "Dosar o esforço"
+chance = 85
+sucesso = { atributos = { fisico = 1 } }
+fracasso = {}
+
+[[rotina]]
+id = "penalti-no-treino"
+texto = "Treino de pênaltis: quem errar menos vira o cobrador oficial."
+condicao = { posicoes = ["atacante", "meia", "volante"] }
+[[rotina.opcao]]
+texto = "Bater forte no ângulo"
+chance = 55
+bonus = "finalizacao"
+sucesso = { atributos = { finalizacao = 2 }, nota = 1 }
+fracasso = { nota = -1 }
+[[rotina.opcao]]
+texto = "Bater colocado, no canto"
+chance = 70
+sucesso = { atributos = { finalizacao = 1 } }
+fracasso = {}
+
+[[rotina]]
+id = "marcar-o-craque"
+texto = "No próximo jogo, {nome} pode ficar com a missão de marcar o craque adversário."
+condicao = { posicoes = ["zagueiro", "volante", "lateral"] }
+[[rotina.opcao]]
+texto = "Aceitar a missão"
+chance = 55
+bonus = "marcacao"
+sucesso = { atributos = { marcacao = 3 }, nota = 1 }
+fracasso = { nota = -2 }
+[[rotina.opcao]]
+texto = "Marcar por zona, como sempre"
+sucesso = {}
+
+[[rotina]]
+id = "apoiar-o-ataque"
+texto = "O técnico libera {nome} para subir ao ataque sempre que der."
+condicao = { posicoes = ["lateral", "zagueiro", "volante"] }
+[[rotina.opcao]]
+texto = "Subir sem medo"
+chance = 50
+bonus = "velocidade"
+sucesso = { atributos = { passe = 2, velocidade = 1 } }
+fracasso = { nota = -2 }
+[[rotina.opcao]]
+texto = "Guardar a posição"
+chance = 90
+sucesso = { atributos = { marcacao = 1 } }
+fracasso = {}
+
+[[rotina]]
+id = "jogo-de-cabeca"
+texto = "Treino de bolas paradas: o auxiliar quer {nome} na área em todo escanteio."
+condicao = { posicoes = ["zagueiro", "atacante", "volante"] }
+[[rotina.opcao]]
+texto = "Treinar o cabeceio até cansar"
+chance = 70
+bonus = "cabeceio"
+sucesso = { atributos = { cabeceio = 3 } }
+fracasso = { jogos = 0.85 }
+[[rotina.opcao]]
+texto = "Ficar na sobra"
+sucesso = {}
+
+[[rotina]]
+id = "visita-ao-bairro"
+texto = "O bairro onde {nome} cresceu prepara uma festa em homenagem a ele."
+condicao = { idade_min = 20 }
+[[rotina.opcao]]
+texto = "Ir e passar o dia com a comunidade"
+chance = 90
+sucesso = { nota = 2, atributos = { lideranca = 1 } }
+fracasso = {}
+[[rotina.opcao]]
+texto = "Mandar um vídeo agradecendo"
+sucesso = {}
+
+[[rotina]]
+id = "empresario-novo"
+texto = "Um empresário famoso promete levar {nome} para um clube maior."
+condicao = { idade_min = 18, idade_max = 30 }
+[[rotina.opcao]]
+texto = "Assinar com ele"
+chance = 50
+sucesso = { saida = 0.6 }
+fracasso = { nota = -2, saida = 0.3 }
+[[rotina.opcao]]
+texto = "Ficar com o empresário de sempre"
+sucesso = {}
+
+[[rotina]]
+id = "jejum-de-gols"
+texto = "{nome} não marca há dez jogos e a cobrança aumenta."
+condicao = { posicoes = ["atacante"], idade_min = 18 }
+[[rotina.opcao]]
+texto = "Ficar depois do treino chutando"
+chance = 60
+bonus = "finalizacao"
+sucesso = { atributos = { finalizacao = 2 }, nota = 2 }
+fracasso = { nota = -2 }
+[[rotina.opcao]]
+texto = "Desligar o celular e esquecer"
+chance = 50
+sucesso = { nota = 2 }
+fracasso = { nota = -1 }
+
+[[rotina]]
+id = "convocacao-de-base"
+texto = "A Seleção de base chama {nome} para um torneio no meio da temporada."
+condicao = { idade_max = 20 }
+[[rotina.opcao]]
+texto = "Ir defender a amarelinha"
+chance = 70
+sucesso = { atributos = { lideranca = 2 }, nota = 2, selecao = true }
+fracasso = { jogos = 0.8 }
+[[rotina.opcao]]
+texto = "Pedir para ficar no clube"
+chance = 80
+sucesso = { nota = 1 }
+fracasso = {}
+
+[[rotina]]
+id = "veterano-poupado"
+texto = "Aos {idade}, o departamento médico sugere poupar {nome} nos jogos de meio de semana."
+condicao = { idade_min = 31 }
+[[rotina.opcao]]
+texto = "Aceitar o rodízio"
+chance = 85
+sucesso = { nota = 2 }
+fracasso = {}
+[[rotina.opcao]]
+texto = "Querer jogar tudo"
+chance = 40
+bonus = "fisico"
+sucesso = { nota = 1, atributos = { lideranca = 1 } }
+fracasso = { jogos = 0.5, nota = -3 }
+
+[[rotina]]
+id = "aprender-idioma"
+texto = "O clube oferece aulas de inglês para quem sonha em jogar fora."
+condicao = { idade_max = 26 }
+[[rotina.opcao]]
+texto = "Estudar à noite"
+chance = 75
+sucesso = { saida = 0.3, atributos = { lideranca = 1 } }
+fracasso = { nota = -1 }
+[[rotina.opcao]]
+texto = "Deixar para depois"
+sucesso = {}
+
+[[rotina]]
+id = "chuteira-nova"
+texto = "O patrocinador manda uma chuteira nova uma semana antes da estreia."
+[[rotina.opcao]]
+texto = "Estrear com ela"
+chance = 60
+sucesso = { atributos = { velocidade = 1 } }
+fracasso = { jogos = 0.85 }
+[[rotina.opcao]]
+texto = "Continuar com a velha de guerra"
+sucesso = {}
+
+[[rotina]]
+id = "provocacao-do-rival"
+texto = "Um jogador do rival provoca {nome} nas redes na semana do clássico."
+condicao = { idade_min = 18 }
+[[rotina.opcao]]
+texto = "Responder em campo, com gol"
+chance = 45
+bonus = "finalizacao"
+sucesso = { nota = 3 }
+fracasso = { nota = -2 }
+[[rotina.opcao]]
+texto = "Ignorar e jogar sério"
+chance = 80
+sucesso = { nota = 1 }
+fracasso = {}
+
+[[rotina]]
+id = "treino-de-passe"
+texto = "O novo auxiliar monta um treino de passes em espaço curto, todo dia cedo."
+[[rotina.opcao]]
+texto = "Chegar uma hora antes"
+chance = 75
+bonus = "passe"
+sucesso = { atributos = { passe = 3 } }
+fracasso = { nota = -1 }
+[[rotina.opcao]]
+texto = "Fazer só o treino normal"
+sucesso = {}
+
+[[rotina]]
+id = "familia-longe"
+texto = "A família de {nome} sente falta dele e pensa em se mudar para perto."
+condicao = { idade_min = 19 }
+[[rotina.opcao]]
+texto = "Trazer todo mundo"
+chance = 80
+sucesso = { nota = 2 }
+fracasso = { nota = -1 }
+[[rotina.opcao]]
+texto = "Matar a saudade por vídeo"
+chance = 60
+sucesso = {}
+fracasso = { nota = -2, saida = 0.2 }
+
+# --- Nordeste ---------------------------------------------------------------------------------
+
+[[rotina]]
+id = "convite-do-forro"
+texto = "Um trio de forró famoso chama {nome} para subir no palco no São João."
+condicao = { regioes = ["nordeste"] }
+[[rotina.opcao]]
+texto = "Subir e tocar zabumba"
+chance = 70
+sucesso = { atributos = { lideranca = 2 }, nota = 1 }
+fracasso = { nota = -1 }
+[[rotina.opcao]]
+texto = "Descansar para o jogo"
+sucesso = {}
+
+[[rotina]]
+id = "treino-na-areia"
+texto = "O preparador {do_clube} leva o elenco para treinar na areia da praia."
+condicao = { regioes = ["nordeste"] }
+[[rotina.opcao]]
+texto = "Dar tudo na areia fofa"
+chance = 65
+bonus = "fisico"
+sucesso = { atributos = { fisico = 2, velocidade = 1 } }
+fracasso = { jogos = 0.8 }
+[[rotina.opcao]]
+texto = "Fazer só o básico"
+chance = 90
+sucesso = { atributos = { fisico = 1 } }
+fracasso = {}
+
+[[rotina]]
+id = "semana-do-classico"
+texto = "Semana do {classico}: a torcida {do_clube} espera {nome} no treino com faixas."
+condicao = { regioes = ["nordeste"], classico = true }
+[[rotina.opcao]]
+texto = "Prometer gol contra {o_rival}"
+chance = 45
+bonus = "finalizacao"
+sucesso = { nota = 3, atributos = { lideranca = 1 } }
+fracasso = { nota = -2 }
+[[rotina.opcao]]
+texto = "Falar pouco e treinar"
+chance = 85
+sucesso = { nota = 1 }
+fracasso = {}
+
+[[rotina]]
+id = "olheiro-do-sudeste"
+texto = "Um olheiro de um grande do Sudeste veio ver {nome} no estadual."
+condicao = { regioes = ["nordeste"], idade_max = 26 }
+[[rotina.opcao]]
+texto = "Caprichar e chamar a atenção"
+chance = 55
+bonus = "drible"
+sucesso = { saida = 0.6, nota = 1 }
+fracasso = { nota = -1 }
+[[rotina.opcao]]
+texto = "Jogar pelo time, sem firula"
+chance = 80
+sucesso = { nota = 1, saida = -0.2 }
+fracasso = {}
+
+[[rotina]]
+id = "escolinha-na-terra"
+texto = "A prefeitura da cidade natal de {nome} quer abrir uma escolinha com o nome dele."
+condicao = { regioes = ["nordeste"], idade_min = 25 }
+[[rotina.opcao]]
+texto = "Topar e visitar nas folgas"
+chance = 85
+sucesso = { atributos = { lideranca = 2 } }
+fracasso = { jogos = 0.9 }
+[[rotina.opcao]]
+texto = "Deixar para depois da carreira"
+sucesso = {}
