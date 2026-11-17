@@ -331,10 +331,10 @@ class _Simulacao:
         ganhos = []
         peso = self.clube.prestigio**2
         rivais = self._pesos_estado.get(estado.uf, peso)
-        if self.rng.random() < min(0.85, 1.6 * peso / rivais) * participacao:
+        if self.rng.random() < min(0.75, 1.1 * peso / rivais) * participacao:
             ganhos.append(estado.campeonato)
         if estado.regiao == "nordeste":
-            chance = min(0.5, 4 * peso / self._peso_nordeste) * participacao
+            chance = min(0.3, 2.2 * peso / self._peso_nordeste) * participacao
             if self.rng.random() < chance:
                 ganhos.append(COPA_DO_NORDESTE)
         return ganhos
