@@ -28,6 +28,14 @@ campeonato = "Campeonato da Série C"
 copa = "Copa do Brasil"
 
 [[liga]]
+id = "bra-d"
+pais = "Brasil"
+divisao = 4
+forca = 32
+campeonato = "Campeonato da Série D"
+copa = "Copa do Brasil"
+
+[[liga]]
 id = "arg"
 pais = "Argentina"
 divisao = 1
@@ -146,6 +154,7 @@ continental = "Champions da Concacaf"
 id = "flamengo"
 nome = "Flamengo"
 liga = "bra-a"
+estado = "RJ"
 prestigio = 84
 time = "flamengo"
 wikidata = "Q17479"
@@ -154,6 +163,7 @@ wikidata = "Q17479"
 id = "palmeiras"
 nome = "Palmeiras"
 liga = "bra-a"
+estado = "SP"
 prestigio = 84
 time = "palmeiras"
 wikidata = "Q80964"
@@ -162,6 +172,7 @@ wikidata = "Q80964"
 id = "corinthians"
 nome = "Corinthians"
 liga = "bra-a"
+estado = "SP"
 prestigio = 76
 wikidata = "Q35933"
 
@@ -169,6 +180,7 @@ wikidata = "Q35933"
 id = "sao-paulo"
 nome = "São Paulo"
 liga = "bra-a"
+estado = "SP"
 prestigio = 76
 wikidata = "Q38568"
 
@@ -176,6 +188,7 @@ wikidata = "Q38568"
 id = "atletico-mg"
 nome = "Atlético-MG"
 liga = "bra-a"
+estado = "MG"
 prestigio = 74
 wikidata = "Q270995"
 
@@ -183,6 +196,7 @@ wikidata = "Q270995"
 id = "botafogo"
 nome = "Botafogo"
 liga = "bra-a"
+estado = "RJ"
 prestigio = 74
 wikidata = "Q80958"
 
@@ -190,6 +204,7 @@ wikidata = "Q80958"
 id = "fluminense"
 nome = "Fluminense"
 liga = "bra-a"
+estado = "RJ"
 prestigio = 72
 wikidata = "Q80987"
 
@@ -197,6 +212,7 @@ wikidata = "Q80987"
 id = "gremio"
 nome = "Grêmio"
 liga = "bra-a"
+estado = "RS"
 prestigio = 72
 wikidata = "Q221695"
 
@@ -204,6 +220,7 @@ wikidata = "Q221695"
 id = "internacional"
 nome = "Internacional"
 liga = "bra-a"
+estado = "RS"
 prestigio = 72
 wikidata = "Q80845"
 
@@ -211,6 +228,7 @@ wikidata = "Q80845"
 id = "cruzeiro"
 nome = "Cruzeiro"
 liga = "bra-a"
+estado = "MG"
 prestigio = 72
 wikidata = "Q188277"
 
@@ -218,6 +236,7 @@ wikidata = "Q188277"
 id = "vasco"
 nome = "Vasco"
 liga = "bra-a"
+estado = "RJ"
 prestigio = 70
 time = "vasco"
 wikidata = "Q5014111"
@@ -226,6 +245,7 @@ wikidata = "Q5014111"
 id = "santos"
 nome = "Santos"
 liga = "bra-a"
+estado = "SP"
 prestigio = 70
 wikidata = "Q80955"
 
@@ -233,6 +253,7 @@ wikidata = "Q80955"
 id = "bahia"
 nome = "Bahia"
 liga = "bra-a"
+estado = "BA"
 prestigio = 64
 wikidata = "Q198032"
 
@@ -240,6 +261,7 @@ wikidata = "Q198032"
 id = "athletico-pr"
 nome = "Athletico-PR"
 liga = "bra-a"
+estado = "PR"
 prestigio = 62
 wikidata = "Q506832"
 
@@ -247,6 +269,7 @@ wikidata = "Q506832"
 id = "bragantino"
 nome = "Bragantino"
 liga = "bra-a"
+estado = "SP"
 prestigio = 60
 wikidata = "Q541744"
 
@@ -254,6 +277,7 @@ wikidata = "Q541744"
 id = "vitoria"
 nome = "Vitória"
 liga = "bra-a"
+estado = "BA"
 prestigio = 54
 wikidata = "Q274465"
 
@@ -261,6 +285,7 @@ wikidata = "Q274465"
 id = "coritiba"
 nome = "Coritiba"
 liga = "bra-a"
+estado = "PR"
 prestigio = 52
 wikidata = "Q478317"
 
@@ -269,6 +294,7 @@ id = "chapecoense"
 nome = "Chapecoense"
 genero = "f"
 liga = "bra-a"
+estado = "SC"
 prestigio = 48
 wikidata = "Q2536715"
 
@@ -276,6 +302,7 @@ wikidata = "Q2536715"
 id = "mirassol"
 nome = "Mirassol"
 liga = "bra-a"
+estado = "SP"
 prestigio = 46
 wikidata = "Q2622870"
 
@@ -283,6 +310,7 @@ wikidata = "Q2622870"
 id = "remo"
 nome = "Remo"
 liga = "bra-a"
+estado = "PA"
 prestigio = 46
 wikidata = "Q2552872"
 
@@ -290,6 +318,7 @@ wikidata = "Q2552872"
 id = "sport"
 nome = "Sport"
 liga = "bra-b"
+estado = "PE"
 prestigio = 50
 wikidata = "Q219098"
 
@@ -297,6 +326,7 @@ wikidata = "Q219098"
 id = "fortaleza"
 nome = "Fortaleza"
 liga = "bra-b"
+estado = "CE"
 prestigio = 54
 wikidata = "Q188841"
 
@@ -304,6 +334,7 @@ wikidata = "Q188841"
 id = "ceara"
 nome = "Ceará"
 liga = "bra-b"
+estado = "CE"
 prestigio = 50
 wikidata = "Q1052219"
 
@@ -311,6 +342,7 @@ wikidata = "Q1052219"
 id = "goias"
 nome = "Goiás"
 liga = "bra-b"
+estado = "GO"
 prestigio = 46
 wikidata = "Q816779"
 
@@ -318,6 +350,7 @@ wikidata = "Q816779"
 id = "america-mg"
 nome = "América-MG"
 liga = "bra-b"
+estado = "MG"
 prestigio = 48
 wikidata = "Q338285"
 
@@ -325,6 +358,7 @@ wikidata = "Q338285"
 id = "juventude"
 nome = "Juventude"
 liga = "bra-b"
+estado = "RS"
 prestigio = 44
 wikidata = "Q910453"
 
@@ -332,6 +366,7 @@ wikidata = "Q910453"
 id = "nautico"
 nome = "Náutico"
 liga = "bra-b"
+estado = "PE"
 prestigio = 42
 time = "nautico"
 wikidata = "Q73971"
@@ -340,48 +375,56 @@ wikidata = "Q73971"
 id = "cuiaba"
 nome = "Cuiabá"
 liga = "bra-b"
+estado = "MT"
 prestigio = 42
 
 [[clube]]
 id = "atletico-go"
 nome = "Atlético-GO"
 liga = "bra-b"
+estado = "GO"
 prestigio = 44
 
 [[clube]]
 id = "crb"
 nome = "CRB"
 liga = "bra-b"
+estado = "AL"
 prestigio = 38
 
 [[clube]]
 id = "criciuma"
 nome = "Criciúma"
 liga = "bra-b"
+estado = "SC"
 prestigio = 40
 
 [[clube]]
 id = "avai"
 nome = "Avaí"
 liga = "bra-b"
+estado = "SC"
 prestigio = 40
 
 [[clube]]
 id = "vila-nova"
 nome = "Vila Nova"
 liga = "bra-b"
+estado = "GO"
 prestigio = 36
 
 [[clube]]
 id = "novorizontino"
 nome = "Novorizontino"
 liga = "bra-b"
+estado = "SP"
 prestigio = 34
 
 [[clube]]
 id = "operario-pr"
 nome = "Operário-PR"
 liga = "bra-b"
+estado = "PR"
 prestigio = 32
 
 [[clube]]
@@ -389,36 +432,42 @@ id = "ponte-preta"
 nome = "Ponte Preta"
 genero = "f"
 liga = "bra-b"
+estado = "SP"
 prestigio = 40
 
 [[clube]]
 id = "paysandu"
 nome = "Paysandu"
 liga = "bra-b"
+estado = "PA"
 prestigio = 40
 
 [[clube]]
 id = "botafogo-sp"
 nome = "Botafogo-SP"
 liga = "bra-b"
+estado = "SP"
 prestigio = 32
 
 [[clube]]
 id = "londrina"
 nome = "Londrina"
 liga = "bra-b"
+estado = "PR"
 prestigio = 32
 
 [[clube]]
 id = "amazonas"
 nome = "Amazonas"
 liga = "bra-b"
+estado = "AM"
 prestigio = 28
 
 [[clube]]
 id = "abc"
 nome = "ABC"
 liga = "bra-c"
+estado = "RN"
 prestigio = 34
 time = "abc"
 
@@ -426,6 +475,7 @@ time = "abc"
 id = "guarani"
 nome = "Guarani"
 liga = "bra-c"
+estado = "SP"
 prestigio = 34
 wikidata = "Q1133475"
 
@@ -433,6 +483,7 @@ wikidata = "Q1133475"
 id = "santa-cruz"
 nome = "Santa Cruz"
 liga = "bra-c"
+estado = "PE"
 prestigio = 34
 wikidata = "Q508440"
 
@@ -441,6 +492,7 @@ id = "portuguesa"
 nome = "Portuguesa"
 genero = "f"
 liga = "bra-c"
+estado = "SP"
 prestigio = 30
 wikidata = "Q204675"
 
@@ -448,24 +500,28 @@ wikidata = "Q204675"
 id = "figueirense"
 nome = "Figueirense"
 liga = "bra-c"
+estado = "SC"
 prestigio = 32
 
 [[clube]]
 id = "ypiranga-rs"
 nome = "Ypiranga-RS"
 liga = "bra-c"
+estado = "RS"
 prestigio = 24
 
 [[clube]]
 id = "brusque"
 nome = "Brusque"
 liga = "bra-c"
+estado = "SC"
 prestigio = 24
 
 [[clube]]
 id = "confianca"
 nome = "Confiança"
 liga = "bra-c"
+estado = "SE"
 prestigio = 22
 
 [[clube]]
@@ -473,36 +529,42 @@ id = "ferroviaria"
 nome = "Ferroviária"
 genero = "f"
 liga = "bra-c"
+estado = "SP"
 prestigio = 24
 
 [[clube]]
 id = "botafogo-pb"
 nome = "Botafogo-PB"
 liga = "bra-c"
+estado = "PB"
 prestigio = 24
 
 [[clube]]
 id = "csa"
 nome = "CSA"
 liga = "bra-c"
+estado = "AL"
 prestigio = 28
 
 [[clube]]
 id = "volta-redonda"
 nome = "Volta Redonda"
 liga = "bra-c"
+estado = "RJ"
 prestigio = 22
 
 [[clube]]
 id = "caxias"
 nome = "Caxias"
 liga = "bra-c"
+estado = "RS"
 prestigio = 24
 
 [[clube]]
 id = "floresta"
 nome = "Floresta"
 liga = "bra-c"
+estado = "CE"
 prestigio = 18
 
 [[clube]]
@@ -1133,3 +1195,274 @@ id = "pachuca"
 nome = "Pachuca"
 liga = "mex"
 prestigio = 60
+
+[[clube]]
+id = "america-rn"
+nome = "América-RN"
+liga = "bra-d"
+estado = "RN"
+prestigio = 30
+
+[[clube]]
+id = "treze"
+nome = "Treze"
+liga = "bra-d"
+estado = "PB"
+prestigio = 22
+
+[[clube]]
+id = "campinense"
+nome = "Campinense"
+liga = "bra-d"
+estado = "PB"
+prestigio = 22
+
+[[clube]]
+id = "sampaio-correa"
+nome = "Sampaio Corrêa"
+liga = "bra-d"
+estado = "MA"
+prestigio = 26
+
+[[clube]]
+id = "moto-club"
+nome = "Moto Club"
+liga = "bra-d"
+estado = "MA"
+prestigio = 16
+
+[[clube]]
+id = "ferroviario"
+nome = "Ferroviário"
+liga = "bra-d"
+estado = "CE"
+prestigio = 24
+
+[[clube]]
+id = "river-pi"
+nome = "River"
+liga = "bra-d"
+estado = "PI"
+prestigio = 18
+
+[[clube]]
+id = "altos"
+nome = "Altos"
+liga = "bra-d"
+estado = "PI"
+prestigio = 16
+
+[[clube]]
+id = "sergipe"
+nome = "Sergipe"
+liga = "bra-d"
+estado = "SE"
+prestigio = 18
+
+[[clube]]
+id = "juazeirense"
+nome = "Juazeirense"
+liga = "bra-d"
+estado = "BA"
+prestigio = 16
+genero = "f"
+
+[[clube]]
+id = "atletico-ba"
+nome = "Atlético de Alagoinhas"
+liga = "bra-d"
+estado = "BA"
+prestigio = 16
+
+[[clube]]
+id = "asa"
+nome = "ASA"
+liga = "bra-d"
+estado = "AL"
+prestigio = 18
+genero = "f"
+
+[[clube]]
+id = "globo"
+nome = "Globo"
+liga = "bra-d"
+estado = "RN"
+prestigio = 14
+
+[[clube]]
+id = "retro"
+nome = "Retrô"
+liga = "bra-d"
+estado = "PE"
+prestigio = 16
+
+# Estaduais: todo clube brasileiro tem estado (UF) e disputa o campeonato dele.
+
+[[estado]]
+uf = "SP"
+campeonato = "Paulistão"
+regiao = "sudeste"
+
+[[estado]]
+uf = "RJ"
+campeonato = "Campeonato Carioca"
+regiao = "sudeste"
+
+[[estado]]
+uf = "MG"
+campeonato = "Campeonato Mineiro"
+regiao = "sudeste"
+
+[[estado]]
+uf = "RS"
+campeonato = "Gauchão"
+regiao = "sul"
+
+[[estado]]
+uf = "PR"
+campeonato = "Campeonato Paranaense"
+regiao = "sul"
+
+[[estado]]
+uf = "SC"
+campeonato = "Campeonato Catarinense"
+regiao = "sul"
+
+[[estado]]
+uf = "GO"
+campeonato = "Campeonato Goiano"
+regiao = "centro-oeste"
+
+[[estado]]
+uf = "MT"
+campeonato = "Campeonato Mato-Grossense"
+regiao = "centro-oeste"
+
+[[estado]]
+uf = "PA"
+campeonato = "Campeonato Paraense"
+regiao = "norte"
+
+[[estado]]
+uf = "AM"
+campeonato = "Campeonato Amazonense"
+regiao = "norte"
+
+[[estado]]
+uf = "BA"
+campeonato = "Campeonato Baiano"
+regiao = "nordeste"
+
+[[estado]]
+uf = "PE"
+campeonato = "Campeonato Pernambucano"
+regiao = "nordeste"
+
+[[estado]]
+uf = "CE"
+campeonato = "Campeonato Cearense"
+regiao = "nordeste"
+
+[[estado]]
+uf = "RN"
+campeonato = "Campeonato Potiguar"
+regiao = "nordeste"
+
+[[estado]]
+uf = "PB"
+campeonato = "Campeonato Paraibano"
+regiao = "nordeste"
+
+[[estado]]
+uf = "AL"
+campeonato = "Campeonato Alagoano"
+regiao = "nordeste"
+
+[[estado]]
+uf = "SE"
+campeonato = "Campeonato Sergipano"
+regiao = "nordeste"
+
+[[estado]]
+uf = "MA"
+campeonato = "Campeonato Maranhense"
+regiao = "nordeste"
+
+[[estado]]
+uf = "PI"
+campeonato = "Campeonato Piauiense"
+regiao = "nordeste"
+
+# Clássicos: a manchete ganha o nome ({classico}) e o rival ({rival}).
+
+[[classico]]
+nome = "Clássico-Rei"
+clubes = ["abc", "america-rn"]
+
+[[classico]]
+nome = "Clássico dos Clássicos"
+clubes = ["nautico", "sport"]
+
+[[classico]]
+nome = "Clássico das Multidões"
+clubes = ["sport", "santa-cruz"]
+
+[[classico]]
+nome = "Clássico das Emoções"
+clubes = ["nautico", "santa-cruz"]
+
+[[classico]]
+nome = "Clássico-Rei"
+clubes = ["ceara", "fortaleza"]
+
+[[classico]]
+nome = "Clássico das Multidões"
+clubes = ["csa", "crb"]
+
+[[classico]]
+nome = "Ba-Vi"
+clubes = ["bahia", "vitoria"]
+
+[[classico]]
+nome = "Clássico dos Maiorais"
+clubes = ["treze", "campinense"]
+
+[[classico]]
+nome = "Re-Pa"
+clubes = ["remo", "paysandu"]
+
+[[classico]]
+nome = "Fla-Flu"
+clubes = ["flamengo", "fluminense"]
+
+[[classico]]
+nome = "Clássico dos Milhões"
+clubes = ["flamengo", "vasco"]
+
+[[classico]]
+nome = "Derby"
+clubes = ["corinthians", "palmeiras"]
+
+[[classico]]
+nome = "Majestoso"
+clubes = ["sao-paulo", "corinthians"]
+
+[[classico]]
+nome = "Choque-Rei"
+clubes = ["palmeiras", "sao-paulo"]
+
+[[classico]]
+nome = "Gre-Nal"
+clubes = ["gremio", "internacional"]
+
+[[classico]]
+nome = "Clássico Mineiro"
+clubes = ["atletico-mg", "cruzeiro"]
+
+[[classico]]
+nome = "Atletiba"
+clubes = ["athletico-pr", "coritiba"]
+
+[[classico]]
+nome = "Clássico Vovô"
+clubes = ["botafogo", "fluminense"]

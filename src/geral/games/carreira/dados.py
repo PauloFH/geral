@@ -140,6 +140,20 @@ class Clube:
     time: str | None = None  # slug of the team edition that starts here
     wikidata: str | None = None  # same id as the jogo da velha base, when there is one
     genero: str = "m"  # "f": a Lazio, da Ponte Preta (the headlines' articles)
+    estado: str | None = None  # UF of a Brazilian club: its state cup and region
+
+
+@dataclass(frozen=True)
+class Estado:
+    uf: str
+    campeonato: str
+    regiao: str  # nordeste, sudeste, sul, norte, centro-oeste
+
+
+@dataclass(frozen=True)
+class Classico:
+    nome: str
+    clubes: tuple[str, str]
 
 
 @dataclass(frozen=True)
@@ -152,6 +166,24 @@ class Dados:
     decisoes: tuple[Decisao, ...] = ()
     finais: tuple[dict, ...] = ()  # read by final.py
     rotinas: tuple[Rotina, ...] = ()
+    estados: dict[str, Estado] = field(default_factory=dict, hash=False)
+    classicos: tuple[Classico, ...] = ()
+
+    def regiao(self, clube: Clube) -> str | None:
+        estado = self.estados.get(clube.estado or "")
+        return estado.regiao if estado else None
+
+    def classicos_de(self, clube: Clube) -> list[tuple[str, Clube]]:
+        """(name, rival) of every derby this club plays, in file order."""
+        return [
+            (c.nome, self.clubes[c.clubes[1] if c.clubes[0] == clube.id else c.clubes[0]])
+            for c in self.classicos
+            if clube.id in c.clubes
+        ]
+
+    def classico(self, clube: Clube) -> tuple[str, Clube] | None:
+        todos = self.classicos_de(clube)
+        return todos[0] if todos else None
 
 
 def _toml(pasta: Path, nome: str) -> dict:
@@ -169,6 +201,23 @@ def _lenda(entry: dict) -> Lenda:
     if not entry.get("edicoes") or not entry.get("wikidata"):
         raise ValueError(f"lendas.toml: {nome!r} needs wikidata and edicoes")
     return Lenda(nome, entry["wikidata"], tuple(entry["edicoes"]), dict(notas))
+
+
+def _estados_e_classicos(
+    raw: dict, ligas: dict[str, Liga], clubes: dict[str, Clube]
+) -> tuple[dict[str, Estado], tuple[Classico, ...]]:
+    estados = {e["uf"]: Estado(**e) for e in raw.get("estado", [])}
+    if estados:
+        for clube in clubes.values():
+            if ligas[clube.liga].pais == "Brasil" and clube.estado not in estados:
+                raise ValueError(f"mundo.toml: {clube.nome!r} needs an estado with a campeonato")
+    classicos = []
+    for entry in raw.get("classico", []):
+        classico = Classico(entry["nome"], tuple(entry["clubes"]))
+        if len(classico.clubes) != 2 or any(c not in clubes for c in classico.clubes):
+            raise ValueError(f"mundo.toml: {classico.nome!r} needs two known clubes")
+        classicos.append(classico)
+    return estados, tuple(classicos)
 
 
 def _mundo(pasta: Path) -> tuple[dict[str, Liga], dict[str, Clube]]:
@@ -268,6 +317,7 @@ def carregar(pasta: Path = PASTA) -> Dados:
 def _carregar(pasta: Path, versao: str) -> Dados:
     lendas = tuple(_lenda(e) for e in _toml(pasta, "lendas.toml").get("lenda", []))
     ligas, clubes = _mundo(pasta)
+    estados, classicos = _estados_e_classicos(_toml(pasta, "mundo.toml"), ligas, clubes)
     eventos = tuple(_evento(e) for e in _toml(pasta, "eventos.toml").get("evento", []))
     decisoes = tuple(_decisao(e) for e in _toml(pasta, "escolhas.toml").get("escolha", []))
     rotinas = tuple(_rotina(e) for e in _toml(pasta, "rotina.toml").get("rotina", []))
@@ -275,4 +325,6 @@ def _carregar(pasta: Path, versao: str) -> Dados:
     if len(ids) != len(set(ids)):
         raise ValueError("eventos.toml/escolhas.toml: repeated id")
     finais = tuple(_toml(pasta, "finais.toml").get("final", []))
-    return Dados(lendas, ligas, clubes, versao, eventos, decisoes, finais, rotinas)
+    return Dados(
+        lendas, ligas, clubes, versao, eventos, decisoes, finais, rotinas, estados, classicos
+    )
