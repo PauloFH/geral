@@ -18,7 +18,11 @@ def edition_from_slot(slot: Slot) -> Edition:
 
 
 def resolve_match_edition(
-    kind: Kind, day: date, fixtures: list[Fixture], last_sent: datetime | None
+    kind: Kind,
+    day: date,
+    fixtures: list[Fixture],
+    last_sent: datetime | None,
+    weekdays: tuple[int, ...] = (0,),
 ) -> Edition | None:
     """The `kind` slot planned for `day`, or None.
 
@@ -26,6 +30,6 @@ def resolve_match_edition(
     """
     start_of_day = datetime.combine(day, time(0, 0), tzinfo=TZ)
     anchor = last_sent if last_sent is not None and last_sent < start_of_day else None
-    slots = plan(fixtures, start_of_day, anchor)
+    slots = plan(fixtures, start_of_day, anchor, weekdays=weekdays)
     slot = next((s for s in slots if s.kind == kind and s.send_at.date() == day), None)
     return edition_from_slot(slot) if slot else None

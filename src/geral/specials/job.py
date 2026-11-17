@@ -17,6 +17,7 @@ from pydantic import BaseModel, Field
 from geral.config import Settings
 from geral.send import recipients
 from geral.specials import sources
+from geral.specials.birthdays import birthdays
 from geral.specials.sources import Passage
 from geral.specials.verifier import NUMBER, unsupported
 from geral.specials.writer import StoryDraft, write_story
@@ -111,14 +112,21 @@ def top_up(
         report.skipped_reason = f"acervo com {unused} histórias"
         return report
     need = TARGET - unused
-    if need <= 0:
-        report.skipped_reason = f"acervo com {unused} histórias"
-        return report
     try:
         found = sources.passages(wiki, team)
     except httpx.HTTPError as e:
         logger.error("Stories of %s: Wikipedia did not answer: %s", team.slug, e)
         report.skipped_reason = "Wikipédia fora do ar"
+        return report
+    # The idols' birthdays ("Neste dia") are refreshed whenever the sources are read.
+    try:
+        born = birthdays(wiki, found)
+        if keep and born:
+            recipients.save_birthdays(settings, team.slug, born)
+    except httpx.HTTPError as e:
+        report.problems.append(f"aniversários: {e}")
+    if need <= 0:
+        report.skipped_reason = f"acervo com {unused} histórias"
         return report
     fresh = [p for p in found if p.key not in seen]
     for calls, passage in enumerate(_interleaved(fresh, today)):

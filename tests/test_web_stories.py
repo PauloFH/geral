@@ -161,3 +161,36 @@ def test_a_story_is_reserved_once(store) -> None:
 
     assert store.draw_story("nautico", "L2") is None
     assert store.draw_story("nautico", "L1")["id"] == first["id"]
+
+
+def test_on_this_day_includes_idol_birthdays(client) -> None:
+    born = [{"name": "Bita", "birth_date": "1941-03-06", "source_url": "u"}]
+
+    assert (
+        client.put(
+            f"{BASE}/../birthdays".replace("/stories/..", ""), json=born, headers=AUTH
+        ).status_code
+        == 204
+    )
+    client.put("/api/teams/nautico/birthdays", json=born, headers=AUTH)  # again: no duplicate
+
+    assert facts(client, "2026-03-05") == [
+        {"date": "1941-03-06", "title": "Bita", "summary": "nascia Bita."}
+    ]
+
+
+def test_birthdays_are_replaced_on_each_update(client) -> None:
+    client.put(
+        "/api/teams/nautico/birthdays",
+        json=[{"name": "Velho", "birth_date": "1941-03-06", "source_url": "u"}],
+        headers=AUTH,
+    )
+    client.put(
+        "/api/teams/nautico/birthdays",
+        json=[{"name": "Bita", "birth_date": "1941-03-06", "source_url": "u"}],
+        headers=AUTH,
+    )
+    bad = [{"name": "", "birth_date": "1941-03-06", "source_url": "u"}]
+
+    assert [f["title"] for f in facts(client, "2026-03-06")] == ["Bita"]
+    assert client.put("/api/teams/nautico/birthdays", json=bad, headers=AUTH).status_code == 422

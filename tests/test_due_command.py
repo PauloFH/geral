@@ -421,3 +421,28 @@ def test_a_second_late_release_is_a_new_row(geral_db) -> None:
 
     assert first != second  # the trigger dispatches each row once: a new release is a new row
     assert second.split("\t")[:3] == ["vasco", "post", "2026-10-18"]
+
+
+def test_due_all_gives_thursday_news_to_specials_teams_only(geral_db) -> None:
+    follow(geral_db, "ana@example.com", ["abc", "vasco"])
+    monday = datetime(2026, 10, 19, 13, 2, tzinfo=TZ)
+    for team, name in (("abc", "Elefante News"), ("vasco", "Almirante News")):
+        geral_db.set_latest_edition(team, f"{name} — Notícias — 19/10/2026: x", "h", "t", monday)
+    with pytest.MonkeyPatch.context() as m:
+        m.setattr(cli, "_fixtures", lambda team, settings, now: [])
+        m.setattr(cli, "_now", lambda: datetime(2026, 10, 22, 13, 10, tzinfo=TZ))
+        lines = CliRunner().invoke(cli.app, ["due", "--all"]).stdout.splitlines()
+
+    assert lines == ["abc\tnews\t2026-10-22\tNotícias — 22/10/2026\tsend"]
+
+
+def test_run_news_on_a_thursday_resolves_for_specials() -> None:
+    from datetime import date
+
+    from geral.edition import resolve_match_edition
+
+    edition = resolve_match_edition(
+        "news", date(2026, 10, 22), [], datetime(2026, 10, 19, 13, 2, tzinfo=TZ), weekdays=(0, 3)
+    )
+
+    assert edition is not None and edition.label == "Notícias — 22/10/2026"

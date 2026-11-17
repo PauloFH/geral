@@ -38,6 +38,7 @@ class Passage(BaseModel):
     title: str
     url: str
     text: str
+    qid: str | None = None  # the page's Wikidata item (idols: their birth date)
 
 
 class Section(BaseModel):
@@ -58,15 +59,29 @@ def url_of(title: str) -> str:
     return "https://pt.wikipedia.org/wiki/" + quote(title.replace(" ", "_"))
 
 
-def extract(client: httpx.Client, title: str) -> str:
-    """The article as plain text, "== Heading ==" lines included ("" when it does not exist)."""
+def extract_page(client: httpx.Client, title: str) -> tuple[str, str | None]:
+    """The article as plain text ("== Heading ==" lines included; "" when it does not exist)
+    and its Wikidata id."""
     data = mediawiki.api(
         client,
         PTWIKI,
-        {"action": "query", "prop": "extracts", "explaintext": 1, "redirects": 1, "titles": title},
+        {
+            "action": "query",
+            "prop": "extracts|pageprops",
+            "ppprop": "wikibase_item",
+            "explaintext": 1,
+            "redirects": 1,
+            "titles": title,
+        },
     )
     pages = data.get("query", {}).get("pages", [])
-    return pages[0].get("extract", "") if pages else ""
+    if not pages:
+        return "", None
+    return pages[0].get("extract", ""), pages[0].get("pageprops", {}).get("wikibase_item")
+
+
+def extract(client: httpx.Client, title: str) -> str:
+    return extract_page(client, title)[0]
 
 
 def sections(text: str) -> list[Section]:
@@ -164,7 +179,8 @@ def passages(client: httpx.Client, team: Team) -> list[Passage]:
     for title in idol_titles(client, team):
         if title == team.wikipedia or title in team.classics:
             continue
-        idol = _idol(title, extract(client, title), team.club_terms)
+        text, qid = extract_page(client, title)
+        idol = _idol(title, text, team.club_terms)
         if idol:
-            found.append(idol)
+            found.append(idol.model_copy(update={"qid": qid}))
     return found

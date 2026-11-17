@@ -252,3 +252,24 @@ def test_a_wikipedia_error_skips_only_that_team(monkeypatch) -> None:
 
 def test_an_impossible_date_is_cut_to_the_year() -> None:
     assert job.checked_date("1934-06-31", "Em 31/06/1934, um registro errado.") == "1934"
+
+
+@respx.mock
+def test_job_saves_birthdays_on_sunday(monkeypatch) -> None:
+    found = [passage(1, "idolo")]
+    monkeypatch.setattr(job.sources, "passages", lambda client, team: found)
+    monkeypatch.setattr(
+        job,
+        "birthdays",
+        lambda client, passages: [{"name": "Bita", "birth_date": "1941-03-06", "source_url": "u"}],
+    )
+    page(unused=10, seen=[])
+    saved = respx.put("https://geral.test/api/teams/nautico/birthdays").mock(
+        return_value=httpx.Response(204)
+    )
+    llm = FakeLLMClient(faithful)
+
+    job.top_up(get_team("nautico"), settings(), llm, httpx.Client(), SUNDAY)
+
+    assert json.loads(saved.calls.last.request.content)[0]["name"] == "Bita"
+    assert llm.prompts == []  # the stock is full: birthdays only

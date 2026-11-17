@@ -358,3 +358,15 @@ def on_this_day(
     )
     response.raise_for_status()
     return [] if response.status_code == 204 else response.json()
+
+
+def save_birthdays(
+    settings: Settings, team: str, birthdays: list[dict], client: httpx.Client | None = None
+) -> None:
+    """The idols' birth dates for "Neste dia". Raises httpx.HTTPError."""
+    response = (client or httpx.Client(timeout=TIMEOUT)).put(
+        settings.PUBLIC_URL.rstrip("/") + f"/api/teams/{team}/birthdays",
+        json=birthdays,
+        headers=_auth(settings),
+    )
+    response.raise_for_status()

@@ -67,6 +67,12 @@ class Team(BaseModel):
     wikipedia: str | None = None
     classics: tuple[str, ...] = ()
     club_terms: tuple[str, ...] = ()
+
+    @property
+    def news_weekdays(self) -> tuple[int, ...]:
+        """Weekly news days with no match near: Monday, and Thursday for the special sections."""
+        return (0, 3) if self.specials else (0,)
+
     cbf_tables: dict[str, str] = Field(default_factory=dict)
 
     @field_validator("accent", "dark")

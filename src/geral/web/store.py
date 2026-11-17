@@ -84,6 +84,14 @@ CREATE TABLE IF NOT EXISTS stories (
     discarded INTEGER NOT NULL DEFAULT 0,
     UNIQUE (team, source_key)
 );
+-- Birth dates of the idols found by the stories job ("Neste dia").
+CREATE TABLE IF NOT EXISTS idol_birthdays (
+    team TEXT NOT NULL,
+    name TEXT NOT NULL,
+    birth_date TEXT NOT NULL,
+    source_url TEXT NOT NULL,
+    UNIQUE (team, name)
+);
 CREATE TABLE IF NOT EXISTS editions (
     team TEXT PRIMARY KEY,
     subject TEXT NOT NULL,
@@ -563,10 +571,26 @@ class SubscriberStore:
         """Removed by the owner in the review: never drawn again."""
         self._run("UPDATE stories SET discarded = 1 WHERE id = ?", story_id)
 
+    def save_birthdays(self, team: str, birthdays: list[dict]) -> None:
+        """The team's idols' birth dates, replacing the previous list (one transaction)."""
+        with closing(self._connect()) as db, db:
+            db.execute("DELETE FROM idol_birthdays WHERE team = ?", (team,))
+            db.executemany(
+                "INSERT OR REPLACE INTO idol_birthdays (team, name, birth_date, source_url)"
+                " VALUES (?, ?, ?, ?)",
+                [(team, b["name"], b["birth_date"], b["source_url"]) for b in birthdays],
+            )
+
     def on_this_day(self, team: str, day: date, days: int = 3) -> list[dict]:
-        """Dated facts of the team's stories whose day and month fall within `days` of `day`."""
+        """Dated facts (stories, idols' births) whose day and month fall within `days` of `day`."""
         found = []
-        for story in self._stories(
+        births = [
+            {"fact_date": when, "title": name, "summary": f"nascia {name}."}
+            for name, when in self._run(
+                "SELECT name, birth_date FROM idol_birthdays WHERE team = ?", team
+            )
+        ]
+        for story in births + self._stories(
             "team = ? AND rejected_reason IS NULL AND discarded = 0 AND length(fact_date) = 10",
             team,
         ):
