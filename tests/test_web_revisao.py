@@ -248,3 +248,67 @@ def test_late_draft_not_released_says_it_did_not_go_out(owner, store, clock) -> 
 
     assert "não saiu" in page.text.lower()
     assert "próxima verificação" not in page.text
+
+
+# --- special sections in the review ------------------------------------------------------------
+
+
+def with_sections(store):
+    from geral.models import Story
+
+    store.add_story(
+        "flamengo",
+        {
+            "kind": "clube",
+            "title": "A história",
+            "body": "Texto da história.",
+            "summary": "s",
+            "fact_date": "",
+            "source_url": "u",
+            "source_title": "t",
+            "source_key": "k",
+            "rejected_reason": None,
+        },
+        NOW,
+    )
+    drawn = store.draw_story("flamengo", "L")
+    n = newsletter().model_copy(
+        update={"story": Story(**drawn), "on_this_day": ["Há 10 anos, em 01/01/2016: algo."]}
+    )
+    day = (NOW + timedelta(hours=5)).date().isoformat()
+    store.save_draft(
+        "flamengo", "news", day, "Notícias", n.model_dump_json(), NOW, NOW + timedelta(hours=5)
+    )
+    return store.draft("flamengo", "news", day), drawn["id"]
+
+
+def test_review_lists_the_story(owner, store) -> None:
+    with_sections(store)
+
+    page = owner.get(f"/revisao?t={link()}").text
+
+    assert "A história" in page and "Neste dia" in page
+
+
+def test_removed_story_is_discarded_and_not_sent(owner, store) -> None:
+    from geral.models import Newsletter
+
+    d, story_id = with_sections(store)
+
+    assert post(owner, f"/revisao/{d.id}/historia/tirar").status_code == 303
+
+    kept = Newsletter.model_validate_json(store.draft_by_id(d.id).newsletter_json)
+    assert kept.story is None and kept.on_this_day  # what the send reads
+    assert store.draw_story("flamengo", "L") is None  # discarded: never drawn again
+    assert "Texto da história." not in owner.get(f"/revisao/{d.id}/previa?t={link()}").text
+
+
+def test_remove_on_this_day(owner, store) -> None:
+    from geral.models import Newsletter
+
+    d, _ = with_sections(store)
+
+    post(owner, f"/revisao/{d.id}/neste-dia/tirar")
+
+    kept = Newsletter.model_validate_json(store.draft_by_id(d.id).newsletter_json)
+    assert kept.on_this_day == [] and kept.story is not None

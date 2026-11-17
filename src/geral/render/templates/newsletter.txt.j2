@@ -134,6 +134,21 @@ Destaques: {% for label, player, value in our_leaders %}{{ label }} {{ player }}
 {% endfor %}
 {% endfor %}
 {% endif %}
+{% if n.story %}
+
+== História ==
+
+* {{ n.story.title }}
+{{ n.story.body }}
+Fonte: {{ n.story.source_title }} (Wikipédia): {{ n.story.source_url }}
+{% endif %}
+{% if n.on_this_day %}
+
+== Neste dia ==
+{% for line in n.on_this_day %}
+* {{ line }}
+{% endfor %}
+{% endif %}
 {% for section_title, items in [("Saiba mais", n.learn_more), ("Brasil afora", n.around_brazil)] if items %}
 
 == {{ section_title }} ==

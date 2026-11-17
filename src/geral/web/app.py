@@ -156,6 +156,11 @@ class StoryIn(BaseModel):
     rejected_reason: str | None = None  # refused by the verifier: kept so the source is skipped
 
 
+class DrawIn(BaseModel):
+    label: str  # the edition the story goes in (a rebuild gets the same story)
+    reserve: bool = True  # False for a preview: the stock is left as it is
+
+
 class BolaoMatchIn(BaseModel):
     opponent: str
     home: bool  # our team plays at home
@@ -915,6 +920,23 @@ def create_app(
             return unknown_team()
         return {"unused": store.unused_stories(team)}
 
+    @app.post("/api/teams/{team}/stories/draw")
+    def draw_story(request: Request, team: str, body: DrawIn):
+        if not authorized(request):
+            return unauthorized()
+        if team not in catalog:
+            return unknown_team()
+        story = store.draw_story(team, body.label, reserve=body.reserve)
+        return story if story else Response(status_code=204)
+
+    @app.get("/api/teams/{team}/stories/on-this-day")
+    def stories_on_this_day(request: Request, team: str, day: date):
+        if not authorized(request):
+            return unauthorized()
+        if team not in catalog:
+            return unknown_team()
+        return store.on_this_day(team, day)
+
     @app.get("/api/teams/{team}/stories/sources")
     def story_sources(request: Request, team: str):
         if not authorized(request):
@@ -968,6 +990,8 @@ def create_app(
                         {"title": topic.title, "removed": i in d.removed_topics}
                         for i, topic in enumerate(newsletter.topics)
                     ],
+                    "story": newsletter.story.title if newsletter.story else None,
+                    "on_this_day": newsletter.on_this_day,
                 }
             )
         return private(page(request, "revisao.html.j2", drafts=drafts, token=t, timezone=BRASILIA))
@@ -1030,6 +1054,29 @@ def create_app(
             return None
 
         return review_action(request, draft_id, t, change)
+
+    def section_action(request: Request, draft_id: int, t: str, section: str):
+        def change(draft):
+            newsletter = Newsletter.model_validate_json(draft.newsletter_json)
+            if section == "historia":
+                if newsletter.story is None:
+                    return not_found(request)
+                store.discard_story(newsletter.story.id)  # never drawn again
+                newsletter = newsletter.model_copy(update={"story": None})
+            else:
+                newsletter = newsletter.model_copy(update={"on_this_day": []})
+            store.set_draft_newsletter(draft.id, newsletter.model_dump_json())
+            return None
+
+        return review_action(request, draft_id, t, change)
+
+    @app.post("/revisao/{draft_id}/historia/tirar")
+    def review_remove_story(request: Request, draft_id: int, t: Annotated[str, Form()] = ""):
+        return section_action(request, draft_id, t, "historia")
+
+    @app.post("/revisao/{draft_id}/neste-dia/tirar")
+    def review_remove_on_this_day(request: Request, draft_id: int, t: Annotated[str, Form()] = ""):
+        return section_action(request, draft_id, t, "neste-dia")
 
     @app.post("/revisao/{draft_id}/topicos/{n}/tirar")
     def review_remove(request: Request, draft_id: int, n: int, t: Annotated[str, Form()] = ""):

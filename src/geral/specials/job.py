@@ -66,6 +66,10 @@ def checked_date(fact_date: str, source: str) -> str:
     if month is None:
         return year
     d, m = int(day), int(month)
+    try:
+        date(int(year), m, d)
+    except ValueError:
+        return year  # "31/06" in the source: the year is all that holds
     spelled = rf"\b0?{d}º? de {MONTHS[m - 1]}\b" if 1 <= m <= 12 else None
     numeric = rf"\b0?{d}/0?{m}\b"
     found = (spelled and re.search(spelled, source, re.IGNORECASE)) or re.search(numeric, source)
