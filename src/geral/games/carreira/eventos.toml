@@ -473,3 +473,97 @@ peso = 0.8
 condicao = { classico = true, jogos_min = 10 }
 manchetes = ["{nome} perde a cabeça e é expulso no {classico}", "Vermelho no {classico}: {nome} deixa {o_clube} com dez contra {o_rival}"]
 efeito = { nota = -1 }
+
+# --- Nordeste (o clube atual é nordestino) ----------------------------------------------------
+
+[[evento]]
+id = "viagem-de-onibus"
+peso = 1.5
+momento = "antes"
+condicao = { regioes = ["nordeste"], idade_min = 17 }
+manchetes = ["Catorze horas de ônibus pela BR: {nome} chega moído, mas joga", "Ônibus quebra na estrada e {o_clube} chega em cima da hora; {nome} salva o empate"]
+efeito = { jogos = 0.9 }
+
+[[evento]]
+id = "calor-do-meio-dia"
+peso = 1.5
+unico = false
+condicao = { regioes = ["nordeste"], jogos_min = 15 }
+manchetes = ["Jogo às 16h, 38 graus: {nome} é o único que não cai de rendimento", "Sol de rachar e {nome} correndo pelos dois: o calor é casa para ele"]
+
+[[evento]]
+id = "arena-lotada-nordestao"
+peso = 2
+unico = false
+condicao = { regioes = ["nordeste"], jogos_min = 15, idade_min = 18 }
+manchetes = ["Estádio lotado no Nordestão e {nome} faz a festa da torcida {do_clube}", "Noite de Copa do Nordeste: {nome} decide diante de 40 mil"]
+efeito = { nota = 1 }
+
+[[evento]]
+id = "proposta-do-sul"
+peso = 1.5
+condicao = { regioes = ["nordeste"], nota_min = 62, idade_min = 19, idade_max = 27 }
+manchetes = ["Clubes do Sul e do Sudeste de olho em {nome}, a joia {do_clube}", "Empresários lotam a tribuna para ver {nome}: o Brasil descobre o ídolo da terra"]
+efeito = { saida = 0.4 }
+
+[[evento]]
+id = "festa-junina"
+peso = 1
+momento = "antes"
+condicao = { regioes = ["nordeste"], idade_min = 17 }
+manchetes = ["São João na concentração: {nome} dança quadrilha e o grupo se fecha", "Forró, milho e união: a festa junina {do_clube} anima {nome}"]
+efeito = { nota = 1 }
+
+[[evento]]
+id = "torcida-no-aeroporto"
+peso = 1.2
+condicao = { regioes = ["nordeste"], titulo = true }
+manchetes = ["Torcida invade o aeroporto para receber {nome} e os campeões {do_clube}", "Carreata pela cidade: {nome} ergue a taça em cima do trio elétrico"]
+
+[[evento]]
+id = "idolo-da-terra"
+peso = 2
+condicao = { regioes = ["nordeste"], no_clube_inicial = true, idade_min = 21, jogos_min = 25 }
+manchetes = ["Filho da terra, {nome} vira o maior ídolo {do_clube} da década", "\"É daqui, é nosso\": a torcida {do_clube} adota {nome} de vez"]
+efeito = { saida = -0.3 }
+
+[[evento]]
+id = "volta-ao-nordeste"
+peso = 2
+condicao = { regioes = ["nordeste"], no_clube_inicial = false, idade_min = 28 }
+manchetes = ["De volta ao Nordeste, {nome} é recebido como rei {no_clube}", "{nome} troca o frio pela praia e brilha {no_clube}"]
+
+[[evento]]
+id = "gramado-ruim"
+peso = 1
+unico = false
+condicao = { regioes = ["nordeste"], jogos_min = 10 }
+manchetes = ["Gramado esburacado no interior e {nome} ainda dá chapéu", "Campo pesado, bola quicando: {nome} se vira e marca no estadual"]
+
+[[evento]]
+id = "classico-lotado"
+peso = 2
+unico = false
+condicao = { regioes = ["nordeste"], classico = true, jogos_min = 15 }
+manchetes = ["{classico} com casa cheia: {nome} é o nome do jogo", "A cidade para no {classico}, e {nome} não decepciona"]
+
+[[evento]]
+id = "artilheiro-do-nordestao"
+peso = 2
+condicao = { regioes = ["nordeste"], gols_min = 12 }
+manchetes = ["{nome} é o artilheiro da Copa do Nordeste", "Ninguém fez mais gols no Nordestão do que {nome}"]
+efeito = { nota = 1, saida = 0.2 }
+
+[[evento]]
+id = "salario-atrasado-nordeste"
+peso = 0.8
+momento = "antes"
+condicao = { regioes = ["nordeste"], forca_max = 45 }
+manchetes = ["Três meses de salário atrasado {no_clube}: {nome} joga por amor à camisa", "Vaquinha da torcida paga o salário do elenco, e {nome} agradece em campo"]
+efeito = { saida = 0.3 }
+
+[[evento]]
+id = "vaquejada"
+peso = 0.6
+condicao = { regioes = ["nordeste"], idade_min = 20 }
+manchetes = ["Nas férias, {nome} vai à vaquejada e vira assunto nas redes", "{nome} aparece de chapéu de couro e a torcida aprova"]

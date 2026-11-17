@@ -114,7 +114,7 @@ def test_link_sem_modo_abre_como_rapida() -> None:
 def test_toda_rotina_e_alcancavel() -> None:
     dados = carregar()
     assert len(dados.rotinas) >= 30
-    vistos: set[tuple[str, str, bool]] = set()
+    vistos: set[tuple[str, int, bool]] = set()
     for i in range(300):
         final, passos = jogar(
             completa(f"a{i}", posicao=regras.POSICOES[i % 5]),
@@ -125,12 +125,12 @@ def test_toda_rotina_e_alcancavel() -> None:
         respostas = [r for _, p, r in passos if p.tipo == "dia"]
         pro = [t for t in final.temporadas if t.idade >= 17]
         for pergunta, resposta, t in zip(dias, respostas, pro, strict=True):
-            vistos.add((pergunta.id, pergunta.opcoes[resposta], t.rotina.deu_certo))
+            vistos.add((pergunta.id, resposta, t.rotina.deu_certo))
     for rotina in dados.rotinas:
-        for opcao in rotina.opcoes:
-            assert (rotina.id, opcao.texto, True) in vistos, (rotina.id, opcao.texto)
+        for i, opcao in enumerate(rotina.opcoes):
+            assert (rotina.id, i, True) in vistos, (rotina.id, opcao.texto)
             if 1 < opcao.chance < 100:
-                assert (rotina.id, opcao.texto, False) in vistos, (rotina.id, opcao.texto)
+                assert (rotina.id, i, False) in vistos, (rotina.id, opcao.texto)
 
 
 def test_toda_opcao_que_muda_de_clube_diz_qual() -> None:
@@ -143,3 +143,12 @@ def test_toda_opcao_que_muda_de_clube_diz_qual() -> None:
                     assert dados.clubes[clube].nome in texto, (pergunta.id, texto)
                     vistas.add(pergunta.id)
     assert "fim-de-contrato" in vistas
+
+
+def test_perguntas_e_opcoes_sem_campo_sobrando() -> None:
+    for i in range(150):
+        e = completa(f"b{i}", clube=["abc", "nautico", "sport", "flamengo"][i % 4])
+        _, passos = jogar(e, lambda p, rng: rng.randrange(len(p.opcoes)), f"b{i}")
+        for _, pergunta, _ in passos:
+            for texto in [pergunta.pergunta, *pergunta.opcoes]:
+                assert "{" not in texto and "}" not in texto, (pergunta.id, texto)

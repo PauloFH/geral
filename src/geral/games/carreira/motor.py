@@ -589,7 +589,7 @@ class _Simulacao:
                 id=rotina.id,
                 tipo="dia",
                 pergunta=texto,
-                opcoes=[o.texto for o in rotina.opcoes],
+                opcoes=[o.texto.format_map(campos) for o in rotina.opcoes],
                 info=[_info(o, self.notas) for o in rotina.opcoes],
                 destinos=["ficar"] * len(rotina.opcoes),
                 clubes=[None] * len(rotina.opcoes),
@@ -605,7 +605,10 @@ class _Simulacao:
         self.teto = max(35, min(99, self.teto + geral(self.notas, self.posicao) - antes))
         self.efeito = efeito
         self.resultado = ResultadoRotina(
-            situacao=texto, escolha=opcao.texto, deu_certo=deu_certo, efeito=descrever(efeito)
+            situacao=texto,
+            escolha=opcao.texto.format_map(campos),
+            deu_certo=deu_certo,
+            efeito=descrever(efeito),
         )
         return None
 

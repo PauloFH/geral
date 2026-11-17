@@ -463,3 +463,79 @@ texto = "Matar a saudade por vídeo"
 chance = 60
 sucesso = {}
 fracasso = { nota = -2, saida = 0.2 }
+
+# --- Nordeste ---------------------------------------------------------------------------------
+
+[[rotina]]
+id = "convite-do-forro"
+texto = "Um trio de forró famoso chama {nome} para subir no palco no São João."
+condicao = { regioes = ["nordeste"] }
+[[rotina.opcao]]
+texto = "Subir e tocar zabumba"
+chance = 70
+sucesso = { atributos = { lideranca = 2 }, nota = 1 }
+fracasso = { nota = -1 }
+[[rotina.opcao]]
+texto = "Descansar para o jogo"
+sucesso = {}
+
+[[rotina]]
+id = "treino-na-areia"
+texto = "O preparador {do_clube} leva o elenco para treinar na areia da praia."
+condicao = { regioes = ["nordeste"] }
+[[rotina.opcao]]
+texto = "Dar tudo na areia fofa"
+chance = 65
+bonus = "fisico"
+sucesso = { atributos = { fisico = 2, velocidade = 1 } }
+fracasso = { jogos = 0.8 }
+[[rotina.opcao]]
+texto = "Fazer só o básico"
+chance = 90
+sucesso = { atributos = { fisico = 1 } }
+fracasso = {}
+
+[[rotina]]
+id = "semana-do-classico"
+texto = "Semana do {classico}: a torcida {do_clube} espera {nome} no treino com faixas."
+condicao = { regioes = ["nordeste"], classico = true }
+[[rotina.opcao]]
+texto = "Prometer gol contra {o_rival}"
+chance = 45
+bonus = "finalizacao"
+sucesso = { nota = 3, atributos = { lideranca = 1 } }
+fracasso = { nota = -2 }
+[[rotina.opcao]]
+texto = "Falar pouco e treinar"
+chance = 85
+sucesso = { nota = 1 }
+fracasso = {}
+
+[[rotina]]
+id = "olheiro-do-sudeste"
+texto = "Um olheiro de um grande do Sudeste veio ver {nome} no estadual."
+condicao = { regioes = ["nordeste"], idade_max = 26 }
+[[rotina.opcao]]
+texto = "Caprichar e chamar a atenção"
+chance = 55
+bonus = "drible"
+sucesso = { saida = 0.6, nota = 1 }
+fracasso = { nota = -1 }
+[[rotina.opcao]]
+texto = "Jogar pelo time, sem firula"
+chance = 80
+sucesso = { nota = 1, saida = -0.2 }
+fracasso = {}
+
+[[rotina]]
+id = "escolinha-na-terra"
+texto = "A prefeitura da cidade natal de {nome} quer abrir uma escolinha com o nome dele."
+condicao = { regioes = ["nordeste"], idade_min = 25 }
+[[rotina.opcao]]
+texto = "Topar e visitar nas folgas"
+chance = 85
+sucesso = { atributos = { lideranca = 2 } }
+fracasso = { jogos = 0.9 }
+[[rotina.opcao]]
+texto = "Deixar para depois da carreira"
+sucesso = {}

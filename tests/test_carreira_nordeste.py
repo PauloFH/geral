@@ -105,3 +105,19 @@ def test_draft_de_quem_comeca_no_nordeste_tem_dois_idolos_da_regiao() -> None:
         assert sum(x.regiao == "nordeste" for x in nordeste) >= 2
     sem_clube = [oferta(dados, "geral", f"s{i}") for i in range(50)]
     assert sem_clube == [oferta(dados, "geral", f"s{i}", "flamengo") for i in range(50)]
+
+
+def test_eventos_regionais_so_no_nordeste() -> None:
+    dados = carregar()
+    regionais = {e.id for e in dados.eventos if "nordeste" in e.condicao.regioes}
+    rotinas = {r.id for r in dados.rotinas if "nordeste" in r.condicao.regioes}
+    assert len(regionais) >= 12 and len(rotinas) >= 4
+    vistos = set()
+    for clube in ("abc", "flamengo", "nautico", "palmeiras"):
+        for c in _carreiras(clube, 60, f"r{clube}"):
+            for t in c.temporadas:
+                aqui = regionais & set(t.eventos)
+                vistos |= aqui
+                if aqui:
+                    assert dados.regiao(dados.clubes[t.clube_id]) == "nordeste", (aqui, t.clube)
+    assert vistos
