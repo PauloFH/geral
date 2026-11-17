@@ -73,6 +73,8 @@ class Condicao:
     copa: bool | None = None  # played a World Cup this season
     mundial: bool | None = None  # won it
     paises: tuple[str, ...] = ()  # country of the current league
+    regioes: tuple[str, ...] = ()  # region of the current club (Brazil): nordeste, sudeste…
+    classico: bool | None = None  # the current club has a named derby ({classico}, {rival})
 
 
 @dataclass(frozen=True)

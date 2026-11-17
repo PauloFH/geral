@@ -29,6 +29,7 @@ IDADE_INICIAL, IDADE_MAXIMA = 16, 42
 MAX_ESCOLHAS = 4  # decision questions per career (both modes)
 MAX_RESPOSTAS = 60  # every answer of a Completa career: a day-to-day one per season, the market
 CHANCE_ESCOLHA = 0.4  # per season, when one fits
+COPA_DO_NORDESTE = "Copa do Nordeste"
 EUROPA = 80  # league strength from which a league counts as the top of Europe
 EXOTICAS = ("ara", "jap", "eua", "tur", "mex")
 GOL = {"atacante": 0.5, "meia": 0.24, "volante": 0.07, "lateral": 0.06, "zagueiro": 0.05}
@@ -199,6 +200,8 @@ class _Contexto:
     historico: set[str]
     no_clube_inicial: bool
     pais: str = ""
+    regiao: str = ""
+    classico: bool = False
     gols: int = 0
     jogos: int = 0
     titulo: bool = False
@@ -223,6 +226,8 @@ class _Contexto:
             and (c.copa is None or c.copa == self.copa)
             and (c.mundial is None or c.mundial == self.mundial)
             and (not c.paises or self.pais in c.paises)
+            and (not c.regioes or self.regiao in c.regioes)
+            and (c.classico is None or c.classico == self.classico)
         )
 
 
@@ -252,6 +257,15 @@ class _Simulacao:
         self.aposenta_aos = self.rng.randint(33, 38) + (2 if self.notas["fisico"] >= 85 else 0)
         self.idade, self.ano, self.clube = IDADE_INICIAL, PRIMEIRO_ANO, self.inicio
         self.completa = self.entrada.modo == "completa"
+        self._pesos_estado: dict[str, int] = {}
+        self._peso_nordeste = 1
+        for clube in self.dados.clubes.values():
+            if clube.estado:
+                self._pesos_estado[clube.estado] = (
+                    self._pesos_estado.get(clube.estado, 0) + clube.prestigio**2
+                )
+                if self.dados.regiao(clube) == "nordeste":
+                    self._peso_nordeste += clube.prestigio**2
 
     # -- the loop --------------------------------------------------------------------------
 
@@ -300,6 +314,29 @@ class _Simulacao:
     def _nivel(self, clube: Clube) -> float:
         return (self.dados.ligas[clube.liga].forca + clube.prestigio) / 2
 
+    def _campos_classico(self) -> dict[str, str]:
+        """{classico} and {rival} for the texts: the derby turns by year, without the dice."""
+        todos = self.dados.classicos_de(self.clube)
+        nome, rival = todos[self.ano % len(todos)] if todos else ("clássico", None)
+        return {"classico": nome} | artigos("rival", rival)
+
+    def _regionais(self, participacao: float) -> list[str]:
+        """The state cup and, for a club of the Northeast, the Copa do Nordeste: a club's chance is
+        its weight (prestige squared) among the clubs that play it."""
+        estado = self.dados.estados.get(self.clube.estado or "")
+        if estado is None:
+            return []
+        ganhos = []
+        peso = self.clube.prestigio**2
+        rivais = self._pesos_estado.get(estado.uf, peso)
+        if self.rng.random() < min(0.85, 1.6 * peso / rivais) * participacao:
+            ganhos.append(estado.campeonato)
+        if estado.regiao == "nordeste":
+            chance = min(0.5, 4 * peso / self._peso_nordeste) * participacao
+            if self.rng.random() < chance:
+                ganhos.append(COPA_DO_NORDESTE)
+        return ganhos
+
     def _contexto(self) -> _Contexto:
         return _Contexto(
             idade=self.idade,
@@ -309,6 +346,8 @@ class _Simulacao:
             posicao=self.posicao,
             historico=self.historico,
             no_clube_inicial=self.clube.id == self.inicio.id,
+            regiao=self.dados.regiao(self.clube) or "",
+            classico=bool(self.dados.classicos_de(self.clube)),
         )
 
     def _sortear_eventos(self, momento: str, ctx: _Contexto) -> list[Evento]:
@@ -362,6 +401,7 @@ class _Simulacao:
                 and self.rng.random() < chance * 0.35
             ):
                 titulos.append(liga.continental)
+            titulos += self._regionais(peso * min(1.0, jogos / 10))
             convocado = any(e.efeito.selecao for e in antes) or self.efeito.selecao
             if 18 <= self.idade <= 35 and self.nota >= 78 and parte > 0.4:
                 convocado = convocado or self.rng.random() < min(0.95, (self.nota - 76) / 14)
@@ -382,15 +422,19 @@ class _Simulacao:
             if e.efeito.titulo:
                 titulos.append(e.efeito.titulo)
         principal = (depois or antes)[0] if eventos else None
-        campos = artigos("clube", self.clube) | {
-            "nome": self.entrada.craque.nome,
-            "camisa": self.entrada.craque.camisa,
-            "liga": liga.pais,
-            "campeonato": liga.campeonato,
-            "gols": gols,
-            "jogos": jogos,
-            "idade": self.idade,
-        }
+        campos = (
+            artigos("clube", self.clube)
+            | self._campos_classico()
+            | {
+                "nome": self.entrada.craque.nome,
+                "camisa": self.entrada.craque.camisa,
+                "liga": liga.pais,
+                "campeonato": liga.campeonato,
+                "gols": gols,
+                "jogos": jogos,
+                "idade": self.idade,
+            }
+        )
         manchete = self.rng.choice(principal.manchetes).format_map(campos) if principal else ""
         temporada = Temporada(
             ano=self.ano,
@@ -529,10 +573,14 @@ class _Simulacao:
             return None
         rotina = self.rng.choices(novas, weights=[r.peso for r in novas])[0]
         self.rotinas_vistas.append(rotina.id)
-        campos = artigos("clube", self.clube) | {
-            "nome": self.entrada.craque.nome,
-            "idade": self.idade,
-        }
+        campos = (
+            artigos("clube", self.clube)
+            | self._campos_classico()
+            | {
+                "nome": self.entrada.craque.nome,
+                "idade": self.idade,
+            }
+        )
         texto = rotina.texto.format_map(campos)
         resposta = self._resposta(len(rotina.opcoes))
         if resposta is None:

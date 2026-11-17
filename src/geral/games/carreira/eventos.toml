@@ -456,3 +456,20 @@ peso = 1.5
 unico = false
 condicao = { jogos_min = 30, posicoes = ["meia", "lateral"], nota_min = 70 }
 manchetes = ["{nome} é o líder de assistências do {campeonato}", "Garçom: {nome} serve os companheiros {no_clube}"]
+
+# --- clássicos (o clube tem um clássico com nome) -------------------------------------------
+
+[[evento]]
+id = "decide-o-classico"
+peso = 3
+unico = false
+condicao = { classico = true, gols_min = 2 }
+manchetes = ["{nome} decide o {classico} e cala a torcida {do_rival}", "Deu {nome} no {classico}: gol no fim contra {o_rival}", "{classico} é de {nome}: a festa é {do_clube}"]
+efeito = { nota = 1 }
+
+[[evento]]
+id = "expulso-no-classico"
+peso = 0.8
+condicao = { classico = true, jogos_min = 10 }
+manchetes = ["{nome} perde a cabeça e é expulso no {classico}", "Vermelho no {classico}: {nome} deixa {o_clube} com dez contra {o_rival}"]
+efeito = { nota = -1 }

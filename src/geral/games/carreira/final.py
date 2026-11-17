@@ -30,6 +30,7 @@ CAMPOS = {
     "exotico_min",
     "paises_min",
     "idade_fim_max",
+    "copa_nordeste_min",
 }
 
 
@@ -55,6 +56,7 @@ def numeros(temporadas: list) -> dict:
         "exotico": sum(t.pais in EXOTICAS for t in pro),
         "paises": len({t.pais for t in pro}),
         "idade_fim": temporadas[-1].idade,
+        "copa_nordeste": sum("Copa do Nordeste" in t.titulos for t in temporadas),
     }
 
 

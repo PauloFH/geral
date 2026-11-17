@@ -3,7 +3,7 @@
 # pico_min/pico_max (maior nota), clubes_min/clubes_max, um_clube_min (temporadas no mesmo
 # clube), titulos_min, gols_min, selecao_min (jogos), copa (disputou), mundial (ganhou),
 # europa_min (temporadas em liga de força 80+), exotico_min (Arábia, Japão, EUA, Turquia,
-# México), paises_min, idade_fim_max. O último não tem condição: é o curinga.
+# México), paises_min, idade_fim_max, copa_nordeste_min (Copas do Nordeste ganhas). O último não tem condição: é o curinga.
 
 [[final]]
 rotulo = "Lenda"
@@ -24,6 +24,11 @@ condicao = { europa_min = 7, titulos_min = 8 }
 rotulo = "Craque da Seleção"
 descricao = "Dono da amarelinha por anos, mesmo sem a taça."
 condicao = { selecao_min = 50 }
+
+[[final]]
+rotulo = "Rei do Nordeste"
+descricao = "Dono da Copa do Nordeste: no Nordestão, ninguém ganhou tanto."
+condicao = { copa_nordeste_min = 2 }
 
 [[final]]
 rotulo = "Bandeira"
