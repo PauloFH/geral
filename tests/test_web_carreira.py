@@ -178,3 +178,45 @@ def test_pagina_sabe_o_tipo_de_cada_taca(game) -> None:
     assert jogo["tacas"]["Campeonato Potiguar"] == "estadual"
     assert jogo["tacas"]["Copa do Nordeste"] == "nordeste"
     assert jogo["tacas"]["Copa do Mundo"] == "mundo"
+
+
+def _ate_o_fim(game, semente="fixa", clube="bahia") -> dict:
+    pedido = _comeco(game) | {"semente": semente, "escolhas": []}
+    pedido["craque"] = CRAQUE | {"clube": clube}
+    while not (corpo := game.post(f"{API}/geral/simular", json=pedido).json())["codigo"]:
+        pedido["escolhas"].append(0)
+    return corpo
+
+
+def test_resposta_final_traz_a_posicao_do_clube(game) -> None:
+    corpo = _ate_o_fim(game)
+
+    assert corpo["placar"] == {"clube": "Bahia", "carreiras": 1, "posicao": 1}
+    assert corpo["carreira"]["final"]["vereditos"]
+    linhas = game.get(f"{API}/placar").json()
+    assert linhas[0]["nome"] == "Bahia" and linhas[0]["carreiras"] == 1
+
+
+def test_mesma_carreira_de_novo_e_link_compartilhado_nao_contam(game) -> None:
+    pedido = _comeco(game) | {"semente": "fixa", "escolhas": []}
+    while not (corpo := game.post(f"{API}/geral/simular", json=pedido).json())["codigo"]:
+        pedido["escolhas"].append(0)
+    game.post(f"{API}/geral/simular", json=pedido)  # the same final request: a retry
+    game.get(f"/jogos/carreira/c/{corpo['codigo']}")
+
+    assert game.get(f"{API}/placar").json()[0]["carreiras"] == 1
+
+
+def test_limite_por_rede_nao_quebra_a_carreira(store, mailer, clock) -> None:
+    from geral.web import app as web
+
+    limite = web.CARREIRAS_POR_REDE
+    web.CARREIRAS_POR_REDE = 2
+    try:
+        game = make_client(store, mailer, clock)
+        contadas = [_ate_o_fim(game, f"s{i}")["placar"] for i in range(3)]
+    finally:
+        web.CARREIRAS_POR_REDE = limite
+
+    assert contadas[1]["carreiras"] == 2 and contadas[2] is None  # the third still ends fine
+    assert game.get(f"{API}/placar").json()[0]["carreiras"] == 2
