@@ -13,11 +13,11 @@
     return node;
   };
   const nomeAtributo = Object.fromEntries(jogo.atributos.map((a) => [a.id, a.nome]));
-  const PASSO = 650; // ms between seasons
   // Only vertical: scrollIntoView would also scroll the pitch (.wall hides a wider decoration).
   const rolar = (node, onde = "start") => {
     const r = node.getBoundingClientRect();
-    const alvo = onde === "center" ? r.top - (innerHeight - r.height) / 2 : r.top - 12;
+    const barra = $("cr-bar").offsetHeight || 0; // the sticky bar must not cover what we scroll to
+    const alvo = onde === "center" ? r.top - (innerHeight - r.height) / 2 : r.top - barra - 16;
     window.scrollTo({ top: scrollY + alvo, behavior: "smooth" });
   };
   const show = (step) =>
@@ -34,8 +34,9 @@
     semente: null,
     escolhas: [],
     mostradas: 0,
-    rapido: false,
-    resposta: null,
+    modo: "rapida",
+    temporadas: [],
+    corpo: null,
   });
 
   // -- 1. the player --------------------------------------------------------------------------
@@ -49,6 +50,12 @@
       group.querySelectorAll(".chip").forEach((c) => c.setAttribute("aria-pressed", String(c === chip)));
     }),
   );
+  const modos = form.querySelector(".cr-modes");
+  modos.addEventListener("click", (event) => {
+    const botao = event.target.closest(".cr-mode");
+    if (!botao) return;
+    modos.querySelectorAll(".cr-mode").forEach((m) => m.setAttribute("aria-pressed", String(m === botao)));
+  });
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const nome = $("cr-nome").value.trim();
@@ -59,8 +66,9 @@
       camisa: Math.min(99, Math.max(1, Number($("cr-camisa").value) || 10)),
       posicao: pressed("posicao"),
       pe: pressed("pe"),
-      clube: $("cr-clube") ? $("cr-clube").value : null,
+      clube: $("cr-clube").value,
     };
+    estado.modo = form.querySelector('.cr-mode[aria-pressed="true"]').dataset.modo;
     const go = form.querySelector(".cr-go");
     go.disabled = true;
     try {
@@ -144,10 +152,13 @@
 
   // -- 3. the career ----------------------------------------------------------------------------
 
+  const AUTO = 1800; // ms per season in the Rápida mode
+
   const pedido = () => ({
     semente_draft: estado.oferta.semente_draft,
     semente: estado.semente,
     craque: estado.craque,
+    modo: estado.modo,
     roubos: Object.entries(estado.roubos).map(([atributo, r]) => ({ lenda: r.lenda, atributo })),
     escolhas: estado.escolhas,
   });
@@ -166,86 +177,140 @@
     return dados;
   }
 
+  const quem = (c) => `${c.nome} · #${c.camisa} · ${c.posicao}`;
+
   function comecarCarreira() {
     show("cr-carreira");
-    $("cr-header").textContent = `${estado.craque.nome} · #${estado.craque.camisa} · ${estado.craque.posicao} · geral ${geral()}`;
-    $("cr-seasons").replaceChildren();
+    $("cr-bar-who").textContent = quem(estado.craque);
+    $("cr-bar-nota").textContent = `geral ${geral()}`;
+    $("cr-now").replaceChildren();
+    delete $("cr-now").dataset.temporada;
+    $("cr-timeline").replaceChildren();
     rolar($("cr-carreira"), "start");
     simular();
   }
 
   async function simular() {
     $("cr-error").hidden = $("cr-retry").hidden = true;
-    $("cr-skip").hidden = false;
     try {
       const corpo = await post(`${API}/simular`, pedido());
       estado.semente = corpo.semente;
-      estado.resposta = corpo;
-      await animar(corpo.carreira.temporadas);
-      depois(corpo);
+      estado.temporadas = corpo.carreira.temporadas;
+      estado.corpo = corpo;
+      avancar();
     } catch (erro) {
       $("cr-error").textContent = erro.message || "Sem conexão. Tente de novo.";
       $("cr-error").hidden = $("cr-retry").hidden = false;
     }
   }
 
-  const espera = (ms) => new Promise((ok) => setTimeout(ok, ms));
+  // One season on screen at a time; the earlier ones go to the timeline.
+  let relogio = null;
+  function avancar() {
+    clearTimeout(relogio);
+    const { temporadas } = estado;
+    if (estado.mostradas < temporadas.length) {
+      mostrarTemporada(temporadas[estado.mostradas]);
+      estado.mostradas += 1;
+      const faltam = estado.mostradas < temporadas.length;
+      $("cr-next").hidden = !faltam;
+      $("cr-skip").hidden = !faltam || estado.modo === "completa";
+      if (faltam && estado.modo === "rapida") relogio = setTimeout(avancar, AUTO);
+      if (faltam) return;
+    }
+    $("cr-next").hidden = $("cr-skip").hidden = true;
+    const { pendente, final } = estado.corpo.carreira;
+    if (pendente) return perguntar(pendente);
+    if (final) fim(final, estado.corpo.codigo);
+  }
 
-  function linhaTemporada(t) {
-    const li = el("li", "cr-season");
-    const top = el("div", "cr-season-top");
-    top.append(el("span", "cr-age", `${t.idade}`), el("span", "cr-club", t.clube));
-    const numeros = t.idade === 16 ? "base" : `${t.jogos}j ${t.gols}g`;
-    top.append(el("span", "cr-nums", numeros));
-    li.append(top);
-    if (t.titulos.length) li.append(el("span", "cr-titles", `🏆 ${t.titulos.join(" · ")}`));
-    li.append(el("p", "cr-headline", t.manchete));
+  $("cr-next").addEventListener("click", avancar);
+  $("cr-skip").addEventListener("click", () => {
+    clearTimeout(relogio);
+    while (estado.mostradas < estado.temporadas.length - 1) {
+      mostrarTemporada(estado.temporadas[estado.mostradas]);
+      estado.mostradas += 1;
+    }
+    avancar();
+  });
+  $("cr-retry").addEventListener("click", () => simular());
+
+  const chip = (texto, cls = "cr-chip") => el("span", cls, texto);
+
+  function mostrarTemporada(t) {
+    const atual = $("cr-now");
+    const anterior = atual.dataset.temporada;
+    if (anterior) $("cr-timeline").prepend(linhaDoTempo(JSON.parse(anterior)));
+    atual.dataset.temporada = JSON.stringify(t);
+    atual.replaceChildren();
+    atual.classList.remove("enter");
+    void atual.offsetWidth; // restart the animation
+    atual.classList.add("enter");
+    atual.append(el("span", "cr-kicker", `${t.ano} · ${t.idade} anos · ${t.pais}`));
+    if (t.chegada) atual.append(chip(t.chegada, "cr-arrival"));
+    atual.append(el("h3", "cr-club-big", t.clube));
+    const numeros = el("div", "cr-numbers");
+    if (t.idade === 16) numeros.append(chip("Categorias de base"));
+    else {
+      numeros.append(chip(`${t.jogos} jogos`), chip(`${t.gols} gols`), chip(`${t.assistencias} assist.`));
+      if (t.selecao) numeros.append(chip(`${t.selecao} pela Seleção`, "cr-chip selecao"));
+    }
+    atual.append(numeros);
+    if (t.titulos.length) {
+      const tacas = el("div", "cr-trophies");
+      t.titulos.forEach((nome) => tacas.append(chip(`🏆 ${nome}`, "cr-trophy")));
+      atual.append(tacas);
+    }
+    atual.append(el("p", "cr-headline", t.manchete));
+    if (t.rotina) {
+      const r = t.rotina;
+      const linha = el("p", r.deu_certo ? "cr-routine ok" : "cr-routine bad");
+      linha.append(el("b", "", r.deu_certo ? "Deu certo" : "Deu errado"));
+      linha.append(document.createTextNode(` · ${r.escolha}${r.efeito ? `: ${r.efeito}` : ""}`));
+      atual.append(linha);
+    }
+    $("cr-bar-nota").textContent = `${t.idade} anos · ${t.clube} · nota ${t.nota}`;
+  }
+
+  function linhaDoTempo(t) {
+    const li = el("li", "cr-line");
+    li.append(el("span", "cr-line-age", t.idade), el("span", "cr-line-club", t.clube));
+    li.append(el("span", "cr-line-nums", t.idade === 16 ? "base" : `${t.jogos}j · ${t.gols}g`));
+    if (t.titulos.length) li.append(el("span", "cr-line-trophy", `🏆${t.titulos.length > 1 ? `×${t.titulos.length}` : ""}`));
+    li.title = t.manchete;
     return li;
   }
 
-  async function animar(temporadas) {
-    const lista = $("cr-seasons");
-    while (estado.mostradas < temporadas.length) {
-      const li = linhaTemporada(temporadas[estado.mostradas]);
-      lista.append(li);
-      estado.mostradas += 1;
-      if (!estado.rapido) {
-        li.classList.add("enter");
-        const quadro = lista.parentElement;
-        quadro.scrollTop = quadro.scrollHeight;
-        await espera(PASSO);
-      }
-    }
-  }
-
-  $("cr-skip").addEventListener("click", () => (estado.rapido = true));
-  $("cr-retry").addEventListener("click", () => simular());
-
-  function depois(corpo) {
-    const { pendente, final } = corpo.carreira;
-    $("cr-skip").hidden = Boolean(final) || Boolean(pendente);
-    if (pendente) return perguntar(pendente);
-    if (final) fim(final, corpo.codigo);
-  }
+  const TIPOS = { dia: "Dia a dia", mercado: "Mercado", decisao: "Decisão" };
 
   function perguntar(pendente) {
     const caixa = $("cr-question");
+    caixa.dataset.tipo = pendente.tipo;
+    $("cr-q-kind").textContent = TIPOS[pendente.tipo] || "Decisão";
     $("cr-question-text").textContent = pendente.pergunta;
     const opcoes = $("cr-options");
     opcoes.replaceChildren();
     pendente.opcoes.forEach((texto, i) => {
-      const b = el("button", "btn cr-option", texto);
+      const info = (pendente.info || [])[i];
+      const b = el("button", "cr-option");
       b.type = "button";
+      b.append(el("span", "cr-option-text", texto));
+      if (info && info.chance !== null && info.chance !== undefined) {
+        const barra = el("span", "cr-chance");
+        barra.style.setProperty("--chance", `${info.chance}%`);
+        barra.append(el("span", "cr-chance-n", `${info.chance}%`));
+        b.append(barra);
+      }
+      if (info && info.efeitos) b.append(el("span", "cr-option-effects", info.efeitos));
       b.addEventListener("click", () => {
         caixa.hidden = true;
         estado.escolhas.push(i);
-        estado.rapido = false;
         simular();
       });
       opcoes.append(b);
     });
     caixa.hidden = false;
-    rolar(caixa, "center");
+    rolar($("cr-now"), "start"); // the season first, its question right below
   }
 
   // -- 4. the card ------------------------------------------------------------------------------
@@ -258,6 +323,20 @@
     $("cr-end-kicker").textContent = `${craque.nome} · #${craque.camisa} · ${craque.posicao}`;
     $("cr-end-label").textContent = `${final.rotulo} · ${final.nota}`;
     $("cr-end-desc").textContent = `${final.descricao} Sua carreira lembra a de ${final.parecido}.`;
+    const stats = $("cr-end-stats");
+    stats.replaceChildren();
+    const linhas = [
+      ["Títulos", titulos],
+      ["Jogos", final.jogos],
+      ["Gols", final.gols],
+      ["Clubes", final.clubes.length],
+    ];
+    if (final.selecao) linhas.push(["Pela Seleção", final.selecao]);
+    for (const [rotulo, valor] of linhas) {
+      const item = el("div", "cr-stat-item");
+      item.append(el("dt", "", rotulo), el("dd", "", valor));
+      stats.append(item);
+    }
     const url = `${jogo.url || location.origin}/jogos/carreira/c/${codigo}`;
     const canvas = await desenharCard({ craque, final, titulos });
     const png = canvas.toDataURL("image/png");
@@ -422,14 +501,12 @@
     return canvas;
   }
 
-  // A shared link: the whole career at once, then the card.
+  // A shared link: the last season, the timeline, then the card.
   if (jogo.compartilhada && jogo.compartilhada.carreira) {
-    const { carreira, codigo } = jogo.compartilhada;
+    const { carreira, codigo, craque } = jogo.compartilhada;
     show("cr-carreira");
-    $("cr-skip").hidden = true;
-    const c = jogo.compartilhada.craque;
-    $("cr-header").textContent = `${c.nome} · #${c.camisa} · ${c.posicao}`;
-    $("cr-seasons").replaceChildren(...carreira.temporadas.map(linhaTemporada));
+    $("cr-bar-who").textContent = quem(craque);
+    carreira.temporadas.forEach(mostrarTemporada);
     fim(carreira.final, codigo);
   } else if (jogo.compartilhada) {
     $("cr-craque").hidden = true;

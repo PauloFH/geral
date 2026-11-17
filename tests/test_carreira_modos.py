@@ -131,3 +131,15 @@ def test_toda_rotina_e_alcancavel() -> None:
             assert (rotina.id, opcao.texto, True) in vistos, (rotina.id, opcao.texto)
             if 1 < opcao.chance < 100:
                 assert (rotina.id, opcao.texto, False) in vistos, (rotina.id, opcao.texto)
+
+
+def test_toda_opcao_que_muda_de_clube_diz_qual() -> None:
+    dados, vistas = carregar(), set()
+    for i in range(400):
+        _, passos = jogar(entrada(f"o{i}"), lambda p, rng: rng.randrange(len(p.opcoes)), f"o{i}")
+        for _, pergunta, _ in passos:
+            for texto, clube in zip(pergunta.opcoes, pergunta.clubes, strict=True):
+                if clube:
+                    assert dados.clubes[clube].nome in texto, (pergunta.id, texto)
+                    vistas.add(pergunta.id)
+    assert "fim-de-contrato" in vistas

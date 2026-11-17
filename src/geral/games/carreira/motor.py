@@ -131,7 +131,9 @@ def descrever(efeito: Efeito) -> str:
     if efeito.jogos < 1:
         partes.append("lesão: perde parte da temporada" if efeito.jogos <= 0.7 else "lesão leve")
     if efeito.saida > 0:
-        partes.append("clima ruim no clube")
+        partes.append("mais chance de proposta")
+    elif efeito.saida < 0:
+        partes.append("mais chance de ficar")
     if efeito.selecao:
         partes.append("olho da Seleção")
     return ", ".join(partes)
@@ -591,14 +593,30 @@ class _Simulacao:
         return None, True
 
     def _escolha(self, decisao: Decisao, destinos: dict[str, Clube | None]) -> Escolha:
-        alvo = next(iter(destinos.values()), None)
+        alvos = [c for c in destinos.values() if c]
         clubes = [destinos.get(o.destino) for o in decisao.opcoes]
-        campos = artigos("clube", self.clube) | artigos("destino", alvo)
-        campos |= {"nome": self.entrada.craque.nome, "idade": self.idade}
+        pais = lambda c: self.dados.ligas[c.liga].pais if c else ""  # noqa: E731
+        campos = artigos("clube", self.clube) | {
+            "nome": self.entrada.craque.nome,
+            "idade": self.idade,
+        }
+        # {destino} in the question is the first club on offer, {outro} the second; in an option,
+        # {destino} is that option's own club.
+        primeiro = alvos[0] if alvos else None
+        segundo = alvos[1] if len(alvos) > 1 else None
+        geral_ = campos | artigos("destino", primeiro) | artigos("outro", segundo)
+        geral_ |= {"pais_destino": pais(primeiro), "pais_outro": pais(segundo)}
+
+        def opcao(texto: str, clube: Clube | None) -> str:
+            proprio = clube or primeiro
+            return texto.format_map(
+                campos | artigos("destino", proprio) | {"pais_destino": pais(proprio)}
+            )
+
         return Escolha(
             id=decisao.id,
-            pergunta=decisao.pergunta.format_map(campos),
-            opcoes=[o.texto.format_map(campos) for o in decisao.opcoes],
+            pergunta=decisao.pergunta.format_map(geral_),
+            opcoes=[opcao(o.texto, c) for o, c in zip(decisao.opcoes, clubes, strict=True)],
             destinos=[o.destino for o in decisao.opcoes],
             clubes=[c.id if c else None for c in clubes],
         )

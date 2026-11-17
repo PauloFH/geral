@@ -9,11 +9,6 @@
     <div class="game-title"><h1>Carreira</h1><button type="button" class="rules-open" aria-label="Como jogar">?</button></div>
 
     <div class="stage">
-      <nav class="editions" aria-label="Edições">
-        {% for slug, t in editions %}
-        <a href="/jogos/carreira{% if slug != 'geral' %}/{{ slug }}{% endif %}"{% if slug == edition and not compartilhada %} aria-current="page"{% endif %}>{{ t.name if t else "Geral" }}</a>
-        {% endfor %}
-      </nav>
 
       {% if compartilhada %}
       {# A shared career: the card, and the whole career when the data still replays it. #}
@@ -29,7 +24,7 @@
 
       {# 1. The player. #}
       <form class="board match cr-step" id="cr-craque"{% if compartilhada %} hidden{% endif %}>
-        <span class="lamp meta">Monte seu craque · {{ label }}</span>
+        <span class="lamp meta">Monte seu craque</span>
         <div class="cr-fields">
           <label class="cr-field cr-name"><span>Nome</span><input id="cr-nome" name="nome" maxlength="24" required autocomplete="off" spellcheck="false" placeholder="Como a torcida vai chamar"></label>
           <label class="cr-field cr-number"><span>Camisa</span><input id="cr-camisa" name="camisa" type="number" min="1" max="99" value="10" required inputmode="numeric"></label>
@@ -40,13 +35,13 @@
         <fieldset class="cr-choice"><legend>Pé bom</legend>
           {% for p, nome in [("direito", "Direito"), ("esquerdo", "Esquerdo"), ("ambos", "Os dois")] %}<button type="button" class="chip" data-pe="{{ p }}" aria-pressed="{{ 'true' if p == 'direito' else 'false' }}">{{ nome }}</button>{% endfor %}
         </fieldset>
-        {% if jogo.clubes %}
         <label class="cr-field"><span>Começa na base do</span>
-          <select id="cr-clube" required>{% for c in jogo.clubes %}<option value="{{ c.id }}">{{ c.nome }}</option>{% endfor %}</select>
+          <select id="cr-clube" required>{% for c in jogo.clubes %}<option value="{{ c.id }}"{% if c.id == "abc" %} selected{% endif %}>{{ c.nome }}</option>{% endfor %}</select>
         </label>
-        {% else %}
-        <p class="cr-start">Começa na base do <b>{{ label }}</b>.</p>
-        {% endif %}
+        <fieldset class="cr-modes"><legend>Modo</legend>
+          <button type="button" class="cr-mode" data-modo="rapida" aria-pressed="true"><b>Rápida</b><span>~1 minuto. O jogo decide quase tudo; você só entra nas grandes decisões.</span></button>
+          <button type="button" class="cr-mode" data-modo="completa" aria-pressed="false"><b>Completa</b><span>~5 minutos. Você decide o dia a dia de cada temporada e toda proposta de clube.</span></button>
+        </fieldset>
         <button class="btn cr-go" type="submit">Começar o draft</button>
       </form>
 
@@ -64,32 +59,39 @@
         </div>
       </div>
 
-      {# 3. The career, season by season. #}
+      {# 3. The career: the season just played as a newspaper clipping, the earlier ones below. #}
       <div class="cr-step" id="cr-carreira" hidden>
-        <div class="board match cr-seasons-board">
-          <span class="lamp meta" id="cr-header"></span>
-          <ol class="cr-seasons" id="cr-seasons" aria-live="polite"></ol>
-        </div>
-        <div class="cr-question" id="cr-question" hidden>
-          <p id="cr-question-text"></p>
+        <div class="board cr-bar" id="cr-bar"><span class="lamp" id="cr-bar-who"></span><span class="lamp" id="cr-bar-nota"></span></div>
+        <article class="cr-now" id="cr-now" aria-live="polite"></article>
+        <section class="cr-question" id="cr-question" hidden>
+          <span class="cr-q-kind" id="cr-q-kind"></span>
+          <p class="cr-q-text" id="cr-question-text"></p>
           <div class="cr-options" id="cr-options"></div>
-        </div>
+        </section>
         <p class="how" id="cr-error" role="alert" hidden></p>
-        <div class="cr-controls"><button class="btn secondary cr-skip" type="button" id="cr-skip">Pular</button><button class="btn" type="button" id="cr-retry" hidden>Tentar de novo</button></div>
+        <div class="cr-controls">
+          <button class="btn cr-next" type="button" id="cr-next" hidden>Próxima temporada →</button>
+          <button class="btn secondary cr-skip" type="button" id="cr-skip" hidden>Pular até o fim</button>
+          <button class="btn" type="button" id="cr-retry" hidden>Tentar de novo</button>
+        </div>
+        <details class="cr-history" id="cr-history" open><summary>Linha do tempo</summary><ol class="cr-timeline" id="cr-timeline"></ol></details>
       </div>
     </div>
 
     {# 4. The end: the card to share. #}
     <div class="result cr-end" id="cr-end" hidden>
-      <span class="cr-kicker" id="cr-end-kicker"></span>
-      <h2 id="cr-end-label"></h2>
-      <p id="cr-end-desc"></p>
       <img class="cr-card" id="cr-card" alt="O card da carreira">
-      <div class="actions">
-        <button class="btn" type="button" id="cr-share">Compartilhar</button>
-        <a class="btn secondary" id="cr-download" download="carreira.png">Baixar o card</a>
-        <button class="btn secondary" type="button" id="cr-again">Jogar de novo</button>
-        <span id="cr-copied" role="status"></span>
+      <div class="cr-end-info">
+        <span class="cr-kicker" id="cr-end-kicker"></span>
+        <h2 id="cr-end-label"></h2>
+        <p class="cr-end-desc" id="cr-end-desc"></p>
+        <dl class="cr-end-stats" id="cr-end-stats"></dl>
+        <div class="cr-end-actions">
+          <button class="btn" type="button" id="cr-share">Compartilhar</button>
+          <a class="btn secondary" id="cr-download" download="carreira.png">Baixar o card</a>
+          <button class="btn secondary" type="button" id="cr-again">Jogar de novo</button>
+          <span class="cr-copied" id="cr-copied" role="status"></span>
+        </div>
       </div>
     </div>
 

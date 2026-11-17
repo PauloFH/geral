@@ -1,6 +1,7 @@
 # Escolhas da Carreira: perguntas que aparecem entre temporadas, conforme a condição.
 # {nome}, {clube}, {idade} e {destino} (o clube que a primeira opção com destino propõe),
-# também com artigo que concorda com o gênero do clube: {o_destino}, {do_clube}, {para_o_destino}…
+# {outro} é o segundo clube oferecido (e {pais_destino}, {pais_outro}); numa opção, {destino} é o
+# clube daquela opção. Também com artigo que concorda com o gênero do clube: {o_destino}, {do_clube}, {para_o_destino}…
 # destino: ficar, europa, maior, emprestimo, arabia, casa, aposentar, mais_um.
 # Nunca reuse um id: carreiras compartilhadas guardam a ordem das respostas.
 
@@ -22,7 +23,7 @@ pergunta = "Pouco espaço {no_clube}. {O_destino} pede {nome} emprestado por um 
 peso = 2
 condicao = { idade_min = 18, idade_max = 23, jogos_max = 15 }
 [[escolha.opcao]]
-texto = "Ir emprestado para jogar"
+texto = "Ir emprestado {para_o_destino} para jogar"
 destino = "emprestimo"
 [[escolha.opcao]]
 texto = "Ficar e brigar por posição"
@@ -102,14 +103,14 @@ destino = "ficar"
 
 [[escolha]]
 id = "fim-de-contrato"
-pergunta = "O contrato de {nome} com {o_clube} acaba. Tem proposta {do_destino} e do exterior."
+pergunta = "O contrato de {nome} com {o_clube} acaba. Tem proposta {do_destino} e {do_outro} ({pais_outro})."
 peso = 2
 condicao = { idade_min = 24, idade_max = 32 }
 [[escolha.opcao]]
 texto = "Assinar com {o_destino}"
 destino = "maior"
 [[escolha.opcao]]
-texto = "Topar a aventura no exterior"
+texto = "Topar a aventura {no_destino} ({pais_destino})"
 destino = "exotico"
 [[escolha.opcao]]
 texto = "Renovar com {o_clube}"
