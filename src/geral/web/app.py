@@ -156,6 +156,12 @@ class StoryIn(BaseModel):
     rejected_reason: str | None = None  # refused by the verifier: kept so the source is skipped
 
 
+class BirthdayIn(BaseModel):
+    name: str
+    birth_date: date
+    source_url: str
+
+
 class DrawIn(BaseModel):
     label: str  # the edition the story goes in (a rebuild gets the same story)
     reserve: bool = True  # False for a preview: the stock is left as it is
@@ -936,6 +942,15 @@ def create_app(
         if team not in catalog:
             return unknown_team()
         return store.on_this_day(team, day)
+
+    @app.put("/api/teams/{team}/birthdays", status_code=204)
+    def save_birthdays(request: Request, team: str, birthdays: list[BirthdayIn]):
+        if not authorized(request):
+            return unauthorized()
+        if team not in catalog:
+            return unknown_team()
+        store.save_birthdays(team, [b.model_dump(mode="json") for b in birthdays])
+        return Response(status_code=204)
 
     @app.get("/api/teams/{team}/stories/sources")
     def story_sources(request: Request, team: str):
