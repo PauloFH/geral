@@ -387,3 +387,28 @@ def test_real_nautico_edition_has_a_month_of_players() -> None:
     names = {slug: team.name for slug, team in load_teams().items()}
 
     assert len(pool(load(), "nautico", names)) >= 30
+
+
+def test_clube_com_outro_id_conta_como_o_mesmo_clube() -> None:
+    # Wikipedia linked the Vasco rowing club (Q900x), not the football club (Q100)
+    rows = [*ROWS, row("Q3", "Q9001", "Clube de Regatas Vasco da Gama", "2021", "2022")]
+    fixes = {**OVERRIDES, "Q9001": {"mesmo_que": "Q100"}}
+
+    convertido = convert(PLAYERS, rows, fixes)
+
+    assert "Q9001" not in convertido["clubes"]
+    revelacao = next(j for j in convertido["jogadores"] if j["wikidata"] == "Q3")
+    assert [s["clube"] for s in revelacao["clubes"]].count("Q100") == 1  # merged with 2020–
+
+
+def test_ids_corrigidos_nao_aparecem_mais_nos_dados() -> None:
+    """A club fixed with `mesmo_que` (the Vasco rowing club, the city of Itumbiara) is gone from
+    the careers: the bug was "Vasco" and "Clube de Regatas Vasco da Gama" side by side."""
+    from geral.games.onde_jogou import load, load_fixes
+
+    corrigidos = {q for q, f in load_fixes().items() if "mesmo_que" in f}
+    data = load()
+
+    assert {"Q21707173", "Q193350"} <= corrigidos
+    assert not corrigidos & set(data.clubes)
+    assert not corrigidos & {s.clube for j in data.jogadores for s in j.clubes}

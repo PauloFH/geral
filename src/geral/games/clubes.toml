@@ -1,5 +1,6 @@
 # Nomes curtos e apelidos dos clubes do "Onde jogou?"; prevalecem sobre o Wikidata.
-# `ignorar = true` tira da carreira o que não é clube (o país, time B). Depois de editar:
+# `ignorar = true` tira da carreira o que não é clube (o país, time B); `mesmo_que = "Q..."` junta
+# um id errado ao clube certo (a Wikipédia linkou o clube de remo ou a cidade). Depois de editar:
 # uv run python scripts/import_carreiras.py --cache
 
 [Q155]
@@ -7,6 +8,12 @@ ignorar = true  # o país, listado como clube
 
 [Q12217]
 ignorar = true  # time B do Real Madrid
+
+[Q21707173]
+mesmo_que = "Q5014111"  # o clube de remo do Vasco, linkado na carreira do Lucas Ribamar
+
+[Q193350]
+mesmo_que = "Q1675356"  # a cidade de Itumbiara, no lugar do Itumbiara Esporte Clube
 
 [Q17479]
 nome = "Flamengo"
