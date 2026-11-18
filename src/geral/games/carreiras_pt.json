@@ -1686,11 +1686,6 @@
    "apelidos": [],
    "pais": "Outros"
   },
-  "Q193350": {
-   "nome": "Itumbiara",
-   "apelidos": [],
-   "pais": "Brasil"
-  },
   "Q1936034": {
    "nome": "Espinho",
    "apelidos": [
@@ -2047,13 +2042,6 @@
     "Clube de Futebol Os Belenenses"
    ],
    "pais": "Portugal"
-  },
-  "Q21707173": {
-   "nome": "Clube de Regatas Vasco da Gama",
-   "apelidos": [
-    "Vasco"
-   ],
-   "pais": "Brasil"
   },
   "Q218074": {
    "nome": "Neftçi Baku",
@@ -4542,6 +4530,7 @@
    "apelidos": [
     "CR Vasco da Gama",
     "Club de Regatas Vasco da Gama",
+    "Clube de Regatas Vasco da Gama",
     "Vasco da Gama"
    ],
    "pais": "Brasil"
@@ -33333,7 +33322,7 @@
      "fim": 2007
     },
     {
-     "clube": "Q193350",
+     "clube": "Q1675356",
      "inicio": 2008,
      "fim": 2008
     },
@@ -38495,7 +38484,7 @@
      "fim": 2021
     },
     {
-     "clube": "Q21707173",
+     "clube": "Q5014111",
      "inicio": 2019,
      "fim": 2020
     },

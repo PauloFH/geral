@@ -75,6 +75,7 @@ def convert(players: list[dict], rows: list[dict], fixes: dict[str, dict]) -> di
     countries: dict[str, str] = {}
     for r in rows:
         qid, club, label = r["player"], r["club"], r["clubLabel"].strip()
+        club = fixes.get(club, {}).get("mesmo_que", club)  # e.g. Wikipedia linked a rowing club
         if qid not in names:
             continue
         if r.get("position") and qid not in positions:
