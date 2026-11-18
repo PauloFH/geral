@@ -64,5 +64,27 @@ Ordem de execução. Cada fatia vira um PR; a página da fatia fica em `docs/fea
 ## Fatia 5 — Cartola simples (o bolão por torcida já vem na 2a)
 
 ## Fatia 6 — Joguinhos "7 a 0"
+Ideias tiradas dos joguinhos de futebol que viralizaram em 2026 (7a0/Sete a Zero, The Fenômeno,
+El Ídolo, Destiny Eleven, Copero, GAMBETA, Missing 11).
+- [x] Carreira: draft de lendas e carreira simulada, modos Rápida/Completa, Nordeste, veredito das
+  torcidas e Fábrica de craques, capa da Geral (`docs/features/carreira*.md`; PRs #56 e #57)
+- [ ] Revisar as notas das lendas (`src/geral/games/carreira/lendas.toml`): ainda é o rascunho;
+  faltam Alberi (ABC) e ídolos do CRB, sem id na base
+- [ ] Carreira, desafio com o mesmo sorteio: link "joga com o meu draft" e placar lado a lado
+  (projeto 5, sem guardar nada no servidor)
+- [ ] **7a0 do clube**: montar o time dos sonhos de um clube com quem já vestiu a camisa e tentar
+  vencer um mata-mata (o 7a0 original é só de seleções em Copas). Dados: a base do jogo da velha
+  (5.495 jogadores com clubes, posição, período e fama) já basta para elencos e força; o diferencial
+  é o ABC e o Náutico terem o seu
+- [ ] **Escalação do dia** (estilo Missing 11): mostra um jogo (data, placar, competição), o campo
+  com o esquema e as 11 camisas numeradas; o torcedor adivinha quem jogou em cada posição, com dicas.
+  Dados pesquisados em 2026-11-18:
+  - ESPN (`summary?event=`, já usada pela Geral): titulares, posição detalhada, número e reservas;
+    Série A desde pelo menos 2009 (esquema tático a partir de ~2014), Série B, Libertadores e Copa do
+    Brasil. A Série C vem **sem** escalação (o ABC fica de fora enquanto estiver nela)
+  - Wikipédia: "Ficha técnica" com escalações nos jogos marcantes (finais, títulos, Copa de 1970);
+    serve para uma lista curada de ~30 jogos por time, inclusive ABC e Náutico
+  - A decidir: jogos recentes da ESPN (volume, automático), históricos curados (memória da torcida)
+    ou os dois
 
 ## Fatia 7 — Fóruns
