@@ -246,7 +246,10 @@ select.chip { appearance: auto; }
 .search-bar { display: flex; gap: 8px; }
 .search-open { flex: 1; min-width: 0; text-align: left; font: 18px var(--body); padding: 12px 14px; border: 3px solid var(--ink); background: #fff; color: var(--ink-soft); cursor: pointer; }
 .search-open:hover { border-color: var(--lamp); }
-.game-dialog .club-grid { grid-auto-rows: 78px; }
+/* Every club square the same height, tall enough for a two-line name and the country (18 px
+   names on a computer, 14 px on a phone): a shorter row cut the second line in half. */
+.game-dialog .club-grid { grid-auto-rows: 90px; }
+@media (max-width: 600px) { .game-dialog .club-grid { grid-auto-rows: 78px; } }
 /* Room between the game tabs and the title; the editions sit with the game, not the title. */
 .jogo h1 { margin: 26px 0 4px; }
 .jogo .stage { margin-top: 18px; }
