@@ -396,21 +396,6 @@
   </td></tr>
   {% endif %}
 
-  {% if team.supporters %}{% set s = team.supporters %}
-  <tr><td class="block font">
-    <table role="presentation" class="card" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td class="card-body">
-      <p class="card-title">Torcida</p>
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
-        {% if supporters_logo %}<td width="92" valign="middle"><img src="{{ supporters_logo }}" alt="{{ s.name }}" width="80" height="80" style="display: block; border: 0;"></td>{% endif %}
-        <td valign="middle">
-          <p class="next-name">{{ s.name }}</p>
-          <p class="text">{{ s.text }}</p>
-        </td>
-      </tr></table>
-    </td></tr></table>
-  </td></tr>
-  {% endif %}
-
   <tr><td class="footer font">
     Resumo gerado com IA a partir das fontes citadas; confira os links para detalhes. Escudos e dados: ESPN.
     <br>Feito por um torcedor, sem ligação oficial com o clube.

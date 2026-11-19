@@ -30,16 +30,6 @@ class UnknownTeam(LookupError):
     """Slug not in the catalog; the message lists the valid ones."""
 
 
-class Supporters(BaseModel):
-    """A fan group the newsletter salutes at the end of every edition, with its own logo."""
-
-    model_config = ConfigDict(frozen=True)
-
-    name: str  # "Mancha Azul"
-    text: str  # pt-BR, shown as is
-    logo: str | None = None  # file in static/<slug>/; the card shows it once the file is there
-
-
 class Team(BaseModel):
     model_config = ConfigDict(frozen=True)
 
@@ -77,7 +67,9 @@ class Team(BaseModel):
     wikipedia: str | None = None
     classics: tuple[str, ...] = ()
     club_terms: tuple[str, ...] = ()
-    supporters: Supporters | None = None
+    # News naming any of these is left out of the edition (e.g. an organized fan group whose
+    # coverage is police news).
+    exclude_terms: tuple[str, ...] = ()
 
     @property
     def news_weekdays(self) -> tuple[int, ...]:
@@ -129,6 +121,11 @@ class Team(BaseModel):
 
     def mentions(self, text: str) -> bool:
         return bool(self.pattern.search(text))
+
+    def excludes(self, text: str) -> bool:
+        """Whether `text` names something the newsletter leaves out (`exclude_terms`)."""
+        folded = text.casefold()
+        return any(term.casefold() in folded for term in self.exclude_terms)
 
     def __hash__(self) -> int:
         return hash(self.slug)

@@ -143,13 +143,6 @@ def test_every_team_has_its_brand_files() -> None:
             assert (static / slug / name).exists(), f"{slug}/{name}"
 
 
-def test_every_supporters_card_has_its_logo_file() -> None:
-    static = Path(__file__).parents[1] / "src" / "geral" / "static"
-    for slug, team in load_teams().items():
-        if team.supporters and team.supporters.logo:
-            assert (static / slug / team.supporters.logo).exists(), f"{slug}/{team.supporters.logo}"
-
-
 def test_ge_tables_require_ge_id():
     with pytest.raises(ValidationError, match="ge_id"):
         Team(
@@ -224,3 +217,10 @@ def test_news_weekdays_follow_specials():
     assert get_team("abc").news_weekdays == (0, 3)
     assert get_team("csa").news_weekdays == (0, 3)  # Thursday news with stories, off-season
     assert get_team("vasco").news_weekdays == (0,)
+
+
+def test_csa_leaves_out_the_mancha_azul():
+    csa = load_teams()["csa"]
+
+    assert csa.excludes("Briga da Mancha Azul") and not csa.excludes("CSA vence")
+    assert not get_team("abc").excludes("Mancha Azul")  # only the CSA

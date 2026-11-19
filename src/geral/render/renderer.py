@@ -8,10 +8,8 @@ from premailer import Premailer
 
 from geral.models import MatchEvent, MatchPreview, Newsletter, StandingRow
 from geral.stats.table import standings_window
-from geral.teams import Team
 
 TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
-STATIC = Path(__file__).resolve().parents[1] / "static"
 WEEKDAYS = ("segunda", "terça", "quarta", "quinta", "sexta", "sábado", "domingo")
 SOURCE_LABELS = {
     "ge": "ge",
@@ -144,19 +142,10 @@ def render(
         # The Geral page: enables the bolão card and board, which link to it.
         "page_url": page_url.rstrip("/") if page_url else None,
         "standings": standings_window(newsletter.standings),
-        "supporters_logo": supporters_logo(newsletter.team, page_url),
         "unsubscribe_url": unsubscribe_url,
         "subscribe_url": subscribe_url,
     }
     return render_pair("newsletter", context)
-
-
-def supporters_logo(team: Team, page_url: str | None) -> str | None:
-    """The fan group's logo on the Geral page, once its file is in static/<slug>/."""
-    logo = team.supporters.logo if team.supporters else None
-    if not (logo and page_url and (STATIC / team.slug / logo).exists()):
-        return None
-    return f"{page_url.rstrip('/')}/static/{team.slug}/{logo}"
 
 
 def render_pair(name: str, context: dict) -> tuple[str, str]:
