@@ -38,6 +38,7 @@ Ordem de execução. Cada fatia vira um PR; a página da fatia fica em `docs/fea
 
 ## Fatia 2c — Novas torcidas
 - [x] CSA (Azulão News): Série D e Alagoano pelo ge, gols pela CBF, seções especiais e cartão da Mancha Azul (`docs/features/torcida-na-edicao.md`)
+- [x] CSA: notícias das categorias de base (sub-20, sub-17, sub-15) no "Saiba mais"
 - [ ] CSA: trocar o ícone provisório (SVG) por um do Nano Banana (`docs/features/identidade-visual-times.md`)
 - [ ] CSA: caixa `azulao@` do remetente (conta Google criada pelo dono)
 

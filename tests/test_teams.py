@@ -201,6 +201,7 @@ def test_csa_follows_series_d_and_alagoano_on_ge_with_cbf_goals():
     assert set(csa.ge_tables) == {"Série D", "Alagoano"}
     assert csa.cbf_tables == {"Série D": "campeonato-brasileiro/serie-d"}
     assert csa.league is None  # ESPN has no table for the Série D
+    assert set(csa.other_sports) == {"Categorias de base"}  # the youth teams in "Saiba mais"
 
 
 def test_csa_club_terms_leave_out_the_sao_caetano():
