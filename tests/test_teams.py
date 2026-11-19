@@ -143,6 +143,13 @@ def test_every_team_has_its_brand_files() -> None:
             assert (static / slug / name).exists(), f"{slug}/{name}"
 
 
+def test_every_supporters_card_has_its_logo_file() -> None:
+    static = Path(__file__).parents[1] / "src" / "geral" / "static"
+    for slug, team in load_teams().items():
+        if team.supporters and team.supporters.logo:
+            assert (static / slug / team.supporters.logo).exists(), f"{slug}/{team.supporters.logo}"
+
+
 def test_ge_tables_require_ge_id():
     with pytest.raises(ValidationError, match="ge_id"):
         Team(

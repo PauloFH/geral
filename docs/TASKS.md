@@ -36,6 +36,11 @@ Ordem de execução. Cada fatia vira um PR; a página da fatia fica em `docs/fea
 - [x] Notícias do time pelo feed JSON da página do ge (no lugar da raspagem do HTML, que fica de reserva)
 - [x] Pernambucano: segundo leitor, para o formato `tabela-context` (fases e tabela da página, jogos pelo GraphQL do ge); o Náutico entra no 2º turno (Frevo)
 
+## Fatia 2c — Novas torcidas
+- [x] CSA (Azulão News): Série D e Alagoano pelo ge, gols pela CBF, seções especiais e cartão da Mancha Azul (`docs/features/torcida-na-edicao.md`)
+- [ ] CSA: trocar o ícone provisório (SVG) por um do Nano Banana (`docs/features/identidade-visual-times.md`)
+- [ ] CSA: caixa `azulao@` do remetente (conta Google criada pelo dono)
+
 ## Fatia 3 — Pedido de time e ranking de torcidas
 - [x] Formulário "meu time não está aqui" (time + e-mail opcional para avisar quando nascer) e os mais pedidos (`docs/features/pedido-de-time.md`)
 - [ ] Comando que avisa por e-mail quem pediu, quando a torcida nascer

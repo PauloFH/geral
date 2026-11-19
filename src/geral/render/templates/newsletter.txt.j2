@@ -177,6 +177,11 @@ Fonte: {{ n.story.source_title }} (Wikipédia): {{ n.story.source_url }}
 
 {% endfor %}
 {% endif %}
+{% if team.supporters %}
+
+== Torcida ==
+{{ team.supporters.name }}: {{ team.supporters.text }}
+{% endif %}
 
 --
 Resumo gerado com IA a partir das fontes citadas.

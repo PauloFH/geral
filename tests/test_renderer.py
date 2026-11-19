@@ -770,3 +770,31 @@ def test_no_special_sections_without_them() -> None:
     html, text = render(full_newsletter())
 
     assert "Neste dia" not in html and "== História ==" not in text
+
+
+def test_render_supporters_card_with_its_logo_once_the_file_is_there(tmp_path, monkeypatch) -> None:
+    newsletter = full_newsletter().model_copy(update={"team": get_team("csa")})
+    (tmp_path / "csa").mkdir()
+    (tmp_path / "csa" / "mancha-azul.png").write_bytes(b"png")
+    monkeypatch.setattr("geral.render.renderer.STATIC", tmp_path)
+
+    html, text = render(newsletter, page_url="https://geral.example/")
+
+    assert "Mancha Azul" in html and "Aqui só tem guerreiro!" in html
+    assert '<img src="https://geral.example/static/csa/mancha-azul.png" alt="Mancha Azul"' in html
+    assert "== Torcida ==\nMancha Azul: Uma das maiores torcidas" in text
+
+
+def test_render_supporters_card_without_the_logo_file_shows_the_text(tmp_path, monkeypatch) -> None:
+    newsletter = full_newsletter().model_copy(update={"team": get_team("csa")})
+    monkeypatch.setattr("geral.render.renderer.STATIC", tmp_path)
+
+    html, _ = render(newsletter, page_url="https://geral.example/")
+
+    assert "Mancha Azul" in html and "mancha-azul.png" not in html
+
+
+def test_render_no_supporters_card_for_teams_without_one() -> None:
+    html, text = render(full_newsletter(), page_url="https://geral.example/")
+
+    assert "Torcida</p>" not in html and "== Torcida ==" not in text

@@ -108,6 +108,10 @@ club_terms = ["CSA"]  # "Azulão" is also the São Caetano
 "Alagoano" = "https://ge.globo.com/al/futebol/campeonato-alagoano/"
 [csa.cbf_tables]  # goal scorers; the Alagoano is not on the CBF site
 "Série D" = "campeonato-brasileiro/serie-d"
+[csa.supporters]  # a fixed card at the end of every edition (no news section: docs/features/torcida-na-edicao.md)
+name = "Mancha Azul"
+text = "Uma das maiores torcidas do Nordeste. Aqui só tem guerreiro!"
+logo = "mancha-azul.png"
 
 # The Urubu News, moved in from its own app (docs/adr/0001, docs/features/urubu-na-geral.md):
 # its subscribers, bolão and old links live in the Geral since the switch.
