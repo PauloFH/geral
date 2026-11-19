@@ -159,7 +159,7 @@ def test_acervo_all_runs_every_specials_team(monkeypatch) -> None:
     result = CliRunner().invoke(cli.app, ["acervo", "--all"])
 
     assert result.exit_code == 0, result.output
-    assert sorted(seen) == ["abc", "nautico"]
+    assert sorted(seen) == ["abc", "csa", "nautico"]
     assert "nautico: 2 aceitas, 1 recusadas" in result.output
 
 
