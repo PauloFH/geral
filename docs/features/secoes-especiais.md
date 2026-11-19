@@ -21,6 +21,9 @@ revisão das edições (#50, #51) é a rede final. O dono não valida item a ite
 
 - Histórias enviadas pela torcida (formulário + moderação): ideia boa, mas é outra feature.
 - Outros times: a configuração é por time no catálogo, mas o lançamento é só ABC e Náutico.
+  O CSA entrou em 2026-11-19 (`docs/TASKS.md`). Seus trechos de "clube" (símbolos, mascote,
+  estádio) ficam de fora por serem curtos no artigo (menos de `MIN_WORDS`), e a Wikipédia só tem
+  3 ídolos com "ídolo" perto de "CSA" (o nome completo do clube não acrescenta nenhum).
 - Hemeroteca da BN e Internet Archive (OCR ruim, quase sem jornal): ficam como fonte futura.
 
 ## Abordagens
