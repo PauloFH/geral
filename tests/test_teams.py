@@ -222,4 +222,5 @@ def test_specials_teams_have_a_wikipedia_article():
 
 def test_news_weekdays_follow_specials():
     assert get_team("abc").news_weekdays == (0, 3)
+    assert get_team("csa").news_weekdays == (0, 3)  # Thursday news with stories, off-season
     assert get_team("vasco").news_weekdays == (0,)
